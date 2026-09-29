@@ -1,0 +1,99 @@
+# core/schema/__init__.py
+"""
+core と api の間でやり取りされるデータの型。
+
+core/service/api は処理ロジック、ここは処理の結果として何が受け渡されるか
+という「データの形」だけを定義する。api/ はここで定義された型をYAMLで
+シリアライズ/デシリアライズする。
+
+- core.schema.api: APIリクエスト/レスポンスの型。1つの型は必ず
+  core/service/apiの1つの関数(=1つの処理)に対応させ、複数の処理の結果を
+  1つにまとめた型は作らない
+- core.schema.formats: ディスクに永続化されるファイル形式のスキーマ(データメタデータYAML等)。
+  特定のHTTPエンドポイントに紐づかない
+
+両方ともこのパッケージ直下からimportできる(呼び出し側は`api`/`formats`の
+区別を意識しなくてよい)。
+"""
+
+from core.schema.api import (
+    ApiKeyInfo,
+    ApiKeyUpdateRequest,
+    ApiUrlCandidateInfo,
+    ApiUrlCandidateListResult,
+    DatasetContent,
+    DatasetDeleteResult,
+    DatasetFileLocation,
+    DatasetFileUploadRequest,
+    DatasetListResult,
+    DatasetMetadataUpdateRequest,
+    DatasetSummary,
+    EmbeddingConnectionTestRequest,
+    EmbeddingConnectionTestResult,
+    GenaiClientInfo,
+    GenaiSettingInfo,
+    LlmConnectionTestRequest,
+    LlmConnectionTestResult,
+    ModelListRequest,
+    ModelListResult,
+    PreferenceInfo,
+    PreferenceUpdateRequest,
+    ProjectCreateRequest,
+    ProjectInfo,
+    ProjectListResult,
+    ProjectOpenRequest,
+    ProjectPropertiesUpdateRequest,
+    ProjectSaveAsRequest,
+    ProjectUpdatePathRequest,
+)
+from core.schema.formats import (
+    DatasetCategory,
+    DatasetColumnInfo,
+    DatasetHistoryEntry,
+    DatasetInfo,
+    DatasetMetadata,
+    DatasetProvenance,
+    DatasetProvenanceProcess,
+    DatasetSourceRef,
+    ReferenceLanguage,
+)
+
+__all__ = [
+    "ApiKeyInfo",
+    "ApiKeyUpdateRequest",
+    "ApiUrlCandidateInfo",
+    "ApiUrlCandidateListResult",
+    "DatasetContent",
+    "DatasetDeleteResult",
+    "DatasetFileLocation",
+    "DatasetFileUploadRequest",
+    "DatasetListResult",
+    "DatasetMetadataUpdateRequest",
+    "DatasetSummary",
+    "EmbeddingConnectionTestRequest",
+    "EmbeddingConnectionTestResult",
+    "GenaiClientInfo",
+    "GenaiSettingInfo",
+    "LlmConnectionTestRequest",
+    "LlmConnectionTestResult",
+    "ModelListRequest",
+    "ModelListResult",
+    "PreferenceInfo",
+    "PreferenceUpdateRequest",
+    "ProjectCreateRequest",
+    "ProjectInfo",
+    "ProjectListResult",
+    "ProjectOpenRequest",
+    "ProjectPropertiesUpdateRequest",
+    "ProjectSaveAsRequest",
+    "ProjectUpdatePathRequest",
+    "DatasetCategory",
+    "DatasetColumnInfo",
+    "DatasetHistoryEntry",
+    "DatasetInfo",
+    "DatasetMetadata",
+    "DatasetProvenance",
+    "DatasetProvenanceProcess",
+    "DatasetSourceRef",
+    "ReferenceLanguage",
+]

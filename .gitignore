@@ -220,3 +220,6 @@ __marimo__/
 
 # Custom
 .secret
+secrets.env
+# 実験用のプロジェクト(Project/TEST_PROJECT_##、apps/sample_project/の複製)
+/Project/

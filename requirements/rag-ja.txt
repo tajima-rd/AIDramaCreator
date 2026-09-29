@@ -1,0 +1,5 @@
+# 日本語の資料の検索で形態素解析を使う場合の追加の依存(core/genai/rag/sudachi_tokenizer.py)。
+# 無くても資料の検索は動く(語の切り出しは2文字ずつ)。
+#   pip install -r requirements/rag-ja.txt
+SudachiPy==0.7.0
+SudachiDict-core==20260723.1

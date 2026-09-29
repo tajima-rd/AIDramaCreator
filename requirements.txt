@@ -1,0 +1,5 @@
+# AIDC本体の依存(固定版)は requirements/base.txt。用途別の追加の依存も requirements/ にある:
+-r  requirements/api.txt     #HTTPのAPI層(api/)
+-r  requirements/dev.txt     #開発用ツール(整形・静的解析・テスト)
+-r requirements/rag-ja.txt   #日本語の資料の検索での形態素解析(core/genai/rag)
+-r requirements/base.txt

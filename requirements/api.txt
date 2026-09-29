@@ -1,0 +1,6 @@
+# HTTPのAPI層(api/)を動かす場合の追加の依存(版はQIDMと同じ)。
+#   pip install -r requirements/api.txt
+-r base.txt
+fastapi==0.141.1
+starlette==1.6.0
+uvicorn==0.52.4

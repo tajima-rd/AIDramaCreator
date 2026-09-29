@@ -1,0 +1,12 @@
+# 開発用ツール(整形・静的解析・テスト)。実行時には不要(版はQIDMと同じ)。
+#   pip install -r requirements/dev.txt
+# 使い方:
+#   ruff check core api tests   # 静的解析
+#   black core api tests        # コード整形
+#   pytest                      # 自動テスト(tests/。api/の結合テストにはrequirements/api.txtが必要)
+# 設定は pyproject.toml の [tool.ruff] / [tool.black] / [tool.pytest.ini_options] を参照。
+-r api.txt
+black==26.5.1
+ruff==0.16.6
+pytest==9.1.1
+httpx==0.28.1

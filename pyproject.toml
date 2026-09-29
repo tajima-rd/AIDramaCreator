@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aidc"
+version = "0.1.0"
+description = "AIDramaCreator: 生成AIで音声ドラマ風のコンテンツを作る"
+requires-python = ">=3.12"
+dynamic = ["dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements/base.txt"] }
+
+[tool.setuptools.packages.find]
+include = ["core*", "api*"]
+
+[tool.black]
+line-length = 100
+target-version = ["py312"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = [".venv", "__pycache__"]
+
+[tool.ruff.lint]
+# E/W: pycodestyle, F: pyflakes, I: isort, UP: pyupgrade, B: flake8-bugbear
+select = ["E", "F", "I", "UP", "B"]
+ignore = [
+    "E501",  # 行長は black に一任する
+    "E741",  # theta/alpha 等と同様、数学慣用の一文字変数は許容
+    "B008",  # 引数デフォルトでの関数呼び出し
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["core", "api"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
