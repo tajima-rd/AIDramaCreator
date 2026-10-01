@@ -26,6 +26,7 @@
 | `main.py` | 現行の制作の流れ(あらすじ → 台詞 → 原稿 → 音声)をローカルで実行するスクリプト |
 | `core/` | **システム**(インターフェース非依存) |
 | `core/model/` | `drama/`=作られる作品、`agent/`=作品作りに参加する者(クラスと属性のみ。[docs/model_design.md](docs/model_design.md))。純粋なモデルだけを置き、`core.model`の外をimportしない。`identifier.py`はUUIDの識別子(現行の制作の流れが使う旧来の原稿の型は`schema/formats/_legacy_drama.py`。制作の流れを新しいモデルへ移したら消す) |
+| `core/default/` | システム既定(`agents/`=エージェントの職能ごとの既定。正本。プロジェクトの作成時に`<プロジェクト>/user_default/`へ複製する) |
 | `core/project/` | プロジェクトの定義のみ: `Project`(project.yamlに対応する集約の根)・`ProjectLayout`(構成要素の所在)・`Dataset`。操作は`infra/store`・`service/process`にある(QIDM由来の暫定の形) |
 | `core/prompt/` | 用途ごとのプロンプトと、生成AIに返させる構造。生成AIは呼ばない。`drama_production/`=制作の流れの各工程、`reference_search.py`=資料の検索の問い |
 | `core/genai/` | 生成AIの汎用ライブラリ(文章生成・構造化出力・音声合成・埋め込み・プロンプトの部品・`rag/`=資料の検索)。**他のプロジェクトでも使う独立したライブラリの候補なので、パッケージの外(`core.*`等)をimportしない**(Projectの設定・キーとの橋渡しは`core/service/process/genai/generator_builder.py`) |

@@ -11,7 +11,7 @@ project.yamlの読み書きはcore.infra.store.project_file_storeが担う。
 import os
 from datetime import UTC, datetime
 
-from core.infra.store import dataset_registry_store
+from core.infra.store import agent_default_store, dataset_registry_store
 from core.infra.store.project_file_store import read_project, write_project
 from core.model.identifier import new_id
 from core.project.project import Project, ProjectLayout
@@ -22,12 +22,13 @@ def _now() -> str:
 
 
 def create_project_files(root_dir: str, name: str) -> Project:
-    """空のディレクトリに、プロジェクトの構成要素(project.yaml・空のDB・datasets/)を作る。"""
+    """空のディレクトリに、プロジェクトの構成要素(project.yaml・空のDB・datasets/・エージェントのユーザー既定)を作る。"""
     if os.path.exists(root_dir) and (not os.path.isdir(root_dir) or os.listdir(root_dir)):
         raise FileExistsError(f"既に存在し、空のディレクトリではありません: {root_dir}")
     layout = ProjectLayout(root_dir=os.path.abspath(root_dir))
     os.makedirs(layout.root_dir, exist_ok=True)
     os.makedirs(layout.datasets_dir, exist_ok=True)
+    agent_default_store.ensure_user_defaults(layout)
 
     # 接続するだけでスキーマ付きの空DBが生成される(core側の設計)。
     dataset_registry_store.list_dataset_entries(layout.project_db_path)

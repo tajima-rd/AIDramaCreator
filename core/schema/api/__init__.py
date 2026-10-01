@@ -7,6 +7,7 @@ core と api の間でやり取りされるAPIリクエスト/レスポンスの
 スキーマ(core.schema.formats)とは別物。ファイルはcore/service/api・api/routersと同じリソース単位。
 """
 
+from .agent_default import AgentDefaultListResult
 from .dataset import (
     DatasetContent,
     DatasetDeleteResult,
@@ -55,6 +56,7 @@ from .project import (
 )
 
 __all__ = [
+    "AgentDefaultListResult",
     "DramaDraftChangeResult",
     "DramaDraftConfirmRequest",
     "DramaDraftConfirmResult",

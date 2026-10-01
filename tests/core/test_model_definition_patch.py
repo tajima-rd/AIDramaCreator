@@ -8,7 +8,7 @@ import pytest
 import yaml
 
 from core.infra.io.model_definition_patch import patch_spec
-from core.model.agent import Scriptwriter
+from core.infra.io.agent_default_reader import system_default
 from core.service.process.edit import drama_draft_editor as editor
 from tests.core.test_drama_draft_editor import PROJECT_MODEL
 
@@ -139,7 +139,11 @@ dramaturgies:
     titles = {t["code"]: t["title"] for t in after["tasks"]}
     assert titles["draft_proposal"] == "企画を相談する"
     dialogue = next(t for t in after["tasks"] if t["code"] == "write_dialogue")
-    assert dialogue["prohibitions"] == Scriptwriter.default_task("write_dialogue").prohibitions
+    default = system_default("scriptwriter")
+    assert (
+        dialogue["prohibitions"]
+        == next(t for t in default.tasks if t.code == "write_dialogue").prohibitions
+    )
     # 書かなかった属性は残る
     assert after["rules"] == writer["rules"] and after["persona"] == writer["persona"]
 
@@ -151,9 +155,9 @@ dramaturgies:
         f"[{{id: {writer['id']}, rules: null, prohibitions: null, tasks: null}}]}}}}]",
     )
     reset = _writer(_content(db_path, draft_id))
-    assert reset["rules"] == Scriptwriter.default_rules()
-    assert reset["prohibitions"] == Scriptwriter.default_prohibitions()
-    assert [t["title"] for t in reset["tasks"]] == [t.title for t in Scriptwriter.default_tasks()]
+    assert reset["rules"] == default.rules
+    assert reset["prohibitions"] == default.prohibitions
+    assert [t["title"] for t in reset["tasks"]] == [t.title for t in default.tasks]
 
 
 def test_delete_removes_item_and_owned_children(db_path, draft_id):

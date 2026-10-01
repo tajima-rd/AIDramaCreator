@@ -1,5 +1,7 @@
-# StageManagerの既定(core.model.agent.stage_manager.StageManagerの既定の文面から書き出したもの。2026-10-01、暫定)。
-# 作品の分割ファイルと同じ形(dramaturgy.agents)で、作品に重ねればこの職能のエージェントが1人加わる。
+# StageManagerのシステム既定(正本。2026-10-02。文面は暫定)。
+# 作品の分割ファイルと同じ形(dramaturgy.agents)。core.infra.io.agent_default_readerが読み、モデル定義YAMLで省略した
+# 項目の補完と、タスク(code)の一覧の正本に使う。プロジェクトの作成時に<プロジェクト>/user_default/agents/へ複製する
+# (ユーザー既定)。
 # idとkeyは書かない(使うたびに新しいエージェントになる)。
 dramaturgy:
   agents:

@@ -33,8 +33,9 @@
 - [x] 作品モデルのDBを公開API(`drama_model`・`drama_draft`)から使えるようにする(2026-10-01)
 - [ ] 制作の流れ(main.py)を、モデル定義YAMLのファイルではなくDBの正本から読むようにする
 - [x] エージェントの再設計(`BaseAgent`・`AgentTask`、作品が所有、DB・YAML・Agentsタブ。2026-10-01)
-- [ ] 各職能の既定の文面(役割・厳守事項・禁止事項・タスク)の見直し(暫定。ユーザー)。コード(`core/model/agent`)と
-  `apps/AIDC-Console/default/agents/`の2か所にあるので、どちらを正本にするか(GUIがdefaultのYAMLを使う形にするか)も決める
+- [x] エージェントの既定の2段(システム既定`core/default/agents/`・プロジェクトのユーザー既定)と、Agentsタブの既定の読み込み(2026-10-02)
+- [ ] システム既定の文面(役割・厳守事項・禁止事項・タスク)の見直し(暫定。ユーザー)
+- [ ] 作品があるプロジェクトへの取り込みで`key`が衝突する([known_issues.md](known_issues.md))
 - [ ] エージェントの情報からSystemを組み立てる`core/prompt`の共通の部品と、生成AIを呼ぶ処理(`service/process`)。制作の流れのプロンプトをそこへ移すか
 - [ ] SQLiteの残り: Datasetの台帳と作品の結び付け
 - [x] Web GUIの枠(`apps/AIDC-Console`: メニューバー・Tree・パネル、Project Overview・Data Viewer。2026-10-01)

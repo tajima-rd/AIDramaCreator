@@ -22,6 +22,7 @@ from core.infra.io.model_definition_writer import (
     write_dramaturgy,
     write_split_dramaturgy,
 )
+from core.infra.io.agent_default_reader import system_default
 from core.model.agent import Actor, Scriptwriter
 from core.model.drama import (
     Dialogue,
@@ -612,13 +613,17 @@ def test_agents_are_read_with_dramaturgy_and_round_trip(tmp_path):
     assert cast.performance.title == "Quiet Keeper"
 
     # 省略した項目は職能の既定、空の一覧[]は空のまま。タスクは書いたものだけを重ね、ほかは既定
-    assert writer.role == Scriptwriter.default_role()
-    assert writer.rules == Scriptwriter.default_rules()
+    default = system_default("scriptwriter")
+    assert writer.role == default.role
+    assert writer.rules == default.rules
     assert writer.prohibitions == []
-    assert [t.code for t in writer.tasks] == [t.code for t in Scriptwriter.default_tasks()]
+    assert [t.code for t in writer.tasks] == [t.code for t in default.tasks]
     dialogue = next(t for t in writer.tasks if t.code == "write_dialogue")
     assert dialogue.rules == ["方言で書く。"]
-    assert dialogue.description == Scriptwriter.default_task("write_dialogue").description
+    assert (
+        dialogue.description
+        == next(t for t in default.tasks if t.code == "write_dialogue").description
+    )
     assert actor.tasks[0].code == "perform_dialogue"
 
     write_split_dramaturgy(definition.dramaturgy, tmp_path / "model")

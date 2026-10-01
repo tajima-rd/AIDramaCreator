@@ -15,7 +15,8 @@ from typing import Any, Optional, Union
 
 import yaml
 
-from core.model.agent import Actor, AgentTask, BaseAgent
+from core.infra.io.agent_default_reader import complete_agent_spec
+from core.model.agent import AgentTask, BaseAgent
 from core.model.agent.factory import AGENT_ROLES, build_actor, build_agent
 from core.model.drama import (
     AdditionalFeature,
@@ -482,64 +483,46 @@ def _dramaturgy(dramaturgy_spec: DramaturgySpec, refs: "_References") -> Dramatu
 
 def _agents(spec: Optional[AgentsSpec], refs: "_References") -> list[BaseAgent]:
     """作品のエージェントを職能の順(AGENT_ROLES、最後にActor)に組み立てる。Actorの配役はIDで参照する。
-    省略したrole・rules・prohibitions・タスク(とタスクの中の項目)は、職能の既定になる。"""
+    省略したrole・rules・prohibitions・タスク(とタスクの中の項目)は、システム既定(core/default/agents/)で補う。"""
     if spec is None:
         return []
     agents: list[BaseAgent] = []
     for role_name in AGENT_ROLES:
         for agent_spec in getattr(spec, f"{role_name}s"):
+            full = complete_agent_spec(role_name, agent_spec)
             agent = build_agent(
                 role_name,
-                agent_spec.name,
-                agent_spec.role,
-                agent_spec.persona,
-                agent_spec.rules,
-                agent_spec.prohibitions,
-                _agent_tasks(AGENT_ROLES[role_name], agent_spec),
-                id=agent_spec.id,
+                full.name,
+                full.role,
+                full.persona,
+                full.rules,
+                full.prohibitions,
+                _tasks(full),
+                id=full.id,
             )
-            refs.register("Agent", agent_spec.key, agent)
+            refs.register("Agent", full.key, agent)
             agents.append(agent)
     for actor_spec in spec.actors:
-        cast = refs.resolve("Cast", actor_spec.cast, f"演者 '{actor_spec.name}'")
+        full = complete_agent_spec("actor", actor_spec)
+        cast = refs.resolve("Cast", full.cast, f"演者 '{full.name}'")
         actor = build_actor(
             cast.id,
-            actor_spec.name,
-            actor_spec.voice_name,
-            actor_spec.role,
-            actor_spec.persona,
-            actor_spec.rules,
-            actor_spec.prohibitions,
-            _agent_tasks(Actor, actor_spec),
-            id=actor_spec.id,
+            full.name,
+            full.voice_name,
+            full.role,
+            full.persona,
+            full.rules,
+            full.prohibitions,
+            _tasks(full),
+            id=full.id,
         )
-        refs.register("Agent", actor_spec.key, actor)
+        refs.register("Agent", full.key, actor)
         agents.append(actor)
     return agents
 
 
-def _agent_tasks(agent_class: type[BaseAgent], spec: AgentSpec) -> list[AgentTask]:
-    """書いたタスクを、職能の既定のタスクに重ねる(省略した項目は既定)。職能に無いcodeはValueError。"""
-    tasks = []
-    for task_spec in spec.tasks:
-        try:
-            default = agent_class.default_task(task_spec.code)
-        except ValueError as exc:
-            raise ValueError(f"エージェント '{spec.name}': {exc}") from exc
-        tasks.append(
-            AgentTask(
-                task_spec.code,
-                task_spec.title if task_spec.title is not None else default.title,
-                task_spec.description if task_spec.description is not None else default.description,
-                task_spec.rules if task_spec.rules is not None else default.rules,
-                (
-                    task_spec.prohibitions
-                    if task_spec.prohibitions is not None
-                    else default.prohibitions
-                ),
-            )
-        )
-    return tasks
+def _tasks(spec: AgentSpec) -> list[AgentTask]:
+    return [AgentTask(t.code, t.title, t.description, t.rules, t.prohibitions) for t in spec.tasks]
 
 
 def _situation(

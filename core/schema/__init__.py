@@ -17,6 +17,7 @@ core/service/api は処理ロジック、ここは処理の結果として何が
 """
 
 from core.schema.api import (
+    AgentDefaultListResult,
     ApiKeyInfo,
     ApiKeyUpdateRequest,
     ApiUrlCandidateInfo,
@@ -70,6 +71,7 @@ from core.schema.formats import (
 )
 
 __all__ = [
+    "AgentDefaultListResult",
     "DramaDraftChangeResult",
     "DramaDraftConfirmRequest",
     "DramaDraftConfirmResult",

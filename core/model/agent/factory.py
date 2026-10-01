@@ -51,7 +51,7 @@ def build_agent(
     prohibitions: Optional[list[str]] = None,
     tasks: Optional[list[AgentTask]] = None,
 ) -> BaseAgent:
-    """固有の属性を持たないエージェント(AGENT_ROLES)。role_nameは職能の名前、roleは役割の説明(Noneなら既定)。"""
+    """固有の属性を持たないエージェント(AGENT_ROLES)。role_nameは職能の名前、roleは役割の説明。"""
     if role_name not in AGENT_ROLES:
         raise ValueError(f"エージェントの職能 '{role_name}' はありません")
     return AGENT_ROLES[role_name](name, role, persona, rules, prohibitions, tasks)

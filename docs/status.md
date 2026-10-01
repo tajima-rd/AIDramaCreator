@@ -47,9 +47,10 @@
 - エージェント(2026-10-01改訂): 抽象クラス`BaseAgent`と`AgentTask`(役割・性格づけ・厳守事項・禁止事項・タスク。既定は職能のクラス)。
   Producerは削除。作品が所有し(`Dramaturgy.agents`)、モデル定義YAMLは`dramaturgy.agents:`に職能ごと(`actors`は`cast`・`voice_name`も。
   分割では`agents.yaml`)。DBは`agent`・`agent_task`のテーブル。省略した項目は職能の既定、書き出しは全文。
-- GUIの既定のエージェント(2026-10-01): `apps/AIDC-Console/default/agents/<職能>.yaml`(Actor以外の6職能。Actorは配役ごとなので置かない)。
-  職能のクラスの既定の文面から書き出したもので、作品の分割ファイルと同じ形(`dramaturgy.agents`)。食い違いは
-  `tests/core/test_default_agents.py`が検出する(既定を直すときは両方を直す)。
+- エージェントの既定(2026-10-02): システム既定`core/default/agents/<職能>.yaml`(正本。7職能)と、プロジェクトのユーザー既定
+  `<プロジェクト>/user_default/agents/<職能>.yaml`(Actor以外の6職能。作成時に複製、無ければ使うときに複製)。職能のクラスは既定の文面を
+  持たない。読み込みと補完は`core/infra/io/agent_default_reader.py`、ユーザー既定は`core/infra/store/agent_default_store.py`。
+  公開API・HTTP`agent_default`(`GET /projects/{id}/agent-defaults`・`PUT .../agent-defaults/{職能}`・`POST .../agent-defaults/{職能}/restore`)。
 
 ## 企画書(`Proposal`、2026-10-01)
 
@@ -84,8 +85,9 @@
   Actsタブ(幕の一覧と題・あらすじ。追加・削除、削除すると残りのorderを詰める)。New Dramaturgyは題・幕数・言語から作品を作って確定する。
   保存の仕組みは[architecture.md](architecture.md) 8節。
   Proposalタブ(企画書。題・キャッチコピー・ログライン・企画意図・対象地域・あらすじ・登場人物(名前と説明の行を追加・削除))も置いた。
-  Agentsタブ: 作品のエージェントの一覧と、名前・(Actorは声)・役割・性格づけ・厳守事項・禁止事項・タスクごとの文面の編集、追加
-  (職能を選ぶ。Actorは配役も)・削除・Reset to Default。
+  Agentsタブ(2026-10-02改訂): 作品のエージェント(Actor以外)の一覧と、名前・役割・性格づけ・厳守事項・禁止事項・タスクごとの文面の編集。
+  足りない職能はタブを開いたときにユーザー既定から読み込む。Reset to Default・Save as User Default・Restore System Default。
+  New Dramaturgyはユーザー既定の6職能を必ず入れる。
   Proposalタブの`Import from YAML`は、企画書のYAML(最上位の`proposal:`か、モデル定義YAMLの`dramaturgy.proposal`)をフォームに読み込む
   (下書きにはSaveで入る。知らない項目があれば断る)。
 - パネル: Project Overview(Overview・Summary・Generative AI・Datasetのタブ。Datasetの追加はPDF・DOCX・XLSXだけ)、
@@ -110,4 +112,4 @@
   - `preference`: 生成AIの設定・APIキー・接続確認・モデル一覧・接続先の候補
   - `dataset`: 一覧・PDF/DOCX/XLSXの追加・中身とファイルの取得・メタデータの参照と更新・削除。
     ドラマへの割り当ては無い(常に未割当。[future_design.md](future_design.md)「Drama」)
-- テスト(`tests/`、`.venv/bin/python -m pytest`): 153件が通り、3件がskip(2026-10-01)。skipは参考資料のサンプルが無いため([open_tasks.md](open_tasks.md))。
+- テスト(`tests/`、`.venv/bin/python -m pytest`): 170件が通り、3件がskip(2026-10-02)。skipは参考資料のサンプルが無いため([open_tasks.md](open_tasks.md))。

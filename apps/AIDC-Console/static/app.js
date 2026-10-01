@@ -748,7 +748,8 @@ async function mountOrUpdateDramaturgyEditor(projectId, dramaturgyId) {
 // Edit
 // ---------------------------------------------------------------------------
 
-// Edit > New Dramaturgy...: 題・幕数・言語から、空の幕を持つ作品を作り、すぐに確定する(Treeに出る)。
+// Edit > New Dramaturgy...: 題・幕数・言語から、空の幕を持つ作品を作り、すぐに確定する(Treeに出る)。エージェントは
+// プロジェクトのユーザー既定(職能ごと)を必ず入れる。
 // 作品の追加専用の下書きを作って確定するため、Dramaturgy Editorの下書きに確定していない変更があると、
 // その下書きが確定できなくなる。そのため、変更があれば先にSave Versionを求める(変更が無ければ、
 // 次にDramaturgy Editorを開くときに作り直される)。
@@ -793,9 +794,13 @@ function actionNewDramaturgy() {
             });
             const base = `/projects/${projectId}/drama-drafts/${draft.draft_id}`;
             const language = (id) => box.querySelector(`#${id}`).value.trim() || null;
+            const defaults = (await apiFetch(`/projects/${projectId}/agent-defaults`)).defaults || {};
+            const agents = {};
+            for (const [roleName, spec] of Object.entries(defaults)) agents[`${roleName}s`] = [spec];
             const dramaturgy = {
               title,
               acts: Array.from({ length: actCount }, (_, i) => ({ order: i })),
+              agents,
             };
             if (language("f_input_language")) dramaturgy.input_language = language("f_input_language");
             if (language("f_output_language")) dramaturgy.output_language = language("f_output_language");

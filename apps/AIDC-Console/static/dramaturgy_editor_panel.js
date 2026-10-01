@@ -13,8 +13,9 @@
  *   変更があれば破棄してよいかを確かめる
  *
  * タブ: Properties(題・あらすじ・言語)・Proposal(企画書。作品の初期シードで、題・あらすじ・登場人物は作品と共有しない)・
- * Agents(作品作りに参加するエージェント。役割・性格づけ・厳守事項・禁止事項・タスクの文面を書き換える。空にした項目と
- * Reset to Defaultは職能の既定に戻る)・Acts(幕の一覧と詳細。追加・削除)。幕のorderは0から連番で、削除したら残りを詰める。
+ * Agents(作品作りに参加するエージェント。役割・性格づけ・厳守事項・禁止事項・タスクの文面を書き換える。足りない職能は
+ * タブを開いたときにプロジェクトのユーザー既定から読み込む。Reset to Defaultはユーザー既定に戻し、空にした項目はシステム既定になる。
+ * Save as User Default・Restore System Defaultでプロジェクトのユーザー既定を書き換える。Actorは出さない)・Acts(幕の一覧と詳細。追加・削除)。幕のorderは0から連番で、削除したら残りを詰める。
  */
 
 const EDITOR_DRAFT_TITLE = "Dramaturgy Editor";
@@ -23,15 +24,15 @@ const EDITOR_DRAFT_TITLE = "Dramaturgy Editor";
 const PROPOSAL_FIELDS = ["title", "catchphrase", "logline", "intent", "target_area", "synopsis", "characters"];
 const PROPOSAL_CHARACTER_FIELDS = ["name", "description"];
 
-// エージェントの職能(モデル定義YAMLのdramaturgy.agentsの区画名→表示名)。並びが一覧の順
+// Agentsタブに出す職能([モデル定義YAMLのdramaturgy.agentsの区画名, 職能の名前, 表示名])。並びが一覧の順。
+// Actor(演者)は配役ごとに置くので出さない(置き場所は保留。docs/future_design.md)
 const AGENT_SECTIONS = [
-  ["researchers", "Researcher"],
-  ["casting_directors", "Casting Director"],
-  ["scriptwriters", "Scriptwriter"],
-  ["directors", "Director"],
-  ["stage_managers", "Stage Manager"],
-  ["sound_engineers", "Sound Engineer"],
-  ["actors", "Actor"],
+  ["researchers", "researcher", "Researcher"],
+  ["casting_directors", "casting_director", "Casting Director"],
+  ["scriptwriters", "scriptwriter", "Scriptwriter"],
+  ["directors", "director", "Director"],
+  ["stage_managers", "stage_manager", "Stage Manager"],
+  ["sound_engineers", "sound_engineer", "Sound Engineer"],
 ];
 
 // 1行に1つ書いた文(厳守事項・禁止事項)を一覧にする
@@ -115,6 +116,8 @@ customElements.define(
       this.dramaturgyId = dramaturgyId;
       this.activeTab = "properties";
       this.selectedActId = null;
+      this.selectedAgentId = null;
+      this.agentDefaultsFailed = false;
       try {
         if (!(await this.ensureDraft())) {
           this.dispatchEvent(new CustomEvent("dramaturgy-editor-closed", { bubbles: true }));
@@ -483,25 +486,28 @@ customElements.define(
     // Agents
     // -------------------------------------------------------------------
 
-    // 作品のエージェントを、職能の順に平らな一覧にする({section, label, agent})
+    // 作品のエージェント(Agentsタブに出す職能だけ)を、職能の順に平らな一覧にする({section, roleName, label, agent})
     agentEntries() {
       const groups = (this.dramaturgy && this.dramaturgy.agents) || {};
-      return AGENT_SECTIONS.flatMap(([section, label]) =>
-        (groups[section] || []).map((agent) => ({ section, label, agent }))
+      return AGENT_SECTIONS.flatMap(([section, roleName, label]) =>
+        (groups[section] || []).map((agent) => ({ section, roleName, label, agent }))
       );
     }
 
-    // 配役(Cast)の表示名(人物の名前)。keyは下書きの中身の参照
-    castLabel(castRef) {
-      const cast = (this.dramaturgy.casts || []).find((c) => c.key === (castRef && castRef.ref));
-      if (!cast) return castRef ? castRef.ref : "(なし)";
-      const character = ((this.content && this.content.characters) || []).find(
-        (c) => c.key === (cast.character && cast.character.ref)
-      );
-      return character ? character.name : cast.key;
+    // プロジェクトのユーザー既定(職能の名前→エージェント)
+    async fetchAgentDefaults() {
+      const result = await apiFetch(`/projects/${this.projectId}/agent-defaults`);
+      return result.defaults || {};
     }
 
     renderAgentsTab(body) {
+      const groups = (this.dramaturgy && this.dramaturgy.agents) || {};
+      const missing = AGENT_SECTIONS.filter(([section]) => !(groups[section] || []).length);
+      if (missing.length && !this.agentDefaultsFailed) {
+        body.innerHTML = `<p class="placeholder">足りない職能のエージェントを、プロジェクトの既定から読み込んでいます…</p>`;
+        this.loadMissingAgents(missing);
+        return;
+      }
       body.innerHTML = `
         <div class="panel-master-detail">
           <div class="panel-master" id="de-agent-master"></div>
@@ -521,22 +527,36 @@ customElements.define(
         });
         master.appendChild(item);
       }
-      const addBtn = document.createElement("button");
-      addBtn.className = "panel-master-add";
-      addBtn.textContent = "+ Add Agent";
-      addBtn.addEventListener("click", () => this.openAddAgentModal());
-      master.appendChild(addBtn);
       this.renderAgentDetail(body.querySelector("#de-agent-detail"));
+    }
+
+    // 作品に無い職能のエージェントを、プロジェクトのユーザー既定から下書きに読み込む(Agentsタブを開いたとき。
+    // 未確定の変更になる)。失敗したら、作品を読み直すまで繰り返さない。
+    async loadMissingAgents(missing) {
+      if (this.loadingAgentDefaults) return;
+      this.loadingAgentDefaults = true;
+      try {
+        const defaults = await this.fetchAgentDefaults();
+        const agents = {};
+        for (const [section, roleName] of missing) agents[section] = [defaults[roleName]];
+        await this.editDramaturgy({ agents });
+        showToast("足りない職能のエージェントを、プロジェクトの既定から読み込みました(Save Versionで確定)", "info");
+      } catch (e) {
+        this.agentDefaultsFailed = true;
+        showApiError(e);
+        this.renderBody();
+      } finally {
+        this.loadingAgentDefaults = false;
+      }
     }
 
     renderAgentDetail(detail) {
       const entry = this.agentEntries().find((e) => e.agent.id === this.selectedAgentId);
       if (!entry) {
-        detail.innerHTML = `<p class="placeholder">左の一覧からエージェントを選択するか、「+ Add Agent」で追加してください。</p>`;
+        detail.innerHTML = `<p class="placeholder">左の一覧からエージェントを選択してください。</p>`;
         return;
       }
-      const { section, label, agent } = entry;
-      const isActor = section === "actors";
+      const { section, roleName, label, agent } = entry;
       const linesArea = (id, title, items, hint) => `
         <div class="field">
           <label for="${id}">${title}</label>
@@ -564,16 +584,8 @@ customElements.define(
         <div class="panel-section-title">${escapeHtml(agent.name)} <span class="dataset-badge">${escapeHtml(label)}</span></div>
         <div class="panel-form panel-form--wide">
           <div class="panel-readonly-id">ID: ${escapeHtml(agent.id)}</div>
-          <div class="field-hint">生成AIとの対話を始める前に渡す情報です(プロンプトはここから組み立てます)。役割・厳守事項・禁止事項・タスクの文面を空にすると、職能の既定に戻ります。</div>
+          <div class="field-hint">生成AIとの対話を始める前に渡す情報です(プロンプトはここから組み立てます)。役割・厳守事項・禁止事項・タスクの文面を空にすると、システム既定になります。</div>
           ${textField("ag_name", "Name", agent.name || "")}
-          ${
-            isActor
-              ? `<div class="panel-form-row">
-                   <div class="field"><label>Cast</label><div>${escapeHtml(this.castLabel(agent.cast))}</div></div>
-                   ${textField("ag_voice_name", "Voice Name", agent.voice_name || "", "音声合成の声の名前(例: Charon)")}
-                 </div>`
-              : ""
-          }
           <div class="field">
             <label for="ag_role">Role</label>
             <textarea id="ag_role" class="prose">${escapeHtml(agent.role || "")}</textarea>
@@ -591,28 +603,32 @@ customElements.define(
           <div class="panel-actions">
             <button type="button" class="btn btn-primary" id="ag_save">Save</button>
             <button type="button" class="btn" id="ag_reset">Reset to Default</button>
-            <button type="button" class="btn btn-danger" id="ag_delete">Delete Agent</button>
+            <button type="button" class="btn" id="ag_save_default">Save as User Default</button>
+            <button type="button" class="btn" id="ag_restore_system">Restore System Default</button>
           </div>
+          <div class="field-hint">Reset to Default: この作品のエージェントを、プロジェクトの既定(ユーザー既定)に戻します。Save as User Default: 今の入力を、このプロジェクトの${escapeHtml(label)}の既定にします(以後の新しい作品とReset to Defaultで使います)。Restore System Default: このプロジェクトの${escapeHtml(label)}の既定を、システム既定に戻します(作品のエージェントは変えません)。</div>
         </div>
       `;
       detail.querySelector("#ag_save").addEventListener("click", (ev) =>
         this.withButtonBusy(ev.currentTarget, "Saving...", () => this.saveAgent(section, agent))
       );
-      detail.querySelector("#ag_reset").addEventListener("click", () => this.resetAgent(section, agent));
-      detail.querySelector("#ag_delete").addEventListener("click", () => this.deleteAgent(section, agent));
+      detail.querySelector("#ag_reset").addEventListener("click", () => this.resetAgent(section, roleName, agent));
+      detail.querySelector("#ag_save_default").addEventListener("click", (ev) =>
+        this.withButtonBusy(ev.currentTarget, "Saving...", () => this.saveAsUserDefault(roleName, label))
+      );
+      detail.querySelector("#ag_restore_system").addEventListener("click", () => this.restoreSystemDefault(roleName, label));
     }
 
-    async saveAgent(section, agent) {
+    // 入力からエージェントの内容を読む。空にした項目はnull(=システム既定)。タスクは書いた項目だけを持つ。名前が空ならnull
+    readAgentForm() {
       const detail = this.querySelector("#de-agent-detail");
       const value = (id) => detail.querySelector(`#${id}`).value.trim();
       const name = value("ag_name");
       fieldError(detail, "ag_name", "");
       if (!name) {
         fieldError(detail, "ag_name", "入力してください");
-        return;
+        return null;
       }
-      // 空にした項目はnull(=職能の既定に戻る)。タスクは一覧ごと送る(書かなかった項目は既定)
-      const orNull = (v) => v || null;
       const linesOrNull = (id) => {
         const items = linesToList(detail.querySelector(`#${id}`).value);
         return items.length ? items : null;
@@ -629,115 +645,69 @@ customElements.define(
         if (prohibitions.length) task.prohibitions = prohibitions;
         return task;
       });
-      const patch = {
-        id: agent.id,
+      return {
         name,
-        role: orNull(value("ag_role")),
-        persona: orNull(value("ag_persona")),
+        role: value("ag_role") || null,
+        persona: value("ag_persona") || null,
         rules: linesOrNull("ag_rules"),
         prohibitions: linesOrNull("ag_prohibitions"),
         tasks,
       };
-      if (section === "actors") patch.voice_name = orNull(value("ag_voice_name"));
+    }
+
+    async saveAgent(section, agent) {
+      const form = this.readAgentForm();
+      if (!form) return;
       try {
-        await this.editDramaturgy({ agents: { [section]: [patch] } });
+        await this.editDramaturgy({ agents: { [section]: [{ id: agent.id, ...form }] } });
         showToast("下書きに保存しました(Save Versionで確定)", "ok");
       } catch (e) {
         showApiError(e);
       }
     }
 
-    async resetAgent(section, agent) {
-      if (!confirm(`「${agent.name}」の役割・厳守事項・禁止事項・タスクを、職能の既定に戻します。よろしいですか?(名前・性格づけは残ります)`)) {
+    // この作品のエージェントを、プロジェクトのユーザー既定の内容(名前・性格づけも含めて)で置き換える
+    async resetAgent(section, roleName, agent) {
+      if (!confirm(`「${agent.name}」を、このプロジェクトの既定に戻します(名前・性格づけも含めて置き換わります)。よろしいですか?`)) {
         return;
       }
       try {
-        await this.editDramaturgy({
-          agents: { [section]: [{ id: agent.id, role: null, rules: null, prohibitions: null, tasks: null }] },
-        });
+        const spec = (await this.fetchAgentDefaults())[roleName];
+        const patch = {
+          id: agent.id,
+          name: spec.name,
+          role: spec.role ?? null,
+          persona: spec.persona ?? null,
+          rules: spec.rules ?? null,
+          prohibitions: spec.prohibitions ?? null,
+          tasks: spec.tasks ?? null,
+        };
+        await this.editDramaturgy({ agents: { [section]: [patch] } });
         showToast("既定に戻しました(Save Versionで確定)", "ok");
       } catch (e) {
         showApiError(e);
       }
     }
 
-    async deleteAgent(section, agent) {
-      if (!confirm(`エージェント「${agent.name}」を削除します。よろしいですか?`)) return;
+    async saveAsUserDefault(roleName, label) {
+      const form = this.readAgentForm();
+      if (!form) return;
+      if (!confirm(`今の入力を、このプロジェクトの${label}の既定にします。よろしいですか?`)) return;
+      // 空にした項目(null)は送らない(=システム既定で補う)
+      const spec = Object.fromEntries(Object.entries(form).filter(([, v]) => v !== null));
       try {
-        await this.editDramaturgy({ agents: { [section]: [{ id: agent.id, delete: true }] } });
-        this.selectedAgentId = null;
-        this.renderBody();
-        showToast("削除しました(Save Versionで確定)", "ok");
+        await apiFetch(`/projects/${this.projectId}/agent-defaults/${roleName}`, { method: "PUT", bodyObj: spec });
+        showToast(`${label}の既定(ユーザー既定)を保存しました`, "ok");
       } catch (e) {
         showApiError(e);
       }
     }
 
-    // 職能と名前を選んで足す(文面は職能の既定になる)。Actorは演じる配役と声も選ぶ
-    openAddAgentModal() {
-      const casts = this.dramaturgy.casts || [];
-      openModal({
-        title: "Add Agent",
-        bodyHtml: `
-          <div class="field">
-            <label for="na_section">Role</label>
-            ${selectHtml("na_section", AGENT_SECTIONS.map(([s]) => s), "scriptwriters", (s) => AGENT_SECTIONS.find(([x]) => x === s)[1])}
-          </div>
-          ${textField("na_name", "Name", "")}
-          <div id="na_actor_fields" hidden>
-            <div class="field">
-              <label for="na_cast">Cast</label>
-              ${
-                casts.length
-                  ? selectHtml("na_cast", casts.map((c) => c.key), casts[0].key, (key) => this.castLabel({ ref: key }))
-                  : `<p class="field-hint">配役がありません(Actorは配役ごとに1つ置きます)。</p>`
-              }
-              <div class="field-error" id="err_na_cast"></div>
-            </div>
-            ${textField("na_voice_name", "Voice Name", "", "音声合成の声の名前(例: Charon)")}
-          </div>
-        `,
-        onMount: (box) => {
-          const sectionSelect = box.querySelector("#na_section");
-          const sync = () => (box.querySelector("#na_actor_fields").hidden = sectionSelect.value !== "actors");
-          sectionSelect.addEventListener("change", sync);
-          sync();
-        },
-        buttons: [
-          { label: "Cancel", onClick: closeModal },
-          { label: "Add", primary: true, onClick: () => this.addAgent() },
-        ],
-      });
-    }
-
-    async addAgent() {
-      const box = document.getElementById("modal-box");
-      const section = box.querySelector("#na_section").value;
-      const name = box.querySelector("#na_name").value.trim();
-      fieldError(box, "na_name", "");
-      if (!name) {
-        fieldError(box, "na_name", "入力してください");
-        return;
-      }
-      const agent = { name };
-      if (section === "actors") {
-        const castSelect = box.querySelector("#na_cast");
-        if (!castSelect) {
-          fieldError(box, "na_cast", "配役が無いため、Actorを足せません");
-          return;
-        }
-        agent.cast = { ref: castSelect.value };
-        const voice = box.querySelector("#na_voice_name").value.trim();
-        if (voice) agent.voice_name = voice;
-      }
-      const before = new Set(this.agentEntries().map((e) => e.agent.id));
+    async restoreSystemDefault(roleName, label) {
+      if (!confirm(`このプロジェクトの${label}の既定を、システム既定に戻します。作品のエージェントは変わりません。よろしいですか?`)) return;
       try {
-        await this.editDramaturgy({ agents: { [section]: [agent] } });
-        closeModal();
-        const added = this.agentEntries().find((e) => !before.has(e.agent.id));
-        this.selectedAgentId = added ? added.agent.id : null;
-        this.renderBody();
-        showToast(`エージェント「${name}」を追加しました(Save Versionで確定)`, "ok");
+        await apiFetch(`/projects/${this.projectId}/agent-defaults/${roleName}/restore`, { method: "POST" });
+        showToast(`${label}の既定をシステム既定に戻しました(作品のエージェントに反映するにはReset to Default)`, "ok");
       } catch (e) {
         showApiError(e);
       }

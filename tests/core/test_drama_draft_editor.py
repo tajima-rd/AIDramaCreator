@@ -15,7 +15,7 @@ from core.infra.io.model_definition_reader import (
 )
 from core.infra.io.model_definition_writer import model_definition_to_yaml
 from core.infra.store.drama_version_store import DraftNotFoundError
-from core.model.agent import Scriptwriter
+from core.infra.io.agent_default_reader import system_default
 from core.model.drama import Dialogue, SoundEffect
 from core.service.process.edit import drama_draft_editor as editor
 from core.service.process.edit.drama_draft_editor import DraftConflictError
@@ -269,10 +269,10 @@ def test_confirmed_model_round_trips_through_db(db_path):
         "港町の生まれ",
         ["潮の香りを言葉で描く。"],
     )
-    assert writer.prohibitions == Scriptwriter.default_prohibitions()
+    assert writer.prohibitions == system_default("scriptwriter").prohibitions
     dialogue = next(t for t in writer.tasks if t.code == "write_dialogue")
     assert dialogue.prohibitions == ["標準語にしない。"]
-    assert [t.code for t in writer.tasks] == [t.code for t in Scriptwriter.default_tasks()]
+    assert [t.code for t in writer.tasks] == [t.code for t in system_default("scriptwriter").tasks]
     assert (actor.casting_id, actor.voice_name) == (loaded.dramaturgies[0].casts[0].id, "Charon")
     assert loaded.dramaturgies[1].agents == []
 

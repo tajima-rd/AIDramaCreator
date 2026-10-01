@@ -10,7 +10,7 @@ from typing import Optional
 
 
 class AgentTask:
-    """codeはタスクの識別子(職能ごとにコードで決まり、変わらない)。title・description・rules・prohibitionsは文面で、
+    """codeはタスクの識別子(職能ごとにシステム既定(core/default/agents/)で決まり、変わらない)。title・description・rules・prohibitionsは文面で、
     作品ごとに書き換えられる。"""
 
     def __init__(

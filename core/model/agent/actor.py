@@ -26,30 +26,3 @@ class Actor(BaseAgent):
         super().__init__(name, role, persona, rules, prohibitions, tasks)
         self.casting_id: str = casting_id
         self.voice_name: Optional[str] = voice_name
-
-    @classmethod
-    def default_role(cls) -> str:
-        return "配役の人物の台詞を、演出と演じ方に従って音声にする。"
-
-    @classmethod
-    def default_rules(cls) -> list[str]:
-        return [
-            "台詞の文言どおりに読む。",
-        ]
-
-    @classmethod
-    def default_prohibitions(cls) -> list[str]:
-        return [
-            "台詞に無い言葉を足さない。",
-            "音声タグを読み上げない。",
-        ]
-
-    @classmethod
-    def default_tasks(cls) -> list[AgentTask]:
-        return [
-            AgentTask(
-                "perform_dialogue",
-                "台詞を演じる",
-                "台詞を、演出と配役の演じ方に従って音声にする。",
-            ),
-        ]

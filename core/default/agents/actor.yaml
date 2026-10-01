@@ -1,0 +1,21 @@
+# Actorのシステム既定(正本。2026-10-02。文面は暫定)。
+# 作品の分割ファイルと同じ形(dramaturgy.agents)。core.infra.io.agent_default_readerが読み、モデル定義YAMLで省略した
+# 項目の補完と、タスク(code)の一覧の正本に使う。プロジェクトの作成時に<プロジェクト>/user_default/agents/へ複製する
+# (Actorは配役ごとに置くので、プロジェクトのユーザー既定には複製しない)。
+# idとkeyは書かない(使うたびに新しいエージェントになる)。
+dramaturgy:
+  agents:
+    actors:
+    - name: 演者
+      role: 配役の人物の台詞を、演出と演じ方に従って音声にする。
+      rules:
+      - 台詞の文言どおりに読む。
+      prohibitions:
+      - 台詞に無い言葉を足さない。
+      - 音声タグを読み上げない。
+      tasks:
+      - code: perform_dialogue
+        title: 台詞を演じる
+        description: 台詞を、演出と配役の演じ方に従って音声にする。
+        rules: []
+        prohibitions: []

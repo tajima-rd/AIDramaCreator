@@ -111,16 +111,24 @@ UMLからの変更(2026-09-30ユーザー承認): `Profile`をなくし、`Chara
 
 | ファイル | クラス | 属性 |
 | --- | --- | --- |
-| `base_agent.py` | `BaseAgent`(抽象) | `id`・`name`・`role`(役割の説明)・`persona`(性格づけ)・`rules`(どのタスクでも守ること)・`prohibitions`(どのタスクでもしてはいけないこと)・`tasks: list[AgentTask]`。職能ごとの既定は`default_role`・`default_rules`・`default_prohibitions`・`default_tasks`(サブクラスが上書き) |
-| `agent_task.py` | `AgentTask` | `code`(タスクの識別子。職能ごとにコードで決まる)・`title`・`description`・`rules`・`prohibitions`。**職務の定義**で、発注(担当・状態・結果)ではない |
+| `base_agent.py` | `BaseAgent`(抽象) | `id`・`name`・`role`(役割の説明)・`persona`(性格づけ)・`rules`(どのタスクでも守ること)・`prohibitions`(どのタスクでもしてはいけないこと)・`tasks: list[AgentTask]`。既定の文面は持たない(下の「既定」) |
+| `agent_task.py` | `AgentTask` | `code`(タスクの識別子。職能ごとにシステム既定で決まる)・`title`・`description`・`rules`・`prohibitions`。**職務の定義**で、発注(担当・状態・結果)ではない |
 
-- 既定の値は職能のクラス(コード)が決め、作品ごとに書き換えた後の**全文**を持つ。省略(None)すれば既定。
-- **タスクの一覧は職能ごとに固定**(codeで特定)。書き換えられるのは文面だけ。職能に無いcodeはエラー。タスクごとの応答の型・渡す情報・
-  反映の処理は、codeで`core/prompt`・`service/process`の側と結び付ける。
+- エージェントは作品ごとに書き換えた後の**全文**を持つ。
+- **既定は2段**(2026-10-02ユーザー決定):
+  - **システム既定**(正本): `core/default/agents/<職能>.yaml`(Actorを含む7職能。作品の分割ファイルと同じ形`dramaturgy.agents`)。
+    読み込みは`core/infra/io/agent_default_reader.py`。モデル定義YAMLで省略した項目(role・rules・prohibitions、タスクと
+    タスクの中の項目)はシステム既定で補う(`complete_agent_spec`)。モデル(`core/model`)はファイルを読まないので、既定の文面を持たない。
+  - **ユーザー既定**: `<プロジェクト>/user_default/agents/<職能>.yaml`(Actor以外の6職能。プロジェクトごと)。プロジェクトの作成時に
+    システム既定を複製し、無い職能は使うときに複製する(`core/infra/store/agent_default_store.py`)。新しい作品(New Dramaturgy)は
+    必ずユーザー既定のエージェントを持ち、Agentsタブを開いたとき足りない職能はユーザー既定から読み込む。
+- **タスクの一覧は職能ごとに固定**(システム既定のcodeで特定)。書き換えられるのは文面だけ。システム既定に無いcodeはエラー。
+  タスクごとの応答の型・渡す情報・反映の処理は、codeで`core/prompt`・`service/process`の側と結び付ける。
 - `AgentTask.code`は、モデル定義YAMLの`key`(書き出すたびに振り直す呼び名)と区別するため`key`にしなかった。
-- 各職能の既定の文面(役割・厳守事項・禁止事項・タスク)は**暫定**(2026-10-01。ユーザーの見直しを待つ)。
+- システム既定の文面(役割・厳守事項・禁止事項・タスク)は**暫定**(2026-10-01。ユーザーの見直しを待つ)。
+- **Actor(演者)は配役ごとに置く**ので、ユーザー既定とAgentsタブには出さない。設定の置き場所は保留(future_design.md)。
 
-| ファイル | クラス | 生成AI | 固有の属性 | 既定のタスク(code) |
+| ファイル | クラス | 生成AI | 固有の属性 | タスク(code。システム既定) |
 | --- | --- | --- | --- | --- |
 | `researcher.py` | `Researcher` | text+検索 | なし | `answer_question`・`check_consistency` |
 | `casting_director.py` | `CastingDirector` | text | なし | `cast_character`・`assign_voice` |

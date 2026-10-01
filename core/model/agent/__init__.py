@@ -1,6 +1,6 @@
 """
 作品作りに参加するエージェント(生成AIが担う職能)のモデル(docs/model_design.md)。クラスと属性だけを定義している
-(生成AIの呼び出しは処理の側)。各職能の既定の役割・厳守事項・禁止事項・タスクは暫定の文面(2026-10-01)。
+(生成AIの呼び出しは処理の側)。職能ごとの既定の文面とタスクの一覧の正本は、core/default/agents/のYAML。
 """
 
 from core.model.agent.actor import Actor

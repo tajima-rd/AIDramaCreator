@@ -24,6 +24,8 @@ PROJECT_YAML_FILENAME = "project.yaml"
 PROJECT_DB_FILENAME = "project.db"
 DATASETS_DIRNAME = "datasets"
 DRAFTS_DIRNAME = "drafts"
+# プロジェクトのユーザー既定(エージェント等。core.infra.store.agent_default_store)
+USER_DEFAULT_DIRNAME = "user_default"
 
 PROTOCOL_VERSION = "0.1.0"
 DEFAULT_SERVER_BASE_URL = "http://127.0.0.1:8100"
@@ -55,6 +57,11 @@ class ProjectLayout:
     def drafts_dir(self) -> str:
         """作成途中の下書きの置き場所(対話方式の制作で使う予定。docs/future_design.md)。"""
         return os.path.join(self.root_dir, DRAFTS_DIRNAME)
+
+    @property
+    def user_default_agents_dir(self) -> str:
+        """エージェントのユーザー既定(職能ごとのYAML)の置き場所。"""
+        return os.path.join(self.root_dir, USER_DEFAULT_DIRNAME, "agents")
 
 
 @dataclass
