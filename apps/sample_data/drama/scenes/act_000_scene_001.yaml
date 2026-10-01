@@ -1,0 +1,9 @@
+# plot_002.txtのシーンの演出付きの原稿(まだ無い)
+dramaturgy:
+  acts:
+  - id: 8f66368b-129a-5c59-b0dd-078c5cb9b63b
+    key: act_001
+    scenes:
+    - id: e361e037-6ac6-5880-b596-daf9d7b81a60
+      key: scene_002
+      elements: []

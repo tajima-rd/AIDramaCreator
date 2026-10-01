@@ -4,8 +4,7 @@
 
 ## インターフェース(保留)
 
-- 公開API(`core/service/api/`)の形: 識別子・DTO(`core/schema/api/`)・リソースの単位。
-- HTTP(`api/`、FastAPI)の要否と、リクエスト/レスポンスの形式(QIDMはYAMLでやり取りしていた)。
+- 作品モデルの公開APIの形は決まった([architecture.md](architecture.md) 7節、2026-10-01)。HTTPはYAML。
 - Web GUI・CLIの要否。`main.py`の扱い。
 
 ## GUIで扱う制作の準備(2026-09-29ユーザー提供。GUIはQIDMの`apps/QIDM`を参考に設計する)
@@ -22,20 +21,13 @@
 
 未決定(ユーザーに確認すること):
 
-- 「YAMLのモデル定義ファイル」の形式は、1ファイルでも分割でも読み書きできる形にした(2026-09-30。形はレビュー前。[model_design.md](model_design.md))。
+- 「YAMLのモデル定義ファイル」の形式は、1ファイルでも分割でも読み書きできる形にした(2026-09-30。2026-10-01承認。[model_design.md](model_design.md))。
   既存のDramaturgyへ一部の区画(例: 人物だけ)を追加で取り込む方法は未決定。
 - 1と2の使い分け: 生成AIへの渡し方(前提は常に渡す指示・制約、物語の知識は検索して渡す、等)と、Datasetの
   分類(`DatasetCategory`は現状`reference`だけ)。手入力のテキストの保存の形。
 - チャットで相談する方式(3〜5)は、QIDMのdrafts(Build Domain from References。[qidm_reuse.md](qidm_reuse.md) C群)を
   下敷きにするか。「対話方式の制作」と同じ枠組みにするか。
 - 3と4は、下の「ドラマの構成要素の再定義」の人物(character)と声・演者(actor)の区別に対応する。
-
-## 特徴(`AdditionalFeature`)の未決定の点
-
-2026-09-30に`Characteristic`/`AdditionalFeature`の2階層で実装した(`Profile`は`Character`に統合)([model_design.md](model_design.md))。未決定:
-
-- `value`と`description`の使い分け(`apps/sample_data`では、「**項目**: 値」の値は長い文章でも`value`、名前の無い人物の説明は`description`にした)。
-- 名前の無い人物を人物(`Character`)で表すか(今は特徴「人物関係」の項目で、原文での時期が残らない)。
 
 ## モデルは「作品」と「エージェント」の2本立て(2026-09-30ユーザー)
 
@@ -85,10 +77,16 @@
 
 ## Projectの作り直し
 
-- `core/service/process/production/_legacy_project.py`(現行のドラマ用)と`core/project/project.py`(QIDM由来)を、1つの設計に作り直す。
-- ディレクトリ構成(`actor/`・`character/`・`plot/`・`script/`・`scene/`・`sound/`・`dialog/`・`icons/`・`tmp/`)の要否と、
-  project.yaml・プロジェクトのレジストリの要否。
-- 生成AIの設定(提供元・モデル・system_instruction・TextConfig等)とAPIキーの保存場所。
+- 決まったこと([architecture.md](architecture.md) 5節・7節、2026-10-01): 旧来の`Project`は削除した。`Project`はメタ情報と設定だけを持ち、
+  作品モデルはDBの正本。`ModelDefinition`は`core/infra/io`のまま。
+- 残り(GUIを開発しながら決める。2026-10-01ユーザー):
+  - ディレクトリ構成: `drafts/`(下書きはDBに入れたので未使用)、制作の出力(`work/`・`sound/`)、実験用の`<root_dir>/model/`(モデル定義YAMLの複製。
+    DBが正本になったので、取り込みの元としてだけ使う)。
+  - 制作の流れの入出力(DBの正本から読み、生成の結果を下書きに反映する形。音声ファイルの参照)。
+  - エージェント(演者の声`voice_name`)の置き場所。
+  - 生成AIの設定: `main.py`に直書きの`system_instruction`・`TextConfig`の置き場所。
+  - レジストリと`project_id`(公開APIはレジストリ、`main.py`はディレクトリを直接受け取る)、Datasetと作品の結び付け、
+    `project.yaml`の`server.base_url`・`paths`の要否、別名で保存の扱い、`core/project/project.py`の`dataclass`を素のクラスにするか。
 
 ## Dramaturgy(QIDMのDomainに相当する階層)
 
@@ -116,9 +114,11 @@
 
 ## SQLite
 
-- 使う。何を保存するか(構造・目的)は未決定。QIDMのdomain.dbとは異なる。
+- 作品モデルのDBは決まり、実装した([architecture.md](architecture.md) 7節・[database_design.md](database_design.md)、2026-10-01)。
+- 未定: `agent`(`Actor.voice_name`等)をDBに入れるか。Datasetの台帳との関係。下書きの根拠・会話と、提案の形
+  (今はApplyも下書きの中身を作品モデル全体で置き換える。対話方式の制作で設計)。版から下書きを作る(過去の版に戻す)か。
 - 暫定で、プロジェクトに`project.db`を置き、Datasetの台帳(`dataset_registry`)だけを持たせている(QIDMではdomain.dbの中)。
-  DBの名前・分け方は、SQLiteの設計で決め直す。
+  作品モデルのテーブルも`project.db`に置いた。
 
 ## ドラマの構成要素の再定義(`core/model/`)
 

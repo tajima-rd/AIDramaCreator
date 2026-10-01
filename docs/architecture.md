@@ -27,7 +27,7 @@
 | `genai/` | (独立) | 生成AIの汎用ライブラリ(2節) |
 | `infra/io/`・`infra/store/` | B | 外部とやり取りする形式との変換(モデル定義YAML)・内部状態の永続化(`*_store`) |
 | `service/process/` | B | 内部の処理。`production/`=制作の流れの各工程(`dialogue_generator`・`scene_generator`・`sound_generator`)、`edit/`=プロジェクト・設定・Datasetの手順、`genai/`=生成AIを使う処理 |
-| `service/api/` | C | 公開API(`project`・`preference`・`dataset`) |
+| `service/api/` | C | 公開API(`project`・`preference`・`dataset`・`drama_model`・`drama_draft`) |
 | `schema/` | C | 契約(pydantic)。`api/`=公開APIのDTO、`formats/`=ディスクに残るファイル形式 |
 | `api/`(core外) | C | インターフェース: HTTP |
 
@@ -71,7 +71,7 @@
 ## 4. 作品とエージェントのモデル(`core/model/`)
 
 - 作られる作品は`core/model/drama/`、作品作りに参加するエージェントは`core/model/agent/`に定義する(2026-09-30ユーザー決定)。
-  中のクラスの構成は**ユーザーの承認前**([model_design.md](model_design.md)。レビュー中)。
+  中のクラスの構成は2026-10-01にユーザーが承認した([model_design.md](model_design.md)。**暫定**と書いた箇所は暫定のまま)。
 - **モデルの設計などは素のクラスで書くことを優先する**(2026-09-30ユーザー。QIDMの`core/model`と同じ)。`dataclass`は禁止では
   ないが、ユーザーが基本的に好まないため、必要なときだけ許可を得て使う。モデルに`dataclass`が合わない理由は、`__eq__`が値の比較に
   なって識別子で同一性が決まるエンティティと食い違うことと、属性が外から書き換えられて不変条件をメソッドで守らせにくいこと。pydanticにも
@@ -80,15 +80,12 @@
   Datasetのfile_id・生成AIへの指示・生成器・pydantic・読み書き)を置かない。`core.model`は`core.model`の外をimportしない。
 - エージェントのモデルには、エージェントどうしのやり取り(発注・提案・相談)と、動かす手段(生成AIの種類等)を置かない。
 
-## 5. `apps/sample_project/`はゴールデン(2026-09-29ユーザー決定)
+## 5. 実験用のプロジェクトと、旧来の形(2026-10-01ユーザー決定)
 
-- リポジトリに含める。中身はゴールデン(正解の見本)で、**読み取り専用**。例外は、ユーザーが特別に指示した場合だけ。
-- 現行の`Project`(`core/service/process/production/_legacy_project.py`)は、存在しないディレクトリを作り、生成の結果を書き込む。そのため、
-  `apps/sample_project/`を直接`root_dir`にしないこと。使うときは複製してから。
-- 実験用のプロジェクトは`Project/TEST_PROJECT_##`(リポジトリ直下、`##`は01からの連番)に、`apps/sample_project/`を
-  複製して作る。`Project/`はgitの管理外(`.gitignore`)。
-- 空の`dialog/`はgitに残らない(gitは空のディレクトリを管理しない)。
-- `prompt.txt`(台詞の生成プロンプトの出力例)も、ゴールデンの重要なファイルとして含む。
+- 実験用のプロジェクトは`Project/TEST_PROJECT_##`(リポジトリ直下、`##`は01からの連番)に、`apps/sample_data/`を複製して作る
+  (`drama/`・`agent/`を`model/`に、`project.yaml`を直下に)。`apps/sample_data/`を直接`root_dir`にしない。`Project/`はgitの管理外。
+- 旧来の形(`apps/sample_project`のテキストのファイル、`<root_dir>/project/`の下の構成)は使わない。互換性は考えず、移行が済んだものは
+  設計も含めて残さない。`apps/sample_project`と旧来の`Project`(`_legacy_project.py`)は削除した。
 
 ## 6. 生成AIに識別子を決めさせない・出力例に具体的な値を書かない(2026-09-29ユーザー決定)
 
@@ -102,3 +99,35 @@
 
 - SQLiteを使う。ただし、QIDMのdomain.dbとは構造も目的も異なる。QIDM由来の記述(Domain・Run・domain.db等)を
   流用しないこと。
+
+### 作品モデル(`core/model/drama`)のDB(2026-10-01ユーザー決定)
+
+テーブルの定義と実装の場所は [database_design.md](database_design.md)(2026-10-01承認・実装)。
+
+- **DBが正本**。モデル定義YAMLは、取り込み・書き出しと、生成AIとの受け渡しに使う。
+- 対象は今回は`core/model/drama`だけ(`agent`とDatasetの台帳は後で)。
+- **版と下書きの単位は、プロジェクトの作品モデル全体**(Dramaturgyごとにしない)。人物・人物関係はProjectが持ち、
+  複数の作品から参照されるため。
+- 3つの層: ①今の状態(正本。作品のテーブル)・②下書きの履歴・③版。
+- **提案はApplyしても下書きにだけ入る**(QIDMのdraftsと同じ)。下書きはDBに置き、Apply・直接編集・Undoのたびに
+  作品モデル全体の写しを1版ずつ積む(Undoは1つ前と同じ内容を新しい版として積み、履歴は消さない)。
+- **正本を変える経路は、下書きの確定だけ**。YAMLの取り込みも、下書きを作って確定する。
+- **確定=版の作成**。確定すると①を書き換え、③に版を1つ足す(明示的な保存は確定が兼ねる)。
+- 下書きの元にした版(`base_version`)が今の版と違えば、確定を拒否する(作り直してもらう。差分の統合は後で考える)。
+- ②・③の写しはモデル定義YAMLの文字列。プロジェクト全体を写すため、モデル定義YAMLの最上位に`dramaturgies:`の一覧を足す。
+- 置き場所はプロジェクトの`project.db`(Datasetの台帳と同じDB)。
+
+### Projectの役割(2026-10-01ユーザー決定)
+
+- `Project`(`core/project/project.py`、project.yaml)は、プロジェクトのメタ情報(id・名前・日時)と設定(生成AIの接続先等)だけを持つ。
+  作品モデル(作品・人物・人物関係・時点・場所)はProjectのクラスに持たせず、DBの正本として扱う(組み立てた結果は`ModelDefinition`)。
+- `ModelDefinition`の置き場所は`core/infra/io`(モデル定義YAMLの読み込み結果)のままでよい。
+
+### 作品モデルの公開API(2026-10-01ユーザー決定)
+
+- 既存の`project`・`dataset`と同じ作り方: HTTPはYAMLでやり取りし(`api/yaml_io.py`)、`/projects/{project_id}/...`の下に置く。
+- リソースは`drama_model`(正本と版。読むだけ)と`drama_draft`(下書きの作成・一覧・中身・履歴・取り込み・Apply・直接編集・
+  Undo・確定・破棄)の2つ。`service/api`・`schema/api`・`api/routers`に同名のファイルを置く。
+- 作品の中身のDTOは、モデル定義YAMLの形(`DramaturgyDefinition`)で兼ねる(取り込み・生成AIとの受け渡し・GUIが同じ形)。要素は`id`で特定する。
+- 部分的な反映は**idで重ねる部分YAML**: 変えたい部分だけをモデル定義YAMLの形で渡し、下書きの中身に重ねる
+  (同じidの要素は上書き、idの無い要素は追加、削除は明示的に書く)。細かい規則は [database_design.md](database_design.md)。

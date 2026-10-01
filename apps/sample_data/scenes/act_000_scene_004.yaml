@@ -1,7 +1,0 @@
-# plot_005.txtのシーンの演出付きの原稿(まだ無い)
-dramaturgy:
-  acts:
-  - key: act1
-    scenes:
-    - key: plot_005
-      elements: []

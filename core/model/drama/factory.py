@@ -5,15 +5,16 @@ DB・ファイルには触れず、組み立てたオブジェクトを返すだ
 model_definition_reader)と生成AIの提案の反映が、同じ組み立ての規則を共有するためにここへ置く。
 
 識別子を持つエンティティのbuild_*は、キーワード引数idで既存の識別子を保てる(QIDMの_keeps_id)。
-識別子を持たない値(Premise・Characteristic・AdditionalFeature・Script・History・Direction)は、クラスをそのまま使う。
+識別子を持たない値(Premise・Characteristic・AdditionalFeature・Performance・Situation・SpeechStyle・SentenceEnding・Script・History・Direction)は、クラスをそのまま使う。
 """
 
 import functools
 from typing import Optional
 
 from core.model.drama.act import Act
-from core.model.drama.cast import Cast
+from core.model.drama.cast import Cast, Performance, VoiceGender
 from core.model.drama.character import Biography, Character
+from core.model.drama.character_group import CharacterGroup
 from core.model.drama.dramaturgy import Dramaturgy
 from core.model.drama.feature import Characteristic
 from core.model.drama.history import History
@@ -30,6 +31,8 @@ from core.model.drama.script_element import (
     ScriptElement,
     SoundEffect,
 )
+from core.model.drama.situation import Situation
+from core.model.drama.speech_style import SpeechStyle
 from core.model.drama.temporal import (
     StringDateType,
     TemporalEdge,
@@ -62,6 +65,7 @@ def build_dramaturgy(
     output_language: Optional[str] = None,
     premise: Optional[Premise] = None,
     characters: Optional[list[Character]] = None,
+    relationships: Optional[list[Relationship]] = None,
     casts: Optional[list[Cast]] = None,
     acts: Optional[list[Act]] = None,
     history: Optional[History] = None,
@@ -73,6 +77,7 @@ def build_dramaturgy(
         output_language,
         premise,
         characters,
+        relationships,
         casts,
         acts,
         history,
@@ -120,7 +125,7 @@ def build_character(
     reading: Optional[str] = None,
     gender: Optional[str] = None,
     age: Optional[str] = None,
-    speech_style: Optional[str] = None,
+    speech_style: Optional[SpeechStyle] = None,
     characteristics: Optional[list[Characteristic]] = None,
     biographies: Optional[list[Biography]] = None,
 ) -> Character:
@@ -128,12 +133,22 @@ def build_character(
 
 
 @_keeps_id
+def build_character_group(
+    name: str,
+    kind: Optional[str] = None,
+    members: Optional[list[Character]] = None,
+    description: Optional[str] = None,
+) -> CharacterGroup:
+    return CharacterGroup(name, kind, members, description)
+
+
+@_keeps_id
 def build_biography(
     period: TemporalNode,
     episode: str,
-    involved_relationship: Optional[Relationship] = None,
+    involved_relationships: Optional[list[Relationship]] = None,
 ) -> Biography:
-    return Biography(period, episode, involved_relationship)
+    return Biography(period, episode, involved_relationships)
 
 
 @_keeps_id
@@ -143,20 +158,27 @@ def build_relationship(
     label: str,
     period: Optional[TemporalNode] = None,
     description: Optional[str] = None,
+    form_of_address: Optional[str] = None,
+    tone: Optional[str] = None,
 ) -> Relationship:
-    return Relationship(source, target, label, period, description)
+    return Relationship(source, target, label, period, description, form_of_address, tone)
 
 
 @_keeps_id
 def build_cast(
     character: Character,
-    provider: Optional[str] = None,
-    voice_name: Optional[str] = None,
+    performance: Optional[Performance] = None,
+    voice_gender: Optional[str] = None,
     language: Optional[str] = None,
     accent: Optional[str] = None,
-    notes: Optional[str] = None,
 ) -> Cast:
-    return Cast(character, provider, voice_name, language, accent, notes)
+    return Cast(
+        character,
+        performance,
+        VoiceGender(voice_gender) if voice_gender is not None else None,
+        language,
+        accent,
+    )
 
 
 @_keeps_id
@@ -176,10 +198,11 @@ def build_scene(
     synopsis: Optional[str] = None,
     period: Optional[TemporalNode] = None,
     location: Optional[Location] = None,
+    situation: Optional[Situation] = None,
     script: Optional[Script] = None,
     elements: Optional[list[ScriptElement]] = None,
 ) -> Scene:
-    return Scene(order, title, synopsis, period, location, script, elements)
+    return Scene(order, title, synopsis, period, location, situation, script, elements)
 
 
 @_keeps_id
@@ -196,8 +219,9 @@ def build_dialogue(
     action: Optional[str] = None,
     direction: Optional[Direction] = None,
     translated_text: Optional[str] = None,
+    situation: Optional[Situation] = None,
 ) -> Dialogue:
-    return Dialogue(order, line_id, cast_id, text, action, direction, translated_text)
+    return Dialogue(order, line_id, cast_id, text, action, direction, translated_text, situation)
 
 
 # 固有の属性を持たない原稿の要素。種類の名前(モデル定義YAMLのtype)→クラス

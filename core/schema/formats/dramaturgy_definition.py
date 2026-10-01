@@ -1,30 +1,44 @@
 # core/schema/formats/dramaturgy_definition.py
 """
-1つのDramaturgy(core.model.drama)を宣言する「モデル定義YAML」の形。読み書きはcore.infra.io.
+Dramaturgy(core.model.drama)を宣言する「モデル定義YAML」の形。作品が1つならdramaturgyに、複数(プロジェクトの作品モデル全体。
+DBの版・下書きの写し。docs/architecture.md 7節)ならdramaturgiesの一覧に書く(両方に書いてもよく、dramaturgyが先頭になる)。読み書きはcore.infra.io.
 model_definition_reader・model_definition_writer。準備の各項目(前提・人物・配役・プロット)の取り込みと、
 生成AIとの受け渡しに使う(docs/model_design.md)。
 
-【区画】モデルのコンポジション(所有)は、YAMLでも入れ子にする。所有者を持たない要素(TemporalNode・Location・
-Relationship)は、dramaturgyと並ぶ最上位の区画に書き、参照する。
+【区画】モデルのコンポジション(所有)は、YAMLでも入れ子にする。作品が所有しない要素(TemporalNode・Location・
+Character・CharacterGroup・Relationship)は、dramaturgyと並ぶ最上位の区画に書き、参照する(人物・人物関係の持ち主はProjectで、作品は参照で持つ)。作品作りに参加するエージェント(core.model.agent)は、
+最上位のagentsに職能ごとに書く(エージェントは作品の一部ではないので、dramaturgyの外)。
 
     protocol_version: "0.1.0"   # 省略可
     temporal_nodes: [{id, key, label, date_type, string_date}]
     locations: [{id, key, name, latitude, longitude, address, instruction, description}]
-    relationships: [{id, key, source, target, label, period, description}]   # source/targetはCharacterへの参照
+    characters: [{id, key, name, reading, gender, age,
+                  speech_style: {first_person, tone, description,
+                                 endings: [{kind, examples: [...], description}]},   # kindはnormal・conjecture等
+                  characteristics: [{item, definition, description,
+                                     features: [{item, value, definition, description}]}],
+                  biographies: [{id, key, period, episode, involved_relationships: [...]}]}]
+    character_groups: [{id, key, name, kind, members: [{ref}], description}]   # 人物のまとまり(kindは自由に書く)
+    relationships: [{id, key, source, target, label, period, description, form_of_address, tone}]   # source/targetはCharacterへの参照
     dramaturgy:
-      id, title, synopsis, input_language, output_language
+      id, key, title, synopsis, input_language, output_language
       premise: {text}
-      characters: [{id, key, name, reading, gender, age, speech_style,
-                    characteristics: [{item, definition, description,
-                                       features: [{item, value, definition, description}]}],
-                    biographies: [{id, period, episode, involved_relationship}]}]
-      casts: [{id, key, character, provider, voice_name, language, accent, notes}]
+      characters: [{ref}]             # この作品に関わる人物(参照。人物はdramaturgyの外にある)
+      relationships: [{ref}]          # この作品に関わる人物関係(参照)
+      casts: [{id, key, character, performance: {title, description, pace}, voice_gender, language, accent}]   # voice_genderはmale・female・neutral
       acts: [{id, key, order, title, synopsis,
               scenes: [{id, key, order, title, synopsis, period, location,
+                        situation: {location, description, time_of_day, environment},
                         script: {lines: [{id, key, order, cast, text}]},
-                        elements: [{type: dialogue, id, order, line, cast, text, action, direction, translated_text}
-                                   | {type: sound_effect | atmosphere | music, id, order}]}]}]
+                        elements: [{type: dialogue, id, key, order, line, cast, text, action, direction, translated_text,
+                                    situation}
+                                   | {type: sound_effect | atmosphere | music, id, key, order}]}]}]
       history: {edges: [{id, key, label, kind, source, target}]}   # source/targetはTemporalNodeへの参照
+    dramaturgies: [{dramaturgyと同じ形}]   # 作品が複数のとき
+    agents:
+      producers | researchers | casting_directors | scriptwriters | directors | stage_managers | sound_engineers:
+        [{id, key, name, persona}]
+      actors: [{id, key, name, persona, cast, voice_name}]   # castはCastへの参照(モデルではActor.casting_id)
 
 【分割】1つのファイル(複数のYAML文書を`---`で区切ってもよい)にも、複数のファイルにも書ける。分けた文書は、
 どれも上と同じ入れ子の形で、その一部だけを書く(例: 人物だけのファイルは`dramaturgy: {characters: [...]}`)。
@@ -34,20 +48,22 @@ Relationship)は、dramaturgyと並ぶ最上位の区画に書き、参照する
 
     dramaturgy:
       acts:
-        - key: act1          # または id
+        - key: act_001
           scenes:
-            - key: scene1    # または id
+            - key: scene_001
               script:
                 lines: [...]
 
 分けて書くときは、幕・シーンのorderを書いておくのがよい(省略すると、重ね合わせた後の並びの位置になり、ファイルを読む順に左右される)。
 
-【識別子と参照】
-- id: エンティティの識別子(UUID)。書けばその識別子を保ち、省略すれば新しく振る(core.model.identifier)。
-  書き出しでは常に書く(往復で識別子を保つため)。
-- key: この定義の中だけで使う参照の名前(省略可)。人や生成AIがidを決めずに書くためのもので、モデルには残らない。
-- 参照(source・target・period・location・character・cast・line・involved_relationship)は、参照先のkeyかid。
-  参照先は種類ごとに探す(TemporalNode・Location・Character・Relationship・Cast・Line)。
+【識別子と参照】(2026-10-01ユーザー決定: すべて id / key / ref の方式)
+- id: エンティティの識別子(UUID)。システムが決める(人・生成AIには決めさせない)。書けばその識別子を保ち、
+  無ければ読むときにシステムが振る(core.model.identifier)。書き出しでは常に書く。
+- key: このYAML一式の中だけで使う呼び名。参照の受け口で、モデルには残らない。書き出しでは種類と通し番号
+  (character_001・cast_001・scene_001_line_001等)を付ける。
+- 参照(source・target・period・location・character・cast・line・involved_relationshipsの各要素)は、常に {ref: 参照先のkey}。
+  idでは参照しない。参照先は同じYAML一式の中になければならず、種類ごとに探す
+  (TemporalNode・Location・Character・Relationship・Cast・Line)。
 - order: 省略すれば、並びの中の位置(0から)。
 """
 
@@ -55,6 +71,8 @@ from typing import Annotated, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from core.model.drama.cast import VoiceGender
+from core.model.drama.speech_style import SentenceEndingKind
 from core.model.drama.temporal import StringDateType, TemporalRelationKind
 
 PROTOCOL_VERSION = "0.1.0"
@@ -63,6 +81,12 @@ PROTOCOL_VERSION = "0.1.0"
 class _Spec(BaseModel):
     # 書き誤り(属性名の綴り等)を黙って捨てない
     model_config = ConfigDict(extra="forbid")
+
+
+class Ref(_Spec):
+    """参照。refは参照先のkey(同じYAML一式の中)。"""
+
+    ref: str
 
 
 class PremiseSpec(_Spec):
@@ -82,8 +106,8 @@ class TemporalEdgeSpec(_Spec):
     key: Optional[str] = None
     label: Optional[str] = None
     kind: TemporalRelationKind
-    source: str  # TemporalNodeへの参照
-    target: str  # TemporalNodeへの参照
+    source: Ref  # TemporalNodeへの参照
+    target: Ref  # TemporalNodeへの参照
 
 
 class HistorySpec(_Spec):
@@ -117,9 +141,23 @@ class CharacteristicSpec(_Spec):
 
 class BiographySpec(_Spec):
     id: Optional[str] = None
-    period: str  # TemporalNodeへの参照
+    key: Optional[str] = None
+    period: Ref  # TemporalNodeへの参照
     episode: str
-    involved_relationship: Optional[str] = None  # Relationshipへの参照
+    involved_relationships: list[Ref] = []  # Relationshipへの参照
+
+
+class SentenceEndingSpec(_Spec):
+    kind: SentenceEndingKind
+    examples: list[str] = []
+    description: Optional[str] = None
+
+
+class SpeechStyleSpec(_Spec):
+    first_person: Optional[str] = None
+    tone: Optional[str] = None
+    endings: list[SentenceEndingSpec] = []
+    description: Optional[str] = None
 
 
 class CharacterSpec(_Spec):
@@ -129,37 +167,53 @@ class CharacterSpec(_Spec):
     reading: Optional[str] = None
     gender: Optional[str] = None
     age: Optional[str] = None
-    speech_style: Optional[str] = None
+    speech_style: Optional[SpeechStyleSpec] = None
     characteristics: list[CharacteristicSpec] = []
     biographies: list[BiographySpec] = []
+
+
+class CharacterGroupSpec(_Spec):
+    id: Optional[str] = None
+    key: Optional[str] = None
+    name: str
+    kind: Optional[str] = None  # 自由に書く(例: 家族・職場)
+    members: list[Ref] = []  # Characterへの参照
+    description: Optional[str] = None
 
 
 class RelationshipSpec(_Spec):
     id: Optional[str] = None
     key: Optional[str] = None
-    source: str  # Characterへの参照
-    target: str  # Characterへの参照
+    source: Ref  # Characterへの参照
+    target: Ref  # Characterへの参照
     label: str
-    period: Optional[str] = None  # TemporalNodeへの参照
+    period: Optional[Ref] = None  # TemporalNodeへの参照
     description: Optional[str] = None
+    form_of_address: Optional[str] = None
+    tone: Optional[str] = None
+
+
+class PerformanceSpec(_Spec):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    pace: Optional[str] = None
 
 
 class CastSpec(_Spec):
     id: Optional[str] = None
     key: Optional[str] = None
-    character: str  # Characterへの参照
-    provider: Optional[str] = None
-    voice_name: Optional[str] = None
+    character: Ref  # Characterへの参照
+    performance: Optional[PerformanceSpec] = None
+    voice_gender: Optional[VoiceGender] = None
     language: Optional[str] = None
     accent: Optional[str] = None
-    notes: Optional[str] = None
 
 
 class LineSpec(_Spec):
     id: Optional[str] = None
     key: Optional[str] = None
     order: Optional[int] = None
-    cast: str  # Castへの参照
+    cast: Ref  # Castへの参照
     text: str
 
 
@@ -175,33 +229,45 @@ class DirectionSpec(_Spec):
     pause_after: Optional[str] = None
 
 
+class SituationSpec(_Spec):
+    location: Optional[Ref] = None  # Locationへの参照
+    description: Optional[str] = None
+    time_of_day: Optional[str] = None
+    environment: Optional[str] = None
+
+
 class DialogueSpec(_Spec):
     type: Literal["dialogue"]
     id: Optional[str] = None
+    key: Optional[str] = None
     order: Optional[int] = None
-    line: str  # Lineへの参照(モデルではDialogue.line_id)
-    cast: str  # Castへの参照(モデルではDialogue.cast_id)
+    line: Ref  # Lineへの参照(モデルではDialogue.line_id)
+    cast: Ref  # Castへの参照(モデルではDialogue.cast_id)
     text: str
     action: Optional[str] = None
     direction: Optional[DirectionSpec] = None
     translated_text: Optional[str] = None
+    situation: Optional[SituationSpec] = None  # 場面の途中で変わるときだけ
 
 
 class SoundEffectSpec(_Spec):
     type: Literal["sound_effect"]
     id: Optional[str] = None
+    key: Optional[str] = None
     order: Optional[int] = None
 
 
 class AtmosphereSpec(_Spec):
     type: Literal["atmosphere"]
     id: Optional[str] = None
+    key: Optional[str] = None
     order: Optional[int] = None
 
 
 class MusicSpec(_Spec):
     type: Literal["music"]
     id: Optional[str] = None
+    key: Optional[str] = None
     order: Optional[int] = None
 
 
@@ -213,19 +279,20 @@ ScriptElementSpec = Annotated[
 
 class SceneSpec(_Spec):
     id: Optional[str] = None
-    key: Optional[str] = None  # 参照はされない。分けたファイル(台詞等)がどのシーンに属するかを示す
+    key: Optional[str] = None
     order: Optional[int] = None
     title: Optional[str] = None
     synopsis: Optional[str] = None
-    period: Optional[str] = None  # TemporalNodeへの参照
-    location: Optional[str] = None  # Locationへの参照
+    period: Optional[Ref] = None  # TemporalNodeへの参照
+    location: Optional[Ref] = None  # Locationへの参照
+    situation: Optional[SituationSpec] = None
     script: Optional[ScriptSpec] = None
     elements: list[ScriptElementSpec] = []
 
 
 class ActSpec(_Spec):
     id: Optional[str] = None
-    key: Optional[str] = None  # 参照はされない。分けたファイル(シーン等)がどの幕に属するかを示す
+    key: Optional[str] = None
     order: Optional[int] = None
     title: Optional[str] = None
     synopsis: Optional[str] = None
@@ -234,15 +301,42 @@ class ActSpec(_Spec):
 
 class DramaturgySpec(_Spec):
     id: Optional[str] = None
+    key: Optional[str] = None
     title: str
     synopsis: Optional[str] = None
     input_language: Optional[str] = None
     output_language: Optional[str] = None
     premise: Optional[PremiseSpec] = None
-    characters: list[CharacterSpec] = []
+    characters: list[Ref] = []  # 人物への参照
+    relationships: list[Ref] = []  # 人物関係への参照
     casts: list[CastSpec] = []
     acts: list[ActSpec] = []
     history: Optional[HistorySpec] = None
+
+
+class AgentSpec(_Spec):
+    id: Optional[str] = None
+    key: Optional[str] = None
+    name: str
+    persona: Optional[str] = None
+
+
+class ActorSpec(AgentSpec):
+    cast: Ref  # Castへの参照(モデルではActor.casting_id)
+    voice_name: Optional[str] = None
+
+
+class AgentsSpec(_Spec):
+    """職能ごとのエージェント。区画名は職能の複数形(core.model.agent.factory.AGENT_ROLESの名前+s)。"""
+
+    producers: list[AgentSpec] = []
+    researchers: list[AgentSpec] = []
+    casting_directors: list[AgentSpec] = []
+    scriptwriters: list[AgentSpec] = []
+    directors: list[AgentSpec] = []
+    stage_managers: list[AgentSpec] = []
+    sound_engineers: list[AgentSpec] = []
+    actors: list[ActorSpec] = []
 
 
 class DramaturgyDefinition(_Spec):
@@ -251,5 +345,9 @@ class DramaturgyDefinition(_Spec):
     protocol_version: Literal["0.1.0"] = PROTOCOL_VERSION
     temporal_nodes: list[TemporalNodeSpec] = []
     locations: list[LocationSpec] = []
+    characters: list[CharacterSpec] = []
+    character_groups: list[CharacterGroupSpec] = []
     relationships: list[RelationshipSpec] = []
-    dramaturgy: DramaturgySpec
+    dramaturgy: Optional[DramaturgySpec] = None
+    dramaturgies: list[DramaturgySpec] = []  # 作品が複数のとき(プロジェクトの作品モデル全体)
+    agents: Optional[AgentsSpec] = None

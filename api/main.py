@@ -22,8 +22,9 @@ FastAPIアプリの生成・各routerのinclude・システム側の例外から
 HTTPステータスへの共通の対応付けのみを担う。Web GUI(静的ファイルのmount)はインターフェースの
 設計が決まってから(docs/future_design.md)。
 
-システム(core/service/api)はHTTPを知らず、エラーを例外で返す。プロジェクト・Datasetの不在は
-専用の例外(ProjectNotFoundError・DatasetNotFoundError・DatasetMetadataNotFoundError)なので、
+システム(core/service/api)はHTTPを知らず、エラーを例外で返す。プロジェクト・Dataset・作品モデルの下書きと版の不在は
+専用の例外(ProjectNotFoundError・DatasetNotFoundError・DatasetMetadataNotFoundError・DraftNotFoundError・
+VersionNotFoundError)なので、
 ここで一律に404へ対応付ける。それ以外(KeyError/ValueError→400等)は、エンドポイントごとの
 意味に応じて各routerで対応付ける。
 """
@@ -31,14 +32,18 @@ HTTPステータスへの共通の対応付けのみを担う。Web GUI(静的�
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from api.routers import dataset, preference, project
+from api.routers import dataset, drama_draft, drama_model, preference, project
 from core.project.dataset import DatasetMetadataNotFoundError, DatasetNotFoundError
 from core.project.project import ProjectNotFoundError
+from core.service.api.drama_draft import DraftNotFoundError
+from core.service.api.drama_model import VersionNotFoundError
 
 app = FastAPI(title="AIDramaCreator API")
 app.include_router(project.router)
 app.include_router(preference.router)
 app.include_router(dataset.router)
+app.include_router(drama_model.router)
+app.include_router(drama_draft.router)
 
 
 @app.exception_handler(ProjectNotFoundError)
@@ -54,6 +59,16 @@ async def dataset_not_found(_request: Request, _exc: DatasetNotFoundError):
 @app.exception_handler(DatasetMetadataNotFoundError)
 async def dataset_metadata_not_found(_request: Request, _exc: DatasetMetadataNotFoundError):
     return JSONResponse(status_code=404, content={"detail": "dataset metadata not found"})
+
+
+@app.exception_handler(DraftNotFoundError)
+async def draft_not_found(_request: Request, exc: DraftNotFoundError):
+    return JSONResponse(status_code=404, content={"detail": str(exc)})
+
+
+@app.exception_handler(VersionNotFoundError)
+async def version_not_found(_request: Request, exc: VersionNotFoundError):
+    return JSONResponse(status_code=404, content={"detail": str(exc)})
 
 
 @app.get("/health")

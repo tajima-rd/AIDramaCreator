@@ -1,0 +1,10 @@
+# plot_001.txtのシーンの台詞(まだ無い)
+dramaturgy:
+  acts:
+  - id: 8f66368b-129a-5c59-b0dd-078c5cb9b63b
+    key: act_001
+    scenes:
+    - id: 7788f485-2cbd-567c-8dc0-47dc79107a8f
+      key: scene_001
+      script:
+        lines: []

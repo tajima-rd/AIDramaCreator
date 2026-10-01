@@ -14,7 +14,8 @@ if TYPE_CHECKING:
 
 
 class Relationship:
-    """sourceから見たtargetとの関係。labelは短い名前(例: 幼馴染)。"""
+    """sourceから見たtargetとの関係。labelは短い名前(例: 幼馴染)。form_of_addressは、sourceがtargetをどう呼ぶか
+    (例: キタさん。場面による使い分けは扱わない)。toneは、sourceがtargetに対してどんな口調で話すか(例: タメ口)。"""
 
     def __init__(
         self,
@@ -23,6 +24,8 @@ class Relationship:
         label: str,
         period: Optional[TemporalNode] = None,
         description: Optional[str] = None,
+        form_of_address: Optional[str] = None,
+        tone: Optional[str] = None,
     ):
         self.id: str = new_id()  # 識別子(不変)
         self.source: Character = source
@@ -30,6 +33,8 @@ class Relationship:
         self.label: str = label
         self.period: Optional[TemporalNode] = period
         self.description: Optional[str] = description
+        self.form_of_address: Optional[str] = form_of_address
+        self.tone: Optional[str] = tone
         # 関連の人物の側(Character.relationships)をそろえる
         source.relationships.append(self)
         if target is not source:

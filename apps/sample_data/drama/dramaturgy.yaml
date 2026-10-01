@@ -1,0 +1,94 @@
+# 題は、ユーザーの指定による(2026-10-01)
+protocol_version: 0.1.0
+dramaturgy:
+  id: 8bc6ebc3-71ba-56ed-85b7-9a5d7b365289
+  key: dramaturgy_001
+  title: 令和但馬道中膝栗毛〜ハチ北スキー場編〜
+  input_language: ja
+  characters:
+  - {ref: character_001}
+  - {ref: character_002}
+  - {ref: character_003}
+  - {ref: character_004}
+  - {ref: character_005}
+  - {ref: character_006}
+  - {ref: character_007}
+  - {ref: character_008}
+  - {ref: character_009}
+  - {ref: character_010}
+  - {ref: character_011}
+  - {ref: character_012}
+  - {ref: character_013}
+  - {ref: character_014}
+  - {ref: character_015}
+  - {ref: character_016}
+  - {ref: character_017}
+  - {ref: character_018}
+  - {ref: character_019}
+  - {ref: character_020}
+  - {ref: character_021}
+  - {ref: character_022}
+  - {ref: character_023}
+  - {ref: character_024}
+  - {ref: character_025}
+  - {ref: character_026}
+  - {ref: character_027}
+  - {ref: character_028}
+  - {ref: character_029}
+  - {ref: character_030}
+  - {ref: character_031}
+  - {ref: character_032}
+  - {ref: character_033}
+  - {ref: character_034}
+  - {ref: character_035}
+  - {ref: character_036}
+  - {ref: character_037}
+  - {ref: character_038}
+  - {ref: character_039}
+  - {ref: character_040}
+  - {ref: character_041}
+  - {ref: character_042}
+  relationships:
+  - {ref: relationship_001}
+  - {ref: relationship_002}
+  - {ref: relationship_003}
+  - {ref: relationship_004}
+  - {ref: relationship_005}
+  - {ref: relationship_006}
+  - {ref: relationship_007}
+  - {ref: relationship_008}
+  - {ref: relationship_009}
+  - {ref: relationship_010}
+  - {ref: relationship_011}
+  - {ref: relationship_012}
+  - {ref: relationship_013}
+  - {ref: relationship_014}
+  - {ref: relationship_015}
+  - {ref: relationship_016}
+  - {ref: relationship_017}
+  - {ref: relationship_018}
+  - {ref: relationship_019}
+  - {ref: relationship_020}
+  - {ref: relationship_021}
+  - {ref: relationship_022}
+  - {ref: relationship_023}
+  - {ref: relationship_024}
+  - {ref: relationship_025}
+  - {ref: relationship_026}
+  - {ref: relationship_027}
+  - {ref: relationship_028}
+  - {ref: relationship_029}
+  - {ref: relationship_030}
+  - {ref: relationship_031}
+  - {ref: relationship_032}
+  - {ref: relationship_033}
+  - {ref: relationship_034}
+  - {ref: relationship_035}
+  - {ref: relationship_036}
+  - {ref: relationship_037}
+  - {ref: relationship_038}
+  - {ref: relationship_039}
+  - {ref: relationship_040}
+  - {ref: relationship_041}
+  - {ref: relationship_042}
+  - {ref: relationship_043}

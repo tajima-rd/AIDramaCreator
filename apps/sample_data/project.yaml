@@ -1,0 +1,19 @@
+protocol_version: 0.1.0
+project:
+  id: 0056ec31-e4c4-4538-85cf-b51b506e1bfe
+  name: TEST_PROJECT
+  created_at: '2026-10-01T03:13:59+00:00'
+  modified_at: '2026-10-01T03:13:59+00:00'
+server:
+  base_url: http://127.0.0.1:8000
+paths:
+  project_db: project.db
+  datasets_dir: datasets/
+  drafts_dir: drafts/
+genai:
+  llm:
+    client: Gemini
+    model: gemini-3.5-flash
+  tts:
+    client: Gemini
+    model: gemini-3.1-flash-tts-preview

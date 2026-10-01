@@ -9,7 +9,8 @@
 5. [known_issues.md](known_issues.md) — 既知のバグ・技術的負債
 6. [future_design.md](future_design.md) — 未決定の構想(該当する作業では、実装前にユーザーに確認する)
 7. [model_design.md](model_design.md) — `core/model/`(作品・エージェント)の設計
-8. [qidm_reuse.md](qidm_reuse.md) — QIDMから再利用できるもの(新しく作る前に、ここに無いか確かめる)
+8. [database_design.md](database_design.md) — 作品モデルのDB(正本・版・下書き)
+9. [qidm_reuse.md](qidm_reuse.md) — QIDMから再利用できるもの(新しく作る前に、ここに無いか確かめる)
 
 ## 2. 心構え
 
@@ -31,7 +32,7 @@
 - 生成AIを呼ぶ工程はAPIキーと課金を伴う。実行の前にユーザーに確認すること。
 - 自動テスト: `.venv/bin/python -m pytest`(依存は`requirements/dev.txt`)。テストはtmp_pathの
   中だけで動き、実レジストリ(`~/.aidc/`)に触れない。
-- `apps/sample_project/`は読み取り専用のゴールデン([architecture.md](architecture.md) 5節)。動かすときは`Project/TEST_PROJECT_##`(01からの連番)へ複製して使う(例: `cp -r apps/sample_project Project/TEST_PROJECT_01`)。`Project/`はgitの管理外。
+- 動かすときは`apps/sample_data/`を`Project/TEST_PROJECT_##`(01からの連番)へ複製して使う([architecture.md](architecture.md) 5節。`drama/`・`agent/`を`model/`に、`project.yaml`を直下に)。`Project/`はgitの管理外。
 
 ## 5. 秘密情報
 

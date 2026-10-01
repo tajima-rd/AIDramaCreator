@@ -16,6 +16,18 @@ from .dataset import (
     DatasetMetadataUpdateRequest,
     DatasetSummary,
 )
+from .drama_draft import (
+    DramaDraftChangeResult,
+    DramaDraftConfirmRequest,
+    DramaDraftConfirmResult,
+    DramaDraftCreateRequest,
+    DramaDraftImportPathRequest,
+    DramaDraftInfo,
+    DramaDraftListResult,
+    DramaDraftRevisionListResult,
+    DramaDraftRevisionSummary,
+)
+from .drama_model import DramaModelVersionListResult, DramaModelVersionSummary
 from .preference import (
     ApiKeyInfo,
     ApiKeyUpdateRequest,
@@ -43,6 +55,17 @@ from .project import (
 )
 
 __all__ = [
+    "DramaDraftChangeResult",
+    "DramaDraftConfirmRequest",
+    "DramaDraftConfirmResult",
+    "DramaDraftCreateRequest",
+    "DramaDraftImportPathRequest",
+    "DramaDraftInfo",
+    "DramaDraftListResult",
+    "DramaDraftRevisionListResult",
+    "DramaDraftRevisionSummary",
+    "DramaModelVersionListResult",
+    "DramaModelVersionSummary",
     "DatasetContent",
     "DatasetDeleteResult",
     "DatasetFileLocation",

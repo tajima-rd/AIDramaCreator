@@ -11,10 +11,10 @@ from pydub import AudioSegment
 
 from core.prompt.drama_production import generate_sound_drama_prompt
 from core.schema.formats._legacy_drama import Scene
-from core.service.process.production._legacy_project import Project
+from core.service.process.production._model_definition_project import ModelDefinitionProject
 
 
-def generate_sound_drama(project: Project, scene: Scene):
+def generate_sound_drama(project: ModelDefinitionProject, scene: Scene):
     print(f"Starting Scene [{scene.scene_id}]: {scene.title}")
 
     sound_dir = project.get_working_path("sound_path")

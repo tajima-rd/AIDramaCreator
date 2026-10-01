@@ -1,7 +1,7 @@
 # モデルの設計(`core/model/`)
 
 2026-09-30時点の組み立て。決定の経緯は [future_design.md](future_design.md)「モデルは作品とエージェントの2本立て」。
-2026-09-30に**クラスと属性だけ**を実装した。**構成はユーザーの承認前(レビュー中)**。機能(メソッド・Factory)は構成の承認後。**(暫定)** と書いた箇所は、細部を決めずに最も単純な形で置いたもの。基本の部分を動かしてから見直す。
+2026-09-30に**クラスと属性だけ**を実装した。**構成は2026-10-01にユーザーが承認した**。機能(メソッド)はまだ無い。**(暫定)** と書いた箇所は、細部を決めずに最も単純な形で置いたもの。基本の部分を動かしてから見直す。
 
 ## 全体
 
@@ -19,12 +19,15 @@
 構成の正本はユーザーのUMLクラス図(`AiDramaCreator`、`model`パッケージの`agent`・`drama`。2026-09-30)。
 
 ```
-Project(core/project)
+Project(core/project。今はモデル定義の読み込み結果 ModelDefinition に仮置き)
+ ├ Character ×n ─ 登場しない人物も含む。作品をまたいで共有できる。人物像の特徴(Characteristic ×n → AdditionalFeature ×n)を持つ
+ │   └ Biography ×n ─ 経歴(period: TemporalNode、episode、involved_relationships: Relationship ×n)
+ ├ CharacterGroup ×n ─ 人物のまとまり(家族・職場等。members: Character ×n を参照。kindは自由に書く)
+ ├ Relationship ×n ─ 人物関係(source/target: Character、period: TemporalNode、form_of_address)
  └ Dramaturgy ×n ─ 作品全体。メタメタストーリー、input_language / output_language
+     ├ (参照) characters: Character ×n・relationships: Relationship ×n ─ この作品に関わる人物・人物関係(所有しない)
      ├ Premise ─ 前提の知識
-     ├ Character ×n ─ 登場しない人物も含む。人物像の特徴(Characteristic ×n → AdditionalFeature ×n)を持つ
-     │   └ Biography ×n ─ 経歴(period: TemporalNode、episode、involved_relationship: Relationship)
-     ├ Cast ×n ─ character: Character に声を割り当てた配役。台詞の話者
+     ├ Cast ×n ─ character: Character の配役(演じ方・声の性別)。台詞の話者
      ├ History ─ TemporalEdge ×n(時間の位相)
      └ Act ×n ─ メタストーリー
          └ Scene ×n ─ あらすじ、period: TemporalNode(描く時期)、location: Location
@@ -36,7 +39,8 @@ Project(core/project)
                  ├ Atmosphere(空)
                  └ Music(空)
 
-所有者を持たない: TemporalNode(TemporalEdgeの両端)、Location、Relationship(source/target: Character、period: TemporalNode)
+所有者を持たない: TemporalNode(TemporalEdgeの両端)、Location
+人物・人物関係の持ち主はProject(2026-10-01ユーザー決定。作品は参照で持つ。Projectの作り直しまでは ModelDefinition に仮置き)
 ```
 
 `core/model/`には純粋なモデルだけを置く(2026-09-30ユーザー決定)。API・生成AI・ファイル・DBに関わるもの(ファイルのパス、
@@ -47,22 +51,29 @@ store(台帳)の側で持つ。
 
 | ファイル | クラス | 属性 |
 | --- | --- | --- |
-| `dramaturgy.py` | `Dramaturgy` | `id`・`title`・`synopsis`(メタメタストーリー)・`input_language`・`output_language`・`premise`・`characters`・`casts`・`acts`・`history` |
+| `dramaturgy.py` | `Dramaturgy` | `id`・`title`・`synopsis`(メタメタストーリー)・`input_language`・`output_language`・`premise`・`characters`(参照)・`relationships`(参照)・`casts`・`acts`・`history`。人物・人物関係は所有しない(2026-10-01) |
 | `premise.py` | `Premise` | `text` |
 | `act.py` | `Act` | `id`・`order`・`title`・`synopsis`(メタストーリー)・`scenes` |
-| `scene.py` | `Scene` | `id`・`order`・`title`・`synopsis`・`period: TemporalNode`・`location: Location`・`script`・`elements` |
+| `scene.py` | `Scene` | `id`・`order`・`title`・`synopsis`・`period: TemporalNode`・`location: Location`・`situation: Situation`(場面の状況。場所はlocationが持つ)・`script`・`elements` |
+| `situation.py` | `Situation` | `location: Location`(参照)・`description`(状況)・`time_of_day`(時間帯)・`environment`(天候・環境)。シーン・台詞が値として所有する(2026-10-01) |
 | `script.py` | `Script` | `lines` |
 | | `Line` | `id`・`order`・`cast: Cast`・`text` |
 | `script_element.py` | `ScriptElement`(基底) | `id`・`order` |
-| | `Dialogue` | `line_id`・`cast_id`(ID参照)・`text`・`action`(ト書き)・`direction`・`translated_text`(output_languageへの訳文) |
+| | `Dialogue` | `line_id`・`cast_id`(ID参照)・`text`・`action`(ト書き)・`direction`・`translated_text`(output_languageへの訳文)・`situation`(場面の途中で状況が変わるときだけ。無ければシーンの状況) |
 | | `Direction` | `style`・`pace`・`dynamics`・`emotion`・`pause_after`(言葉で表す間。ミリ秒にしない) |
 | | `SoundEffect`・`Atmosphere`・`Music` | 空 |
-| `cast.py` | `Cast` | `id`・`character: Character`・`provider`・`voice_name`・`language`・`accent`・`notes` |
-| `character.py` | `Character` | `id`・`name`・`reading`・`gender`・`age`・`speech_style`・`characteristics: list[Characteristic]`・`biographies`・`relationships`(関わる人物関係。sourceでもtargetでも。所有はしない) |
+| `cast.py` | `Cast` | `id`・`character: Character`(演じる人物。関連)・`performance: Performance`(演じ方)・`voice_gender: VoiceGender`(声を当てるときの性別)・`language`・`accent`。声は演者(`Actor`)が持つ(2026-10-01) |
+| | `Performance` | `title`(見出し。例: Strict Guy)・`description`・`pace`(話す速さ。2026-10-01) |
+| | `VoiceGender` | male・female・neutral(中性的)。人物の性別(`Character.gender`。不明・両性もあり得る)とは別に、配役で決める(2026-10-01ユーザー) |
+| `character.py` | `Character` | `id`・`name`・`reading`・`gender`・`age`・`speech_style: SpeechStyle`(話し方)・`characteristics: list[Characteristic]`・`biographies`・`relationships`(関わる人物関係。sourceでもtargetでも。所有はしない) |
+| `speech_style.py` | `SpeechStyle` | `first_person`(一人称)・`tone`(相手を問わない既定の口調)・`endings: list[SentenceEnding]`・`description`(2026-10-01) |
+| | `SentenceEnding` | `kind: SentenceEndingKind`・`examples`(例の一覧)・`description` |
+| | `SentenceEndingKind` | normal(通常)・conjecture(推測)・question(疑問)・negation(否定)・command(命令)・request(依頼)・exclamation(感嘆) |
 | `feature.py` | `Characteristic` | `item`・`definition`・`description`・`features: list[AdditionalFeature]`(特徴=項目のまとまり。2階層まで) |
-| | `AdditionalFeature` | `item`(項目)・`value`(値)・`definition`(itemの意味。空でもよいが、架空の言葉等では定義を書く)・`description`(補足) |
-| | `Biography` | `id`・`period: TemporalNode`・`episode`・`involved_relationship: Relationship` |
-| `relationship.py` | `Relationship` | `id`・`source: Character`・`target: Character`・`label`・`period: TemporalNode`・`description`。作ると両端の人物の`relationships`に加わる(2026-09-30、人物から人物関係を引けるように) |
+| | `AdditionalFeature` | `item`(項目)・`value`(実際に使う値)・`definition`(itemの意味。空でもよいが、架空の言葉等では定義を書く)・`description`(説明文やメモ) |
+| | `Biography` | `id`・`period: TemporalNode`・`episode`・`involved_relationships: list[Relationship]`(関わる人物関係。複数でもよい。2026-10-01) |
+| `character_group.py` | `CharacterGroup` | `id`・`name`・`kind`(自由に書く。例: 家族・職場)・`members: list[Character]`(参照)・`description`。持ち主はProject(2026-10-01) |
+| `relationship.py` | `Relationship` | `id`・`source: Character`・`target: Character`・`label`・`period: TemporalNode`・`description`・`form_of_address`(sourceがtargetをどう呼ぶか。場面による使い分けは扱わない)・`tone`(sourceがtargetに対して話す口調)(2026-10-01)。作ると両端の人物の`relationships`に加わる(2026-09-30、人物から人物関係を引けるように) |
 | `location.py` | `Location` | `id`・`name`・`latitude`・`longitude`・`address`・`instruction`・`description` |
 | `temporal.py` | `TemporalNode` | `id`・`label`(言葉としての時期)・`date_type: StringDateType`・`string_date` |
 | | `TemporalEdge` | `id`・`label`・`kind: TemporalRelationKind`・`source: TemporalNode`・`target: TemporalNode` |
@@ -85,7 +96,9 @@ UMLからの変更(2026-09-30ユーザー承認): `Profile`をなくし、`Chara
 ## `core/model/agent/`
 
 エージェントは職能ごとのクラス(基底`Agent`のサブクラス)。どの手段で動かすか(利用者・文章生成・音声合成・プログラム)は
-モデルに持たず、処理の側(`service/process`)が決める。エージェントどうしのやり取り(発注・提案と反映・利用者との相談)はエージェントのモデルではないので、
+モデルに持たず、処理の側(`service/process`)が決める。どの生成AI(提供元・モデル)を使うかは、仮に既存の`project.yaml`の`genai`
+(`llm`・`tts`)に置く。ただし演者(`Actor`)は、どの声で演じるか(`voice_name`)を自分で持つ(2026-10-01ユーザー決定)。
+エージェントもモデル定義YAMLに書ける(最上位の`agents:`に職能ごと。`core/model/agent/factory.py`で組み立てる。`apps/sample_data/agent/`)。エージェントどうしのやり取り(発注・提案と反映・利用者との相談)はエージェントのモデルではないので、
 ここには置かない(公開API・処理の側で設計する。QIDMのdraftsに相当)。
 
 | ファイル | クラス | 実行の手段 | 固有の属性 | 読む | 書く |
@@ -93,16 +106,16 @@ UMLからの変更(2026-09-30ユーザー承認): `Profile`をなくし、`Chara
 | `agent.py` | `Agent`(基底) | — | `id`・`name`・`persona`(性格づけ) | | |
 | `producer.py` | `Producer` | human(利用者) | なし | すべて | Premise・提案の反映/却下 |
 | `researcher.py` | `Researcher` | text+検索 | なし | 資料・Premise | (根拠のみ。作品は書き換えない) |
-| `casting_director.py` | `CastingDirector` | text | `provider`(声を選ぶ音声合成の提供元) | Character | Cast |
+| `casting_director.py` | `CastingDirector` | text | なし | Character | Cast(配役と演じ方)・どのActorに任せるか |
 | `scriptwriter.py` | `Scriptwriter` | text | なし | Premise・Character・Relationship・TemporalNode・あらすじ | Character・Biography・Relationship・あらすじ・Script |
 | `director.py` | `Director` | text | なし | Script・Character・Location | ScriptElement |
 | `stage_manager.py` | `StageManager` | program | なし | ScriptElement・音声 | キューシート・翻訳の呼び出し(**暫定**) |
-| `actor.py` | `Actor` | speech | `casting_id`(Castごとに1つ。ID参照) | Dialogue・Cast | 台詞の音声 |
+| `actor.py` | `Actor` | speech | `casting_id`(Castごとに1つ。ID参照)・`voice_name`(使う声) | Dialogue・Cast | 台詞の音声 |
 | `sound_engineer.py` | `SoundEngineer` | program | なし | キューシート | シーンの音声 |
 
 「読む」「書く」は、機能を定義するときにコードへ入れる。
 
-## モデルの組み立てと生成AIとの受け渡し(2026-09-30ユーザー決定。作品の側は実装済み、agentのFactoryは未実装)
+## モデルの組み立てと生成AIとの受け渡し(2026-09-30ユーザー決定。作品・agentとも実装済み)
 
 QIDMに準じる(`core/model/factory.py`・`core/schema/formats/domain_definition.py`・`core/infra/io/model_definition_*`)。
 
@@ -114,7 +127,7 @@ QIDMに準じる(`core/model/factory.py`・`core/schema/formats/domain_definitio
 - モデルとYAMLの変換は`core/infra/io/`(読むときにFactoryを使う)。
 - モデル定義YAMLは、**1つのファイルでも、分割した複数のファイルでも読み書きできる**(2026-09-30ユーザー)。
 
-### モデル定義YAMLの形(2026-09-30実装。**形はユーザーのレビュー前**)
+### モデル定義YAMLの形(2026-09-30実装。2026-10-01ユーザー承認)
 
 | 役割 | 場所 |
 | --- | --- |
@@ -123,7 +136,11 @@ QIDMに準じる(`core/model/factory.py`・`core/schema/formats/domain_definitio
 | 読む | `core/infra/io/model_definition_reader.py`(`read_dramaturgy(ファイルかディレクトリ)`・`build_dramaturgy_from_yaml(*文字列)`) |
 | 書く | `core/infra/io/model_definition_writer.py`(`write_dramaturgy`=1ファイル、`write_split_dramaturgy`=区画ごとのファイル) |
 
-- 1つのYAMLが1つのDramaturgy。**コンポジション(所有)はYAMLでも入れ子にする**(2026-09-30ユーザー): `dramaturgy`の中に
+- 人物・人物のまとまり・人物関係は`dramaturgy`の外の最上位`characters:`・`character_groups:`・`relationships:`に書き、作品は`dramaturgy.characters`・`relationships`で`{ref: …}`の一覧として参照する(2026-10-01)。
+- 作品が複数のとき(プロジェクトの作品モデル全体。DBの版・下書きの写し)は、最上位の`dramaturgies:`に一覧で書く(2026-10-01)。
+  `dramaturgy:`と両方に書けば`dramaturgy`が先頭。読み込み結果`ModelDefinition`は`dramaturgies`(`dramaturgy`は作品が1つのときだけ)と、
+  所有者の無い`temporal_nodes`・`locations`をすべて持つ。
+- 1つのYAMLが1つのDramaturgy(`dramaturgy:`のとき)。**コンポジション(所有)はYAMLでも入れ子にする**(2026-09-30ユーザー): `dramaturgy`の中に
   `premise`・`characters`(`characteristics`→`features`・`biographies`)・`casts`・`acts`(`scenes`→`script.lines`・`elements`→`direction`)・`history.edges`。
   所有者を持たない要素(`temporal_nodes`・`locations`・`relationships`)は、`dramaturgy`と並ぶ最上位に書いて参照する。
 - 分割: 分けた文書も同じ入れ子の形で、その一部だけを持つ(例: `dramaturgy: {casts: [...]}`)。読むときはすべての文書(ファイル・`---`区切り)を
@@ -136,29 +153,39 @@ QIDMに準じる(`core/model/factory.py`・`core/schema/formats/domain_definitio
   シーンの題・あらすじ・時期・場所)・`scripts/…`(台詞)・`scenes/…`(演出付きの原稿)。**プロット単位で取り込める**(2026-09-30ユーザー。
   Plotのクラスは作らず、プロット=`Scene.synopsis`)。書き直すとき、減ったシーンの古いファイルは消し、それ以外の名前のYAMLがあれば書かない。
 
-### サンプルデータ(`apps/sample_data/`)と、変換で見つかった構造上の問題(レビュー用)
+### サンプルデータ(`apps/sample_data/`)と、変換で見つかった構造上の問題
 
-`apps/sample_project/`の`character/*.txt`・`plot/*.txt`を、分割方式のモデル定義YAMLに変換したもの(2026-09-30)。原文は言い換えずに写し、
+旧来のサンプル(`apps/sample_project`。2026-10-01に削除)の`character/*.txt`・`plot/*.txt`・`actor/actors.yaml`を、分割方式のモデル定義YAMLに変換したもの(2026-09-30、10-01)。
+作品は`drama/`、エージェントは`agent/`(2026-10-01ユーザーの構成)。原文は言い換えずに写し、
 人物像は原文の見出しを特徴(`Characteristic`)に、「**項目**: 値」を項目(`AdditionalFeature`)にした。見出し「過去のエピソード」「人物関係」も特徴にし、その前書きを`description`に、名前の無い人物を「人物関係」の項目にした。人物は1人1ファイル(`characters/`)。
 行ごとの照合で、原文の情報はすべて読み込んだモデルにあることを確かめた(人物関係40件はすべて人物から引ける。コメントに残したものは無い)。プロット5件のあらすじは一字一句同じ。
 
-モデルに無理に押し込まなかったもの(クラスの設計で決めること):
-
-| # | 原文 | 問題 | 今の扱い |
-| --- | --- | --- | --- |
-| 1 | 名前の無い人物(吹奏楽部の顧問・彼氏1人目・2人目) | `Character.name`が必須なので人物にできず、「人物関係」の項目にした。原文でどの時期の見出し(中学校時代・大学時代)の下にあったかは、`AdditionalFeature`に時期が無いので残らない | 「人物関係」の項目 |
-| 2 | 1つの経歴に複数の人物関係(「佐々木親子との出会い」等) | `Biography.involved_relationship`は1つだけ | 1人に関わると読めるものだけ結んだ |
-| 3 | 人物関係の本文に、相手の人物像(職業・性格・年齢)が混ざっている | 相手の`Character.characteristics`と人物関係の説明を分けるには、原文を書き換える必要がある | 人物関係の`description`に原文のまま。年齢は冒頭にあるものだけ`age`にも写した |
-| 4 | 見出し「家族」「現在の職場」 | 家族は時期ではない(`period`なし)。「現在の職場」は時期と場所が混ざっている | 家族は`period`なし、「喜一の現在の職場」は時期として置いた |
-| 5 | 作品の題・幕 | 原文に題も幕の区切りも無い。`Dramaturgy.title`は必須、シーンは幕に属する | 題は人物のファイルにある物語の名前「明治の弥次喜多道中」、幕は1つ |
-| 6 | 台詞の話者の呼び名(`script/*.txt`の「喜一：」、`actors.yaml`の`label`・`character_name`) | `Character`に呼び名(短い名前)が無い。制作の流れでは話者名をフルネームにし、生成AIが空白を詰めて書く(「加藤喜一：」)ので、照合で空白を無視している | `script/`は未変換。呼び名(`label`)は`casts.yaml`のコメント |
-| 7 | `actor/actors.yaml`の`personality_title`・`personality_description`・`gender`・`label` | `Cast`に当たる属性が無い(`notes`は声の話し方)。音声合成への指示の「AUDIO PROFILE」から性格が抜ける | 配役(人物・声・accent)は`casts.yaml`に変換、ほかはコメント |
-| 8 | 原稿(`scene/*.yaml`)の各台詞の`context`(場所・状況) | `Dialogue`に当たる属性が無い(`action`は動き・表情)。音声合成への指示の「THE SCENE」に使っている | 制作の流れでは原稿を旧来の形の作業ファイルに置き、`scenes/`には書き戻さない |
+変換で見つかった構造上の問題(モデルに置き場所が無かったもの)は、2026-10-01にすべて決まった(呼び方・一人称・話し方と語尾・氏名不詳の人物・
+複数の人物関係・人物関係の本文の書き換え・人物のまとまり・題・幕・話者名・場面の状況)。それぞれの扱いは以下。
 
 時期ごとの要約(「人生の絶頂期と肥大したプライド。…」等)は、その時期の経歴(`Biography`)の先頭に置いた。
-時間の位相は、人物ごとの時期を順に`meets`で結び(原文の見出しの順から。年齢からの推定はしていない)、2人のネットワークは時点「喜一と弥千代の出会い（城崎温泉）」だけで合流させた(出会いが両方の「現在」の間にある=`during`)。
-- 参照: 参照先の`key`(定義の中だけの名前。人・生成AIがidを決めずに書くため)か`id`。書き出しは常に`id`で書き、`key`は書かない。
-  `Dialogue.line_id`・`cast_id`はYAMLでは`line`・`cast`(同じくkeyかid)。
+名前の無い人物(吹奏楽部の顧問・彼氏1人目・2人目)は、名前を「（氏名不詳）」にした人物にした(2026-10-01ユーザー)。見出しは人物関係の`label`、
+「彼氏（1人目）：優しそうに見えて優柔不断なタイプ」の後半は、その人物の特徴「人物像」の`description`。
+経歴の`involved_relationships`は、経歴の本文に人物関係の相手の名前(空白は無視)か「佐々木親子」が出てくるものを結んだ(同じ相手との関係が
+複数あれば、経歴と同じ時期のもの)。呼び方は、話し方の文にある喜一→弥千代「キミ」・弥千代→喜一「キタさん」。一人称は原文に無いので、ユーザーの指定で喜一「オレ」・弥千代「あたし」(2026-10-01)。
+人物のまとまり(`CharacterGroup`)は、原文の見出し「家族」「現在の職場」「喜一を不満に思うゼミ生3人組」と経歴の「佐々木親子」から5つ作った
+(加藤家・水野家・都内大手IT企業・佐々木親子・ゼミ生3人組)。見出し「現在の職場」の人物関係の時期は「喜一の現在」にした(時点「喜一の現在の職場」はやめた)。
+作品の題は、ユーザーの指定で「令和但馬道中膝栗毛〜ハチ北スキー場編〜」(2026-10-01)。幕は1つで、シーンは幕が1つでも必ず幕に入れる。
+台詞の話者名は、キャラクター名(`Character.name`)を使う(旧来の短い呼び名「喜一：」には合わせない。2026-10-01ユーザー)。
+話し方(「喋り方の特徴」)は、語尾を種類と例に分け、「通常の口調」の文を、既定の口調(`SpeechStyle.tone`)・相手に対する口調
+(`Relationship.tone`。喜一→弥千代「タメ口」)・話す速さ(喜一の配役の`Performance.pace`「比較的ゆっくり」)・呼び方に分けた。
+人物関係の本文に混ざっていた相手の人物像(職業・経歴・性格・先祖の話への考え・年齢)は、35件について相手の人物へ移した(2026-10-01、
+ユーザーの依頼で書き換え)。移した先は相手の特徴「人物像」「先祖の話について」と`age`。人物関係の本文には関係の部分だけを残し、文が
+つながらなくなる所だけ言葉を直した(例:「喜一とは対照的な明るく活発な性格ですが」→人物関係「喜一とは対照的な性格ですが」+人物像
+「明るく活発な性格。」)。原文の句がすべて、書き換えた先のどこかにあることを照合で確かめた。
+時間の位相は、人物ごとの時期を順に`meets`で結び(原文の見出しの順から。年齢からの推定はしていない。喜一の大学時代→現在は、間に就職があるので`before`)、2人のネットワークは時点「喜一と弥千代の出会い（城崎温泉）」だけで合流させた(出会いが両方の「現在」の間にある=`during`)。
+- **識別子と参照は id / key / ref で統一する**(2026-10-01ユーザー決定):
+  - `id`: エンティティの識別子(UUID)。システムが決める(人・生成AIに決めさせない)。書き出しでは必ず書き、読むときに無ければシステムが振る。
+  - `key`: そのYAML一式の中だけで使う呼び名で、参照の受け口。モデルには残らない。書き出しでは種類と通し番号
+    (`character_001`・`cast_001`・`scene_001_line_001`等)を振る。種類ごとに一意。
+  - 参照: 常に`{ref: 参照先のkey}`(例: `character: {ref: character_001}`)。`id`では参照しない(参照先は同じYAML一式の中に
+    なければならない。YAMLの外への参照は、必要になったときに足す)。`Dialogue.line_id`・`cast_id`はYAMLでは`line`・`cast`。
+  - `apps/sample_data`の`id`は、`key`から決まるUUID(UUIDv5)で、変換し直しても変わらない。
 - `order`は省略すれば並びの中の位置(0から)。未知の属性はエラー(書き誤りを黙って捨てない)。
 
 ## 今の制作の流れとの対応
@@ -166,7 +193,7 @@ QIDMに準じる(`core/model/factory.py`・`core/schema/formats/domain_definitio
 | 今 | このモデル |
 | --- | --- |
 | `character/*.txt` | `Character`(見出しを`characteristics`、時期ごとのエピソードを`biographies`、人物関係を`relationships`。`apps/sample_data`で変換済み) |
-| `actor/actors.yaml` | `Cast` |
+| `actor/actors.yaml` | `Cast`(人物・演じ方・accent)と`Actor`(声)。`apps/sample_data`で変換済み |
 | `plot/*.txt` | `Scene.synopsis` |
 | `script/*.txt` | `Script` |
 | `scene/*.yaml` | `Scene.elements`(`Dialogue`) |

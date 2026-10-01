@@ -33,9 +33,15 @@ async def parse_yaml_body[T: BaseModel](request: Request, model: type[T]) -> T:
     return model.model_validate(data)
 
 
-def yaml_response(model: BaseModel) -> Response:
+async def read_text_body(request: Request) -> str:
+    """リクエストの本文を、検証せずに文字列のまま読む(部分YAML等、型に当てはめずに渡すもの)。"""
+    return (await request.body()).decode("utf-8")
+
+
+def yaml_response(model: BaseModel, exclude_unset: bool = False) -> Response:
+    """modelをYAMLで返す。exclude_unsetなら、値を指定した属性だけを書く(モデル定義YAMLの形を返すとき)。"""
     text = yaml.dump(
-        model.model_dump(),
+        model.model_dump(exclude_unset=exclude_unset),
         Dumper=_Dumper,
         allow_unicode=True,
         sort_keys=False,

@@ -12,7 +12,7 @@
 ProjectLayoutをProjectから分けて定義する。
 
 QIDMから持ち込んだ暫定の形(docs/future_design.md「Projectの作り直し」)。現行の制作の流れ(main.py)は
-まだcore/service/process/production/_legacy_project.pyのProjectを使う。
+まだ使わない(<root_dir>/model/のモデル定義YAMLを、core/service/process/production/_model_definition_project.pyで読む)。
 """
 
 import os

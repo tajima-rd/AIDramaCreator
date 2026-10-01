@@ -1,16 +1,18 @@
 # core/service/process/production/_model_definition_project.py
 """
 モデル定義YAML(core.schema.formats.dramaturgy_definition)から、現行の制作の流れ(main.py)を動かすための仲介(暫定)。
-現行の工程(dialogue_generator・scene_generator・sound_generator)と、その検査が使う_legacy_project.Projectと同じ
+現行の工程(dialogue_generator・scene_generator・sound_generator)と、その検査が使う
 入口(get_working_path・get_character_map・load_scenes_yaml・actors・acts・生成器)を、モデルから用意する。
 制作の流れを新しいモデルへ移すとき(docs/open_tasks.md)に、この仲介ごと置き換える。
 
 ディレクトリの構成:
     <root_dir>/model/        モデル定義YAML(分割方式。apps/sample_dataの複製)。台詞はここのscripts/に書き戻す
+    <root_dir>/project.yaml  生成AIの設定(genai.llm・genai.tts。無ければmain.pyの既定。core.infra.store.project_file_store)
     <root_dir>/work/script/  台詞の生成の出力(生成AIの応答そのまま。script_nnn.txt)
     <root_dir>/work/scene/   演出付きの原稿(旧来の形。scene_nnn.yaml)。Dialogueにcontextの置き場所が無いので、YAMLには書き戻さない
     <root_dir>/sound/        音声(scene_nnn.mp3)
 
+話者は、演者(core.model.agent.Actor)のいる配役の人物。声は演者、演じ方は配役(Cast.performance)から取る。
 話者の名前はCharacter.name(フルネーム)。Characterに呼び名の属性が無いため(docs/model_design.md「サンプルデータ」)。
 """
 
@@ -19,12 +21,13 @@ import re
 from pathlib import Path
 from typing import Any, Optional
 
-import yaml
-
 from core.genai import SpeechGenerator, TextGenerator
-from core.infra.io.model_definition_reader import build_dramaturgy_from_spec, read_spec
-from core.infra.io.model_definition_writer import SCRIPT_DIR, scene_filename
+from core.infra.io.model_definition_reader import build_model_definition_from_spec, read_spec
+from core.infra.io.model_definition_writer import SCRIPT_DIR, dump_model_definition, scene_filename
+from core.model.agent import Actor as ActorAgent
+from core.model.agent import Agent
 from core.model.drama import Cast, Character, Dramaturgy, Scene
+from core.model.identifier import new_id
 from core.prompt.drama_production import character_profile
 from core.schema.formats._legacy_drama import Actor, GeminiVoice, Transcript
 from core.schema.formats._legacy_drama import Scene as LegacyScene
@@ -91,10 +94,19 @@ class ModelDefinitionProject:
     def reload(self) -> None:
         """モデル定義YAMLを読み直す(台詞を書き戻した後など)。"""
         self.spec: dict[str, Any] = read_spec(self.model_dir)
-        self.dramaturgy: Dramaturgy = build_dramaturgy_from_spec(self.spec)
-        # 話者(配役のある人物)。名前→配役
-        self.casts: dict[str, Cast] = {cast.character.name: cast for cast in self.dramaturgy.casts}
-        self.actors: dict[str, Actor] = {name: _actor(cast) for name, cast in self.casts.items()}
+        definition = build_model_definition_from_spec(self.spec)
+        self.dramaturgy: Dramaturgy = definition.dramaturgy
+        self.agents: list[Agent] = definition.agents
+        # 話者(演者のいる配役の人物)。名前→配役。声は演者(Actor)が持つ
+        performers = {
+            agent.casting_id: agent for agent in self.agents if isinstance(agent, ActorAgent)
+        }
+        self.casts: dict[str, Cast] = {
+            cast.character.name: cast for cast in self.dramaturgy.casts if cast.id in performers
+        }
+        self.actors: dict[str, Actor] = {
+            name: _actor(cast, performers[cast.id]) for name, cast in self.casts.items()
+        }
 
     def get_working_path(self, key: str) -> Optional[str]:
         return self.working_dirs.get(key)
@@ -104,8 +116,8 @@ class ModelDefinitionProject:
         return [[name, name] for name in self.actors]
 
     def speakers(self) -> list[Character]:
-        """台詞の話者(配役のある人物)。"""
-        return [cast.character for cast in self.dramaturgy.casts]
+        """台詞の話者(演者のいる配役の人物)。"""
+        return [cast.character for cast in self.casts.values()]
 
     def dialogue_profiles(self) -> list[list[str]]:
         """台詞の工程に渡す人物設定([名前, 文章])。話者の人物だけ(話者でない人物は、人物関係の中に出てくる)。"""
@@ -136,15 +148,15 @@ class ModelDefinitionProject:
     def record_script(self, unit: SceneUnit, lines: list[tuple[str, str]]) -> Path:
         """
         台詞([(話者名, 台詞)])を、モデル定義YAMLのscripts/(このシーンのファイル)に書き戻し、読み直して形と参照を確かめる。
-        話者は配役のkey(無ければid)で参照する。
+        各行にはシステムがidを振り、keyは「シーンのkey_line_通し番号」。話者は配役を{ref: key}で参照する。
         """
         cast_keys = {
-            spec_cast["character"]: spec_cast.get("key") or spec_cast.get("id")
+            spec_cast["character"]["ref"]: spec_cast["key"]
             for spec_cast in self.spec["dramaturgy"].get("casts", [])
         }
         character_keys = {
-            _bare(spec_char["name"]): spec_char.get("key") or spec_char.get("id")
-            for spec_char in self.spec["dramaturgy"].get("characters", [])
+            _bare(spec_char["name"]): spec_char["key"]
+            for spec_char in self.spec.get("characters", [])
         }
         script_lines = []
         for order, (speaker, text) in enumerate(lines):
@@ -153,34 +165,46 @@ class ModelDefinitionProject:
                 raise ValueError(f"話者 '{speaker}' の配役がありません")
             script_lines.append(
                 {
-                    "key": f"{unit.scene_key}_line_{order:03d}",
+                    "id": new_id(),
+                    "key": f"{unit.scene_key}_line_{order + 1:03d}",
                     "order": order,
-                    "cast": cast_key,
+                    "cast": {"ref": cast_key},
                     "text": text,
                 }
             )
+        act = self.dramaturgy.acts[unit.act_index]
         document = {
             "dramaturgy": {
                 "acts": [
                     {
+                        "id": act.id,
                         "key": unit.act_key,
-                        "scenes": [{"key": unit.scene_key, "script": {"lines": script_lines}}],
+                        "scenes": [
+                            {
+                                "id": unit.scene.id,
+                                "key": unit.scene_key,
+                                "script": {"lines": script_lines},
+                            }
+                        ],
                     }
                 ]
             }
         }
-        path = Path(self.model_dir) / scene_filename(unit.act_index, unit.scene_index, SCRIPT_DIR)
+        # 既にこのシーンの台詞のファイル(scripts/act_nnn_scene_nnn.yaml)があれば、それを書き換える(配置は問わない)
+        name = scene_filename(unit.act_index, unit.scene_index, SCRIPT_DIR)
+        existing = sorted(Path(self.model_dir).rglob(name))
+        path = existing[0] if existing else Path(self.model_dir) / name
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(
             f"# {unit.scene_key}の台詞(制作の流れの台詞の工程で生成)\n"
-            + yaml.safe_dump(document, allow_unicode=True, sort_keys=False),
+            + dump_model_definition(document),
             encoding="utf-8",
         )
         self.reload()
         return path
 
     def load_scenes_yaml(self, scene_data: dict[str, Any]) -> LegacyScene:
-        """旧来の原稿(scene/*.yaml)を、音声の工程が使うSceneにする(_legacy_project.Project.load_scenes_yamlと同じ)。"""
+        """旧来の原稿(scene/*.yaml)を、音声の工程が使うSceneにする。"""
         transcripts = []
         for item in scene_data.get("transcripts", []):
             actor_name = item.pop("actor_name", None)
@@ -197,14 +221,20 @@ class ModelDefinitionProject:
         return scene
 
 
-def _actor(cast: Cast) -> Actor:
-    """配役を、音声の工程が使う旧来のActorにする。personality_*はCastに置き場所が無いので空(音声合成への指示では省かれる)。"""
+def _actor(cast: Cast, performer: ActorAgent) -> Actor:
+    """配役と演者を、音声の工程が使う旧来のActorにする。声は演者、演じ方(personality_*)は配役のperformance。"""
     character = cast.character
+    voice = next((v for v in GeminiVoice if v.voice_name == performer.voice_name), None)
+    if voice is None:
+        raise ValueError(
+            f"演者 '{performer.name}' の声 '{performer.voice_name}' は、音声合成(Gemini)の声にありません"
+        )
     return Actor(
         character_name=character.name,
-        voice=next(voice for voice in GeminiVoice if voice.voice_name == cast.voice_name),
+        voice=voice,
         label=character.name,
-        gender=character.gender or "",
-        personality_title="",
+        gender=cast.voice_gender.value if cast.voice_gender else "",  # 声の性別(人物の性別ではない)
+        personality_title=cast.performance.title or "",
+        personality_description=cast.performance.description,
         accent=cast.accent or "General English",
     )

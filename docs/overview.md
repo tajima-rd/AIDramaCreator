@@ -38,6 +38,6 @@ sound/     (場面ごとの音声 mp3)
 | `core/genai/` | 生成AI(文章生成・構造化出力・音声合成・埋め込み・資料の検索)の汎用ライブラリ。別プロジェクト(QIDM)由来で、AIDC以外でも使う独立したライブラリとして扱う |
 | `core/model/` | ドラマを構成するオブジェクト(人物・声・場面・台詞・演出等)。再定義が必要 |
 | `core/project/` | プロジェクト。Dataset・drafts/を含めて作り直しが必要 |
-| SQLite | 使う。ただし構造・目的はQIDMのdomain.dbとは根本的に異なる(未設計) |
+| SQLite | 作品モデルの正本(版と下書きを含む)。QIDMのdomain.dbとは構造・目的が異なる。[database_design.md](database_design.md) |
 
 設計の詳細は [architecture.md](architecture.md)、実装の範囲は [status.md](status.md) を参照。

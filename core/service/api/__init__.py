@@ -14,4 +14,6 @@ docs/architecture.md 1.1節参照。
 - project: プロジェクトの作成・開く・一覧・プロパティ・保存
 - preference: 生成AIの設定・APIキー・接続確認・設定の入力補助
 - dataset: Dataset(参考資料等)の一覧・追加・取得・メタデータ・削除
+- drama_model: 作品モデルの正本と版(読むだけ)
+- drama_draft: 作品モデルの下書き(作成・中身・履歴・取り込み・Apply・直接編集・Undo・確定・破棄)
 """

@@ -12,7 +12,18 @@ from core.genai.prompt import (
     Section,
     TextBlock,
 )
-from core.model.drama import Character
+from core.model.drama import Character, SentenceEndingKind
+
+# 語尾の種類の、人物設定の文章での呼び名
+ENDING_KIND_NAMES = {
+    SentenceEndingKind.NORMAL: "通常",
+    SentenceEndingKind.CONJECTURE: "推測",
+    SentenceEndingKind.QUESTION: "疑問",
+    SentenceEndingKind.NEGATION: "否定",
+    SentenceEndingKind.COMMAND: "命令",
+    SentenceEndingKind.REQUEST: "依頼",
+    SentenceEndingKind.EXCLAMATION: "感嘆",
+}
 
 
 def character_profile(character: Character) -> str:
@@ -21,9 +32,29 @@ def character_profile(character: Character) -> str:
     人物関係は、この人物から見たもの(source)だけを書く(相手から見た関係は、相手の人物設定に書かれる)。
     """
     lines = [f"# {character.name}" + (f"（{character.reading}）" if character.reading else "")]
-    lines += [f"* {label}: {value}" for label, value in (("性別", character.gender), ("年齢", character.age)) if value]
-    if character.speech_style:
-        lines += ["", "## 話し方", character.speech_style]
+    lines += [
+        f"* {label}: {value}"
+        for label, value in (
+            ("性別", character.gender),
+            ("年齢", character.age),
+        )
+        if value
+    ]
+    speech = character.speech_style
+    if speech.first_person or speech.tone or speech.endings or speech.description:
+        lines += ["", "## 話し方"]
+        lines += [
+            f"* {label}: {value}"
+            for label, value in (("一人称", speech.first_person), ("口調", speech.tone))
+            if value
+        ]
+        for ending in speech.endings:
+            examples = "".join(f"「{example}」" for example in ending.examples)
+            lines.append(f"* 語尾({ENDING_KIND_NAMES[ending.kind]}): {examples}")
+            if ending.description:
+                lines.append(f"  {ending.description}")
+        if speech.description:
+            lines.append(speech.description)
     for characteristic in character.characteristics:
         lines += ["", f"## {characteristic.item}"]
         if characteristic.definition:
@@ -31,7 +62,9 @@ def character_profile(character: Character) -> str:
         if characteristic.description:
             lines.append(characteristic.description)
         for feature in characteristic.features:
-            head = f"* **{feature.item}**" + (f"（{feature.definition}）" if feature.definition else "")
+            head = f"* **{feature.item}**" + (
+                f"（{feature.definition}）" if feature.definition else ""
+            )
             lines.append(f"{head}: {feature.value}" if feature.value else head)
             if feature.description:
                 lines.append(f"  {feature.description}")
@@ -46,8 +79,21 @@ def character_profile(character: Character) -> str:
         for relationship in own:
             target = relationship.target
             name = target.name + (f"（{target.reading}）" if target.reading else "")
-            period = f"【{relationship.period.label}】" if relationship.period and relationship.period.label else ""
-            lines.append(f"* {period}{relationship.label}：{name}")
+            period = (
+                f"【{relationship.period.label}】"
+                if relationship.period and relationship.period.label
+                else ""
+            )
+            ways = [
+                f"{label}: {value}"
+                for label, value in (
+                    ("呼び方", relationship.form_of_address),
+                    ("口調", relationship.tone),
+                )
+                if value
+            ]
+            address = f"（{'、'.join(ways)}）" if ways else ""
+            lines.append(f"* {period}{relationship.label}：{name}{address}")
             if relationship.description:
                 lines.append(f"  {relationship.description}")
     return "\n".join(lines)

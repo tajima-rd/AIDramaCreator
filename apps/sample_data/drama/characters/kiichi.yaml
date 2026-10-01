@@ -1,0 +1,563 @@
+# Kiichi.txt(apps/sample_project/character)から変換した人物と人物関係
+characters:
+- id: 018c53d6-d546-57e8-a3d4-c4530a7056ce
+  key: character_001
+  name: 加藤 喜一
+  reading: かとう きいち
+  gender: 男性
+  age: 27歳
+  speech_style:
+    first_person: オレ
+    tone: やや、ぶっきらぼう
+    endings:
+    - kind: normal
+      examples:
+      - 〜している。
+      - 〜していたんだ。
+      - 〜だそうだ。
+    - kind: conjecture
+      examples:
+      - 〜だろう。
+      - 〜かもしれない。
+    - kind: question
+      examples:
+      - 〜ではないか？
+      - 〜なのか？
+    - kind: negation
+      examples:
+      - 〜ではない。
+  characteristics:
+  - item: 基本情報
+    description: 生真面目で完璧主義な性格と、感情を表に出さないドライな印象で、周囲からは優秀なシステムエンジニアとして評価されている男性です。『東海道中膝栗毛』の主人公の一人「喜多八」の子孫。
+    features:
+    - item: 祖先との繋がり
+      value: 東海道中膝栗毛の喜多八の子孫
+  - item: 職業とキャリア
+    features:
+    - item: 現在の職業
+      value: システムエンジニア
+    - item: 勤務先
+      value: 都内大手IT企業
+    - item: 仕事への姿勢
+      value: '**論理的思考力と卓越した技術力**で高い評価を得ている。企業向け基幹システム開発やクラウドインフラ構築といった難易度の高いプロジェクトを複数担当し、常に期待を上回る成果を出してきた。しかし、その高評価と信頼からくる**過度なプレッシャー**に常に追い詰められており、連日の深夜残業と休日出勤、システムトラブル対応に追われる日々で、心身ともに休まる暇は一切ない。彼の生真面目さから、自身の苦しみを誰にも打ち明けず、完璧を装い続けている。'
+    - item: 過去のキャリア
+      value: |-
+        * **超難関大学を目指し三度の受験に失敗（二浪）**。特に、**二浪時に迷子による試験会場遅刻、三浪時に解答欄のずれという信じられないケアレスミス**を経験し、父親から\*\*「三回目は無い」\*\*と宣告され、夢を絶たれる。
+        * 不本意な**私立大学の情報科学部を卒業**。大学生活は**友人が全くいない孤独な勉学の日々**となり、ひたすらプログラミングと研究に没頭した。
+  - item: 性格と行動パターン
+    features:
+    - item: 完璧主義者
+      value: 仕事では一切の妥協を許さず、常に最高の成果を追求する。これは、**中学時代にコンピュータを没収された喪失感**と、**初恋の失恋から来る「完璧でなければ大切なものを失う」という強迫観念**が根底にある。
+    - item: 論理的思考
+      value: 物事を感情ではなく、論理とデータに基づいて判断する。これは、**幼少期からの物事の仕組みを解き明かす探求心**と、感情的な出来事の解決に失敗した中学時代の経験に起因する。
+    - item: 感情抑制
+      value: 自身の感情を表に出すことを極端に嫌い、他者に弱みを見せない。これは、**中学時代の失恋で感情を非合理なものと排斥した**こと、そして**浪人時代に自身の弱み（取り乱す姿）を露呈したことへの羞恥心**から来ている。
+    - item: 学歴コンプレックス
+      value: 二浪して不本意な大学に進学した経験から、**旧帝大出身者や有名私立大学出身の同僚たちに対して強い劣等感を抱く**。同時に、それを隠すために自身のプライドを高く保とうとする。父親からの厳格な教育方針も強く影響している。
+    - item: プライドが高い
+      value: 自身の能力に絶大な自信を持つ一方で、挫折経験から他者を見下す傾向もある。**高校時代は学年トップの「スーパーエリート」として「天狗」になっており**、自身の才能に傲慢なほど自信を持っていた。
+    - item: 恋愛に無関心
+      value: '**中学時代の宮沢陽菜への失恋**を機に「恋愛は非合理で無駄」と結論付け、**二度と恋愛をしないと心に誓っている**。そのため、**本人が気づかないだけで高校生以降はずっとモテていたにも関わらず**、異性からの好意にも気づきにくい、あるいは意図的に無視する。大学時代には**桜井菜々子**からも好意を寄せられたが気づかなかった。'
+    - item: 人間関係に不器用
+      value: 自己開示をせず、本音で人と接することが苦手。**中学時代以降、唯一の理解者である幼馴染の佐々木親子を除き**、他者との間に意図的に壁を作るようになった。
+    - item: 運動音痴・方向音痴
+      value: 身体的な不器用さがあり、彼の数少ない人間的な弱点。**小学校時代から顕著**であった。
+    - item: 衝動的な行動
+      value: 現在、過度なプレッシャーと心身の疲弊から、論理的な思考は完全に停止。**「ここから逃げ出したい」という本能的な欲求に駆られ**、会社への連絡なく最低限の荷物で自宅を飛び出した。彼の人生で初めての\*\*「計画外」の行動、無断欠勤\*\*による城崎温泉への旅の始まりである。
+  - item: 過去のエピソード
+    description: 喜一の現在のパーソナリティやキャリアは、幼少期から学生時代、そして社会人初期にかけての様々な経験によって形成されました。
+  - item: 人物関係
+    description: 加藤喜一は、その個性的な性格ゆえに、様々な人物と多様な関係性を築いてきました。彼の成長や価値観の形成には、周囲の人々の存在が不可欠でした。
+  biographies:
+  - id: 4309ef5e-dc8f-50ee-8c95-97a883a49c03
+    key: biography_001
+    period: {ref: temporal_node_001}
+    episode: 論理的思考と静かな探求心、そして初めての挫折の萌芽。喜一の人生の基盤は、**論理的思考力と静かな探求心**が芽生えた小学校時代に培われました。
+  - id: 9f547781-caf9-5fbd-bac8-ba877787e601
+    key: biography_002
+    period: {ref: temporal_node_001}
+    episode: '**静かな探求心と「なぜ？」の追求**: 大勢で外で騒ぐよりも、一人で静かに遊ぶことを好みました。おもちゃの車を分解して内部のギアの動きを観察したり、ブロックやパズルを緻密な計画に基づいて組み上げたりすることに、この上ない喜びと集中力を発揮しました。「なぜ、これはこう動くのか？」「もっと効率的な方法はないか？」――幼いながらに、彼は常に\*\*「なぜ？」を問い、論理的に考えること\*\*を自然と身につけていました。'
+  - id: af2c2fec-4140-58f3-8f18-38a66ec2febe
+    key: biography_003
+    period: {ref: temporal_node_001}
+    episode: '**運動・方向音痴の自覚**: しかし、生まれつきの**運動音痴**（球技は全く得意ではなく体育の時間は憂鬱）と**方向音痴**（地図を読んだり道順を覚えたりするのが苦手で迷子になりがち）という、論理では解決しがたい弱点がありました。この「非論理的な身体の不器用さ」は、彼にとって幼いながらも小さなコンプレックスとなりました。'
+  - id: 500af41c-ace4-50b7-9f5e-45e4fdd46b4d
+    key: biography_004
+    period: {ref: temporal_node_001}
+    episode: '**パソコンとの出会いと熱中**: 小学高学年になると、家庭に初めてパソコンが導入され、喜一は瞬く間にその魅力に取り憑かれました。インターネットの黎明期でしたが、彼は独学でパソコンの操作を覚え、簡単なプログラミングを試みるようになりました。デジタルな世界が持つ\*\*「明確な論理と予測可能な結果」\*\*は、彼の探求心を強く刺激し、時間を忘れて没頭するようになりました。'
+  - id: f3090b95-3ba0-53fc-b792-f8090525a5fc
+    key: biography_005
+    period: {ref: temporal_node_001}
+    episode: '**佐々木親子との出会いと絆**: 小学校に上がる直前、隣に引っ越してきた佐々木親子と出会います。喜一の**唯一の親友となる佐々木翼**は、喜一とは対照的な明るく活発な性格ですが、喜一のコンピュータへの純粋な情熱を理解し、その才能を素直に尊敬していました。喜一の運動音痴や方向音痴な面も受け入れ、助けてくれました。翼の母親である**佐々木和子**は、喜一にとって**第二の母親**のような存在で、彼の本質を理解し、無条件に受け入れてくれる温かい場所でした。'
+    involved_relationships:
+    - {ref: relationship_003}
+    - {ref: relationship_004}
+  - id: 7a02da37-cd9a-5191-bc02-d4179e19bfae
+    key: biography_006
+    period: {ref: temporal_node_001}
+    episode: '**初めての片思いと完璧主義の萌芽**: 小学高学年で、1学年下の**宮沢陽菜**に初めての片思いを経験します。彼女の天真爛漫な笑顔と優しさに惹かれましたが、内向的な喜一は直接話しかける勇気が持てず、遠くから見つめるだけでした。彼女に振り向いてもらうために、無意識のうちに\*\*「自分が完璧であれば、きっと彼女も振り向いてくれる」\*\*と考えるようになります。'
+    involved_relationships:
+    - {ref: relationship_005}
+  - id: 8f459f8f-3577-54ca-9530-89d582a4e303
+    key: biography_007
+    period: {ref: temporal_node_001}
+    episode: 小学校6年生のときに、祖母から誕生日プレゼントに「**東海道中膝栗毛**」の子ども用の漫画をプレゼントしてもらった。そのときに、**先祖が東海道中膝栗毛の喜多八で、喜一が喜多八の子孫**であることが告げられ、喜一は目を輝かせながら、それを本当に信じることに。ただし、真面目な祖母の表情とは裏腹に、両親や祖父は、少し冷ややかに見ながら「また始まったよ…」という感じだった。
+  - id: cb87a78a-4fa0-5aae-9e5d-a79e6e9f2181
+    key: biography_008
+    period: {ref: temporal_node_002}
+    episode: 才能の開花と感情の排斥、性格の決定的な転換期。小学校時代の萌芽が、より具体的な形になり、現在の喜一の性格を決定づけたのが中学校時代です。
+  - id: 81a5bf46-6363-5340-8bc1-5b82ba150c40
+    key: biography_009
+    period: {ref: temporal_node_002}
+    episode: '**コンピュータへの熱中と人生最初の大きな喪失感**: コンピュータ部でプログラミングに夢中になり、その技術力は著しく向上しましたが、他の科目の成績が急落します。これを危惧した**教育熱心な両親（特に父）に、高校進学までパソコンを強制的に没収されます**。これは喜一にとって**人生で初めて経験する大きな喪失感と絶望**であり、**「完璧でなければ大切なものを失う」という強迫観念**の萌芽となりました。'
+  - id: cdb50f83-604e-5208-b27f-7836fb327a80
+    key: biography_010
+    period: {ref: temporal_node_002}
+    episode: '**初恋の挫折と感情の排斥**: 小学校からの片思いであった**宮沢陽菜**に彼氏ができたという知らせは、喜一の心に深い傷を残します。自分の努力や才能が彼女の心を動かすには至らなかった現実に直面し、彼は\*\*「感情は、非合理で無駄なものだ」「恋愛は、努力しても報われない、意味のない行為だ」と結論付け、二度と恋愛をしないと心に誓います\*\*。この出来事が、彼の現在の\*\*「感情を排斥し、論理と効率を最優先する」\*\*性格の決定的な転換点であり、自己防衛のために他者に壁を作るようになりました。'
+    involved_relationships:
+    - {ref: relationship_006}
+  - id: 28643ee2-ad82-5f90-a933-06592574f8a9
+    key: biography_011
+    period: {ref: temporal_node_002}
+    episode: '**唯一の理解者である佐々木親子の存在**: パソコンを没収され、失恋で深い絶望に陥った喜一のそばに、**唯一寄り添ってくれたのが親友の佐々木翼と、その母親である和子さん**でした。和子さんは、喜一の深い悲しみや挫折を真正面から受け止め、温かいおやつを出して励ましてくれました。喜一の両親の圧力により、佐々木家でコンピュータに触れることはできなくなりますが、佐々木親子は喜一にとって、最も辛い時期に無条件で寄り添ってくれた、かけがえのない存在であり続けました。'
+    involved_relationships:
+    - {ref: relationship_003}
+    - {ref: relationship_004}
+  - id: 712004ec-7524-5df4-8a0f-2fc0ff01d9fc
+    key: biography_012
+    period: {ref: temporal_node_003}
+    episode: 人生の絶頂期と肥大したプライド。地域有数の難関進学校での高校時代は、喜一の人生において\*\*学力と自信の「絶頂期」\*\*でした。
+  - id: 3af202dc-c3a1-52a6-be47-8f9eefc3448a
+    key: biography_013
+    period: {ref: temporal_node_003}
+    episode: '**学年トップの「スーパーエリート」**: 学年トップの成績を維持し、教員や同級生から「スーパーエリート」として一目置かれ、後輩からも慕われる存在でした。'
+  - id: 33b0cf7f-6702-576a-83e7-7e71a61acf32
+    key: biography_014
+    period: {ref: temporal_node_003}
+    episode: '**異性からの高い評価と恋愛への無関心**: この頃の喜一は、**本人が気づかないだけで、異性からも非常にモテる存在**でした。彼の知性やクールな雰囲気、そして常に完璧な成績を収める姿に惹かれる女子生徒は多く、**斉藤恵**のような密かな好意を抱く生徒もいました。しかし、喜一は恋愛には全く関心がなく、「学業の邪魔」「時間の無駄」と、告白を全て論理的に、そして無感情に断っていました。'
+    involved_relationships:
+    - {ref: relationship_012}
+  - id: 46dcb2cd-8745-5535-8514-6e814b6893a0
+    key: biography_015
+    period: {ref: temporal_node_003}
+    episode: '**「天狗」となった自信**: まさに\*\*「天狗」**になっており、自分の能力に絶大な自信を持っていました。教員陣からは**山崎浩司\*\*（担任・数学教師）のように才能を高く評価され、難関大学への挑戦を強く後押しされました。しかし、コンピュータ部顧問の**林田悟**だけは、喜一の人間的な弱み、肥大したプライド、周囲への配慮のなさを見抜いており、「技術は人を助けるためにある」「人とのコミュニケーションもプログラム以上に複雑で面白い」と度々忠告しましたが、当時の傲慢な喜一の耳には全く届きませんでした。'
+    involved_relationships:
+    - {ref: relationship_007}
+    - {ref: relationship_008}
+  - id: d41f641c-f7de-5c91-ac89-aad41688d63e
+    key: biography_016
+    period: {ref: temporal_node_003}
+    episode: 日本史の授業で**「東海道中膝栗毛」**が登場し、かつて、**祖母から聞いた「喜多八が先祖」という話を思い出す**。しかし、周囲からバカにされたくないため、心の中にひっそりとしまい込むことに…。
+  - id: 803c9f50-118c-557e-8a9a-14364d0897d7
+    key: biography_017
+    period: {ref: temporal_node_004}
+    episode: 三度の失敗と恋愛の終焉、そして深いコンプレックス。高校卒業後、喜一は旧帝大クラスの難関大学を第一志望に据え、三度の受験に挑みますが、全て失敗に終わります。
+  - id: ef5b3b79-c4e9-5ee5-8591-d915a5ca8b6b
+    key: biography_018
+    period: {ref: temporal_node_004}
+    episode: |-
+      **度重なる挫折**:
+        * **一回目の失敗（現役）**：体調不良によるセンター試験での集中力欠如とケアレスミス。
+        * **二回目の失敗（一浪）**：万全の準備をしたにも関わらず、まさかの**迷子による試験会場遅刻**。この時、予備校の仲間である**渡辺遥**（喜一より1歳年下の一浪）の前で、彼は**初めて人間の弱みを露呈し、取り乱しました**。
+        * **三回目の失敗（二浪）**：三度目の正直をかけた本番で、**解答欄のずれ**という信じられないケアレスミス。
+    involved_relationships:
+    - {ref: relationship_014}
+  - id: b440fd2d-4743-5a12-8f1b-4094e55e5312
+    key: biography_019
+    period: {ref: temporal_node_004}
+    episode: '**父親からの決定的な言葉**: 三度目の失敗後、父親の**加藤誠一**から\*\*「もうこれ以上浪人させる金も意味もない」**と、喜一の夢を打ち砕く決定的な言葉を突きつけられます。その言葉は、喜一にとって父親からの**「見捨てられた」という絶望感**に繋がり、彼の**学歴コンプレックスを決定的なもの\*\*としました。滑り止めの私立大学へ不本意ながら進学することになります。'
+    involved_relationships:
+    - {ref: relationship_001}
+  - id: bcbc4168-3c6a-5e8f-adb6-bd8996b94dfe
+    key: biography_020
+    period: {ref: temporal_node_004}
+    episode: '**恋愛感情の終焉**: 二浪目の時、喜一に好意を抱き、彼もまんざらではなかった**渡辺遥**との関係は、彼が自身の醜態と失敗への羞恥心から、自ら彼女との距離を取り始めたことで、結局交際へと発展することなく終わりました。この経験が、彼が感情を完全に閉ざし、恋愛を遠ざける決定的な理由の一つとなります。予備校のチューターである**坂本慎吾**は、喜一の数少ない理解者で、精神面のバランスの重要性を諭しましたが、当時の喜一には届きませんでした。'
+    involved_relationships:
+    - {ref: relationship_014}
+    - {ref: relationship_013}
+  - id: 41c762b2-b18a-5015-a6ff-9521e21d0df4
+    key: biography_021
+    period: {ref: temporal_node_005}
+    episode: 不本意な選択と孤独な勉学。二浪の末、不本意な私立大学の情報科学部に入学した喜一にとって、大学生活は深い挫折感と屈辱感に満ちたものでした。
+  - id: 3e534845-3991-54ce-9da1-118663abb2a4
+    key: biography_022
+    period: {ref: temporal_node_005}
+    episode: '**孤独な勉学と教授からの評価**: 「自分はもっと高いレベルにいるべき人間だ」というプライドから、現役入学の同級生（彼より2歳年下）をどこか見下し、積極的に友人を作ろうとはしませんでした。結果、彼の大学生活は**友人が全くいない孤独な勉学の日々**となり、ひたすらプログラミングと研究に没頭しました。ゼミの教授である**村田隆**は、喜一の論理的思考力、プログラミングスキル、真面目さを高く評価し、「数少ない光る原石」として可愛がり、学会発表の機会を与えるなど、彼を特別扱いしていました。'
+    involved_relationships:
+    - {ref: relationship_015}
+  - id: c99546dd-39da-56df-96ef-82d401bf3d1e
+    key: biography_023
+    period: {ref: temporal_node_005}
+    episode: '**同級生からの反感**: しかし、その完璧主義と教授からの特別扱いは、ゼミ生の**小島雄介、田中竜也、鈴木恵介**といった同級生からの嫉妬や不満を買うことになります。'
+    involved_relationships:
+    - {ref: relationship_016}
+    - {ref: relationship_017}
+    - {ref: relationship_018}
+  - id: dbd4c135-010b-5cf9-83f0-884e34fb14a3
+    key: biography_024
+    period: {ref: temporal_node_005}
+    episode: '**恋愛への無関心継続**: この時期も、喜一同い年（現役入学のため2歳年下）の**桜井菜々子**という明るく真面目な同級生が彼に密かな好意を抱き、さりげなく気遣ってくれましたが、喜一は彼女の好意に全く気づくことなく、ごく普通の学術的交流としか捉えていませんでした。'
+    involved_relationships:
+    - {ref: relationship_019}
+  - id: ee9cbed9-494f-5c70-a275-5f1134c0cb7d
+    key: biography_025
+    period: {ref: temporal_node_006}
+    episode: 高まるプレッシャーと衝動的な逃避行。大手IT企業でシステムエンジニアとして働く喜一は、その論理的思考力と卓越した技術力で高い評価を得ています。
+  - id: dd6e2ab3-ab57-5694-948c-5d4833475d7a
+    key: biography_026
+    period: {ref: temporal_node_006}
+    episode: '**過度のプレッシャーと心身の疲弊**: 彼の高評価と信頼が、彼を徐々に追い詰めています。連日の深夜残業と休日出勤、システムトラブル対応に追われる日々で、心身ともに休まる暇は一切ありません。'
+  - id: 7221f88b-cbb4-55d4-a34b-b90da84699d5
+    key: biography_027
+    period: {ref: temporal_node_006}
+    episode: '**学歴コンプレックスの刺激**: 追い打ちをかけているのは、彼の**根深い学歴コンプレックス**です。二浪しても入れなかった旧帝大出身者や有名私立大学出身の優秀な同僚たち、特に年下ながら最重要プロジェクトのリーダーを務める超難関大学出身の部下からの無自覚な嫌味は、彼の劣等感を刺激し、精神的な疲弊に拍車をかけています。'
+  - id: cc2900f5-1dee-5c1b-971e-a44894231ece
+    key: biography_028
+    period: {ref: temporal_node_006}
+    episode: '**衝動的な無断欠勤**: 生真面目な彼は、自身の苦しみを誰にも打ち明けず、完璧を装い続けました。しかし、食欲不振、慢性的な頭痛、集中力の著しい低下、そして何よりも「朝、ベッドから起き上がれない」という症状が顕著になります。そしてある平日の早朝、論理的な思考は完全に停止し、ただ\*\*「ここから逃げ出したい」という本能的な欲求に駆られ\*\*、会社に連絡することなく最低限の荷物で自宅を飛び出して、東京駅に向かいます。そして、そこで偶然にも「みどりの窓口」で見かけた、城崎温泉のパンフレットを見て、衝動的に城崎行きの切符を買います。彼の人生で初めての\*\*「計画外」の行動、無断欠勤\*\*による城崎温泉への旅の始まりです。'
+- id: 5a85b263-2065-5eb1-a114-0ea05a18d27e
+  key: character_002
+  name: 加藤 誠一
+  reading: かとう せいいち
+  characteristics:
+  - item: 人物像
+    description: 厳格で保守的な「昭和の父親」。地方の国立大学を卒業後、大手製造業で努力と実力で管理職の地位を築き上げたため、**学歴と努力が人生において最も重要である**という強い信念を持っています。感情論を嫌い、**論理的な思考と具体的な結果**を何よりも重視します。
+  - item: 先祖の話について
+    description: '**先祖が東海道中膝栗毛の喜多八という話は全く信じていない**し、本当にそうだったら、良い笑いものであるとおもっていて、**一種の恥**だと思っています。'
+- id: 98fc4a7f-b3e1-531b-bf10-5d09a0ba21d5
+  key: character_003
+  name: 加藤 恵子
+  reading: かとう けいこ
+  characteristics:
+  - item: 人物像
+    description: 心配性。専業主婦です。自身は高学歴ではありません。
+  - item: 先祖の話について
+    description: 先祖が東海道中膝栗毛の喜多八の先祖という話は、単なるネタとしか考えていません。
+- id: 7546badc-a16a-5a1a-92db-d7aeded94e63
+  key: character_004
+  name: 佐々木 翼
+  reading: ささき つばさ
+  characteristics:
+  - item: 人物像
+    description: 明るく活発な性格。
+- id: bf33591f-2098-5272-9822-0a5f0dee342f
+  key: character_005
+  name: 佐々木 和子
+  reading: ささき かずこ
+  characteristics:
+  - item: 人物像
+    description: 朗らかで包容力のある女性。
+- id: dbdb8129-9a93-5ba6-be13-0b9d8873841c
+  key: character_006
+  name: 宮沢 陽菜
+  reading: みやざわ ひな
+  characteristics:
+  - item: 人物像
+    description: 天真爛漫な笑顔と優しさを持つ。
+- id: f04b029b-b1b6-511c-adfe-a4236cd0996b
+  key: character_007
+  name: 山崎 浩司
+  reading: やまさき こうじ
+  age: 40代後半
+  characteristics:
+  - item: 人物像
+    description: 数学教師。
+- id: 635377ad-3aee-50a9-8b35-2f396d34f146
+  key: character_008
+  name: 林田 悟
+  reading: はやしだ さとる
+  age: 30代前半
+  characteristics: []
+- id: e1aa6ebd-58bb-50a9-aa22-128fc23b45a7
+  key: character_009
+  name: 中野 亮太
+  reading: なかの りょうた
+- id: 97c455eb-7027-5476-b662-377cbe6966a2
+  key: character_010
+  name: 大野 拓也
+  reading: おおの たくや
+  characteristics:
+  - item: 人物像
+    description: 学年2位の秀才。
+- id: b70be8c1-3f40-5eee-b8c9-1915720b042f
+  key: character_011
+  name: 高橋 優太
+  reading: たかはし ゆうた
+- id: bfe687d6-11a3-54a5-b53d-8a04e3635513
+  key: character_012
+  name: 斉藤 恵
+  reading: さいとう めぐみ
+- id: defe8ef6-94f1-5f87-a9a1-ac51b398a017
+  key: character_013
+  name: 坂本 慎吾
+  reading: さかもと しんご
+  age: 20代後半
+  characteristics:
+  - item: 人物像
+    description: 自身も二浪経験者。
+- id: 48d32de1-4ba7-5857-b9af-d4db02b521ed
+  key: character_014
+  name: 渡辺 遥
+  reading: わたなべ はるか
+  age: 19歳
+  characteristics: []
+- id: c4c8c4fa-1da3-5a40-8b49-a66bffbcad3e
+  key: character_015
+  name: 村田 隆
+  reading: むらた たかし
+  age: 50代後半
+  characteristics:
+  - item: 人物像
+    description: 厳格なベテラン教授。レベルの低い学生には容赦なく不満を口にする。
+- id: ab87f8bd-7e13-5595-9f1f-b3fed91f4b3b
+  key: character_016
+  name: 小島 雄介
+  reading: こじま ゆうすけ
+  age: 20歳
+  characteristics:
+  - item: 人物像
+    description: 現役入学。
+- id: 33c158dc-a3e8-5cd1-88aa-77eebd6276b7
+  key: character_017
+  name: 田中 竜也
+  reading: たなか たつや
+  age: 20歳
+  characteristics:
+  - item: 人物像
+    description: 現役入学。
+- id: 9e6e750e-2dde-59f5-b429-e7efe41945c3
+  key: character_018
+  name: 鈴木 恵介
+  reading: すずき けいすけ
+  age: 20歳
+  characteristics:
+  - item: 人物像
+    description: 現役入学。表面的には穏やか。
+- id: 343baa73-3d75-58fb-9562-0da55098c963
+  key: character_019
+  name: 桜井 菜々子
+  reading: さくらい ななこ
+  age: 27歳
+  characteristics:
+  - item: 人物像
+    description: 現役入学。明るく真面目。
+- id: 9164d18e-46f7-5373-ac26-d059da1623be
+  key: character_020
+  name: 岸田 悠斗
+  reading: きしだ ゆうと
+  age: 25歳
+  characteristics:
+  - item: 人物像
+    description: 極めて優秀なプログラマーで、常に無表情で口数も少ないドライな人物。
+- id: 0f4733e0-6921-5b90-b676-67f90ed7784a
+  key: character_021
+  name: 野村 浩一
+  reading: のむら こういち
+  age: 35歳
+  characteristics:
+  - item: 人物像
+    description: 人当たりが良くおしゃべり好きですが、悪意なく相手のデリケートな部分に触れてしまう無自覚な嫌味を言う癖があります。
+- id: ceb6e30c-fe4f-54e4-81e3-349902adc3d7
+  key: character_022
+  name: 沢口 美緒
+  reading: さわぐち みお
+  age: 27歳
+  characteristics:
+  - item: 人物像
+    description: 旧帝大出身の才色兼備で、要領が良く仕事もできる冷静沈着な女性。
+character_groups:
+- id: 32681b00-4b1b-5bb5-9f19-908323ce50f1
+  key: character_group_001
+  name: 加藤家
+  kind: 家族
+  members:
+  - {ref: character_001}
+  - {ref: character_002}
+  - {ref: character_003}
+- id: dea33c9c-a093-5a5d-a46e-a9e9de9e4b08
+  key: character_group_002
+  name: 都内大手IT企業
+  kind: 職場
+  members:
+  - {ref: character_001}
+  - {ref: character_020}
+  - {ref: character_021}
+  - {ref: character_022}
+  description: 喜一の現在の職場
+- id: fcf73291-6cc7-5c7b-9201-169f2da117da
+  key: character_group_003
+  name: 佐々木親子
+  kind: 家族
+  members:
+  - {ref: character_004}
+  - {ref: character_005}
+- id: 99a4c95b-87d1-5ebf-9b0f-1b156f85b665
+  key: character_group_004
+  name: 喜一を不満に思うゼミ生3人組
+  kind: ゼミ
+  members:
+  - {ref: character_016}
+  - {ref: character_017}
+  - {ref: character_018}
+relationships:
+- id: 3e2386d2-c8c7-54be-b2df-85344a1a91bb
+  key: relationship_001
+  source: {ref: character_001}
+  target: {ref: character_002}
+  label: 父親
+  description: 一人息子の喜一に対し、幼い頃から**非常に厳格な教育方針**を貫き、学業においては一切の妥協を許しませんでした。喜一の三度にわたる受験失敗時には、\*\*「もうこれ以上浪人させる金も意味もない」\*\*と、彼の夢を打ち砕く決定的な言葉を突きつけ、**喜一の学歴コンプレックスを決定的なものとしました**。喜一が大手IT企業に就職してからは、表面的には評価していますが、心の奥底では未だに第一志望に進学できなかったことを引きずっている節があります。喜一は今でも父親の期待に応えられているかというプレッシャーを感じ、完璧な自分を演じようとします。
+- id: c9067608-3fa6-57aa-9422-b6abd6dbbba9
+  key: relationship_002
+  source: {ref: character_001}
+  target: {ref: character_003}
+  label: 母親
+  description: 夫である誠一の厳格な教育方針を**全面的に支持し、盲目的に従っていました**。夫の教育に対する考え方を「子供のため」と信じて疑いませんでした。喜一が感情的に落ち込んでいる時も、夫に倣い、感情的な慰めよりも「きちんと勉強すれば大丈夫」「頑張れば報われる」といった**論理的な励まし**をすることが多かったです。これが喜一の感情の抑圧に繋がりました。佐々木親子が喜一を温かく受け入れ、コンピュータに触れさせていたことを知ると、誠一の意向を受けて「息子を甘やかさないでほしい」と申し入れました。これは、喜一への愛情というよりは、夫の期待を裏切ることへの恐れと、息子の教育を完璧に遂行しようとする責任感から来る行動でした。喜一が社会人になってからは彼の体調を気遣う言葉をかけることもありますが、喜一は彼女の言葉に心からの安らぎを得ることはありません。
+- id: e77b53ec-5092-5365-aeee-d08dec2f7621
+  key: relationship_003
+  source: {ref: character_001}
+  target: {ref: character_004}
+  label: 幼馴染
+  period: {ref: temporal_node_001}
+  description: 喜一の隣の家に住む幼馴染。喜一とは対照的な性格ですが、喜一のコンピュータへの純粋な情熱を理解し、「すげぇな！」と素直に尊敬していました。喜一の**運動音痴や方向音痴**な面もからかうことなく受け入れ、助けてくれました。互いの足りない部分を補い合い、全く正反対の性格にも関わらず、妙にお互いの波長が合う**かけがえのない親友**でした。喜一がパソコンを没収された時も、そばに寄り添い、共に悲しみを分かち合いました。喜一が感情を閉ざし始めてからも、彼が唯一、飾らない自分を見せられる存在です。**喜一が東海道中膝栗毛の喜多八の子孫**であるという話を知る唯一の友人。
+- id: b871d3a9-db55-55c8-a6d0-0c34440cf3cb
+  key: relationship_004
+  source: {ref: character_001}
+  target: {ref: character_005}
+  label: 翼の母親
+  period: {ref: temporal_node_001}
+  description: 喜一の**第二の母親**のような存在。喜一が幼い頃から佐々木家に出入りしていたため、彼の本質的な優しさやコンピュータへの情熱を誰よりも理解していました。喜一がパソコンを没収され落ち込んでいた際も、温かいおやつを出して励まし、彼の挫折や苦悩を真正面から受け止めてくれる**唯一の大人**でした。喜一の実の両親の圧力に屈してコンピュータに触れることはできなくなりますが、現在も喜一のことを温かく見守り、気遣ってくれています。喜一にとって、最も辛かった時期に無条件で寄り添ってくれた、かけがえのない存在です。
+- id: e7a794d1-a0bb-5e8e-8fb3-7b93fc53ef4b
+  key: relationship_005
+  source: {ref: character_001}
+  target: {ref: character_006}
+  label: 片思いの女性
+  period: {ref: temporal_node_001}
+  description: 喜一より1歳年下の後輩。彼女の笑顔と優しさに惹かれ、喜一の初恋の相手となります。しかし、内向的な喜一は直接話しかける勇気がなく、遠くから見つめるだけでした。彼女に振り向いてもらうため、無意識のうちに\*\*「自分が完璧であれば、きっと彼女も振り向いてくれる」\*\*と考えるようになります。
+- id: ff016944-a32c-5f60-b704-1ffec3068ec4
+  key: relationship_006
+  source: {ref: character_001}
+  target: {ref: character_006}
+  label: 片思いの女性
+  period: {ref: temporal_node_002}
+  description: 中学校時代に、彼女に彼氏ができたことで、喜一の初恋は失恋に終わります。この挫折が、喜一が恋愛を否定し、感情を排斥する現在の性格を形成する**決定的なきっかけ**となりました。
+- id: 99565be2-02e7-5c6c-b3e0-646464891338
+  key: relationship_007
+  source: {ref: character_001}
+  target: {ref: character_007}
+  label: 担当教師
+  period: {ref: temporal_node_003}
+  description: 担任。喜一の突出した才能を誰よりも高く評価し、難関大学への挑戦を強く後押しした、喜一の自尊心を高める要因でした。
+- id: 98591a2d-a2d0-52f4-bd47-e2c34ab47c9d
+  key: relationship_008
+  source: {ref: character_001}
+  target: {ref: character_008}
+  label: コンピュータ部顧問
+  period: {ref: temporal_node_003}
+  description: 喜一の技術力を評価しつつも、彼唯一、喜一の人間的な弱み、肥大したプライド、周囲への配慮のなさに気づいていました。\*\*「技術は人を助けるためにある」「人とのコミュニケーションもプログラム以上に複雑で面白い」\*\*と度々忠告しましたが、当時の傲慢な喜一の耳には全く届きませんでした。
+- id: a222617f-a849-55f2-a69f-3690aed1dd06
+  key: relationship_009
+  source: {ref: character_001}
+  target: {ref: character_009}
+  label: 友人（と喜一が認識していた人物）
+  period: {ref: temporal_node_003}
+  description: 喜一同い年。クラスで最も喜一と会話を交わす機会が多かった男子生徒。喜一の才能を素直に尊敬し、彼なりの距離感で接していました。喜一は中野を「会話の相手」と認識していましたが、特別な「友人」という意識はありませんでした。
+- id: c03bda58-c9f4-526e-b763-9290247315f6
+  key: relationship_010
+  source: {ref: character_001}
+  target: {ref: character_010}
+  label: 内心嫉妬を抱く同級生
+  period: {ref: temporal_node_003}
+  description: 喜一同い年。喜一に勝てないことに強い劣等感と嫉妬を抱いていました。
+- id: b9832da4-abb8-5968-885d-8ca1742c9a18
+  key: relationship_011
+  source: {ref: character_001}
+  target: {ref: character_011}
+  label: コンピュータ部後輩
+  period: {ref: temporal_node_003}
+  description: 喜一の1歳年下。喜一の高度な技術に心酔し、彼を絶対的な目標としていました。
+- id: d0f9f07f-95a9-5a8c-aff7-ec1e53c9e014
+  key: relationship_012
+  source: {ref: character_001}
+  target: {ref: character_012}
+  label: 密かな好意を抱く女子生徒
+  period: {ref: temporal_node_003}
+  description: 喜一同い年。喜一に密かに憧れていましたが、喜一は恋愛には全く関心がなく、「学業の邪魔」「時間の無駄」と、告白を全て論理的に、そして無感情に断っていました。**高校生以降ずっとモテていた喜一を象徴する存在**の一人。
+- id: 2da96360-b7a9-546d-ba0a-e34c7d78954b
+  key: relationship_013
+  source: {ref: character_001}
+  target: {ref: character_013}
+  label: 予備校のチューター
+  period: {ref: temporal_node_004}
+  description: 喜一の数少ない理解者。喜一の完璧主義を理解しつつも、精神面のバランスの重要性を諭しましたが、その声は当時の喜一には届きませんでした。
+- id: 31542a96-981c-50e6-9697-b00fe2059b8d
+  key: relationship_014
+  source: {ref: character_001}
+  target: {ref: character_014}
+  label: 片思いの女性
+  period: {ref: temporal_node_004}
+  description: 喜一より1歳年下。同じく一浪で、喜一と同じクラスで自習室でも隣の席になることが多かったため、自然と会話を交わすようになりました。喜一の知性と真面目さに惹かれ、彼に好意を抱いていました。喜一もまんざらではありませんでしたが、二度目の受験失敗で彼が**人間の弱み（取り乱す姿）を露呈した**ことで、自分の醜態を見せてしまったことへの羞恥心から、自ら彼女との距離を取り始め、結局交際へと発展することなく関係は終わりました。
+- id: 3a3c7630-3d7f-56d7-84c7-f153cf7ceee7
+  key: relationship_015
+  source: {ref: character_001}
+  target: {ref: character_015}
+  label: ゼミの教授
+  period: {ref: temporal_node_005}
+  description: 喜一の論理的思考力、プログラミングスキル、真面目さに気づき、**「数少ない光る原石」として可愛がり、学会発表の機会を与えるなど、彼を高く評価していました**。
+- id: cab4fab9-3322-5244-8c53-96a920ffa4e0
+  key: relationship_016
+  source: {ref: character_001}
+  target: {ref: character_016}
+  label: 喜一を不満に思うゼミ生3人組
+  period: {ref: temporal_node_005}
+  description: 喜一より2歳年下。喜一の完璧主義と教授からの特別扱いに強い嫉妬と不公平感を抱き、陰で「人間性が終わってる」「プライドだけ一流大学並み」と不満を漏らしていました。
+- id: e155de76-bebf-5994-a038-09402176ee71
+  key: relationship_017
+  source: {ref: character_001}
+  target: {ref: character_017}
+  label: 喜一を不満に思うゼミ生3人組
+  period: {ref: temporal_node_005}
+  description: 喜一より2歳年下。小島に同調し、喜一の「冷たい」部分を批判していました。
+- id: 5c616d28-3901-531d-ae60-6924b9221bb5
+  key: relationship_018
+  source: {ref: character_001}
+  target: {ref: character_018}
+  label: 喜一を不満に思うゼミ生3人組
+  period: {ref: temporal_node_005}
+  description: 喜一より2歳年下。喜一の完璧主義に過度なプレッシャーを感じ、内心不満を抱いていました。
+- id: fe971034-c3d3-580a-a242-e79adb01a6d1
+  key: relationship_019
+  source: {ref: character_001}
+  target: {ref: character_019}
+  label: 片思いの女性
+  period: {ref: temporal_node_005}
+  description: 喜一同い年だが2歳年下の同級生で、喜一の近寄りがたい雰囲気の裏にある純粋な探求心と情熱に惹かれ、彼に密かな片思いを抱いていました。さりげなく声をかけたり、徹夜明けに温かい缶コーヒーを差し入れたりしましたが、**喜一は彼女の好意に全く気づくことなく**、ごく普通の学術的交流としか捉えていませんでした。**この時期も喜一がモテていたことを示す存在**の一人。
+- id: 5145350f-911b-5ee5-9e02-35382fdc231b
+  key: relationship_020
+  source: {ref: character_001}
+  target: {ref: character_020}
+  label: 後輩
+  period: {ref: temporal_node_006}
+  description: 喜一の2歳年下。表向きはそっけない態度を取りますが、内心では喜一の技術力と仕事への真摯な姿勢を深く尊敬し、信頼しています。喜一が追い詰められている際も、言わずとも作業を手伝うなど、陰でサポートしていました。喜一の無断欠勤に際しては、誰よりも静かに、しかし深く心配しています。
+- id: 3e432b41-e323-5445-b129-bc1b8e1b4a77
+  key: relationship_021
+  source: {ref: character_001}
+  target: {ref: character_021}
+  label: 先輩
+  period: {ref: temporal_node_006}
+  description: 喜一の8歳年上。喜一の真面目さと仕事への没頭ぶりを高く評価し、真剣に期待を寄せる一方で、無自覚に喜一の学歴コンプレックスを刺激する発言をしていました。喜一の無断欠勤には誰よりも驚き、心配しています。
+- id: 570a5ef6-8061-5cbc-8b49-666d1c0b8fb7
+  key: relationship_022
+  source: {ref: character_001}
+  target: {ref: character_022}
+  label: 同期
+  period: {ref: temporal_node_006}
+  description: 喜一と同い年。喜一の学歴コンプレックスや不器用な真面目さを察し、さりげなくフォローしてきました。彼の圧倒的な技術力とプロ意識を尊敬しており、わずかながらも恋愛感情の一歩手前のような特別な感情を抱いています。喜一の無断欠勤には深く心を痛め、彼を案じています。**現在の喜一がモテていることを示す存在**の一人。
+- id: 2b7fc549-e272-5670-b181-c7e662f54207
+  key: relationship_023
+  source: {ref: character_001}
+  target: {ref: character_023}
+  label: 旅の相棒（後に）
+  period: {ref: temporal_node_006}
+  description: 城崎温泉で、無理な格好で自撮りをしようとして、危うく、橋から落ちかける。周囲の人々は心配そうに見守ったり、冷ややかに見ていたり、爆笑していたり…このとき、偶然にも、同じように、隣の橋で無理な姿勢で自撮りをしようとしていて、同じ用に川に落ちかえていた水野弥千代と目が合って、二人は話をすることに。そこで、名刺を交換をして、名前を見た瞬間に、思わず「野次さん…？」と呟いたところから「明治の弥次喜多道中」の物語はスタートする。
+  form_of_address: キミ
+  tone: タメ口

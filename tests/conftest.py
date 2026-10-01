@@ -6,7 +6,6 @@ CLAUDE.md「厳守ルール」に従い、
 - ユーザーの実レジストリ(~/.aidc/projects.yaml)とAPIキーの保存先(~/.aidc/secrets.env)は
   絶対に触らない(isolated_registryでtmp_path配下に差し替える)
 - 検証用プロジェクトは`TEST_PROJECT_##`の命名規則に沿わせる
-- apps/sample_projectは読み取り専用のゴールデン入力として使う(書き換えない)
 """
 
 import os
@@ -20,7 +19,6 @@ from core.infra.store import project_registry_store, secret_env_store
 from core.service.process.edit.project_editor import create_project_files
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SAMPLE_PROJECT_DIR = os.path.join(REPO_ROOT, "apps", "sample_project")
 # 参考資料(論文のPDF・DOCX)のサンプル。QIDMから持ち込んだRAGのテストが使うが、AIDCには無い
 # (第三者の論文をリポジトリに入れないため)。無ければ、それを使うテストはskipする(docs/open_tasks.md)
 REFERENCE_SAMPLE_DIR = os.environ.get("AIDC_REFERENCE_SAMPLE_DIR", os.path.join(REPO_ROOT, "tests", "reference_samples"))
@@ -53,8 +51,3 @@ def project(tmp_path):
     project = create_project_files(str(root_dir), "TEST_PROJECT_00")
     project_registry_store.register_project(project.project_id, str(root_dir))
     return project
-
-
-@pytest.fixture
-def sample_project_dir():
-    return SAMPLE_PROJECT_DIR

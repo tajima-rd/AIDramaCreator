@@ -1,6 +1,7 @@
 # tests/core/test_model_definition_io.py
 """モデル定義YAML(core.infra.io.model_definition_reader・writer)の読み書き。tmp_pathの中だけで動く。"""
 
+import shutil
 from pathlib import Path
 
 import pytest
@@ -8,7 +9,9 @@ from pydantic import ValidationError
 
 from core.infra.io.model_definition_reader import (
     build_dramaturgy_from_yaml,
+    build_model_definition_from_yaml,
     read_dramaturgy,
+    read_model_definition,
 )
 from core.infra.io.model_definition_writer import (
     SPLIT_FILES,
@@ -18,7 +21,15 @@ from core.infra.io.model_definition_writer import (
     write_dramaturgy,
     write_split_dramaturgy,
 )
-from core.model.drama import Dialogue, Music, StringDateType, TemporalRelationKind
+from core.model.agent import Actor, Scriptwriter
+from core.model.drama import (
+    Dialogue,
+    Music,
+    SentenceEndingKind,
+    StringDateType,
+    TemporalRelationKind,
+    VoiceGender,
+)
 
 # 人が書く形(idを書かず、keyで参照する)。分割したときの各部分も、同じ入れ子の形の一部
 HEADER = """
@@ -46,8 +57,8 @@ dramaturgy:
   history:
     edges:
       - kind: before
-        source: childhood
-        target: now
+        source: {ref: childhood}
+        target: {ref: now}
 """
 
 LOCATIONS = """
@@ -61,34 +72,46 @@ locations:
 CHARACTERS = """
 relationships:
   - key: taro_father
-    source: taro
-    target: father
+    source: {ref: taro}
+    target: {ref: father}
     label: 親子
-    period: childhood
+    form_of_address: 父さん
+    tone: 敬語
+    period: {ref: childhood}
+characters:
+  - key: taro
+    name: 太郎
+    speech_style:
+      first_person: 僕
+      tone: 穏やか
+      endings:
+        - kind: normal
+          examples: [〜だ。, 〜だよ。]
+    characteristics:
+      - item: 仕事
+        features:
+          - item: 職業
+            value: 灯台守
+          - item: 灯台守
+            definition: 灯台の灯をともし、守る人
+      - item: 性格
+        description: 無口
+    biographies:
+      - period: {ref: childhood}
+        episode: 父と灯台に登った
+        involved_relationships: [{ref: taro_father}]
+  - key: father
+    name: 父
 dramaturgy:
-  characters:
-    - key: taro
-      name: 太郎
-      characteristics:
-        - item: 仕事
-          features:
-            - item: 職業
-              value: 灯台守
-            - item: 灯台守
-              definition: 灯台の灯をともし、守る人
-        - item: 性格
-          description: 無口
-      biographies:
-        - period: childhood
-          episode: 父と灯台に登った
-          involved_relationship: taro_father
-    - key: father
-      name: 父
+  characters: [{ref: taro}, {ref: father}]
+  relationships: [{ref: taro_father}]
   casts:
     - key: taro_voice
-      character: taro
-      provider: gemini
-      voice_name: Kore
+      character: {ref: taro}
+      performance:
+        title: Quiet Keeper
+        description: 口数は少ないが温かい
+        pace: ゆっくり
 """
 
 ACTS = """
@@ -99,18 +122,18 @@ dramaturgy:
       scenes:
         - key: night
           title: 灯台の夜
-          period: now
-          location: lighthouse
+          period: {ref: now}
+          location: {ref: lighthouse}
           script:
             lines:
               - key: l1
-                cast: taro_voice
+                cast: {ref: taro_voice}
                 text: 今夜も灯をともす。
           elements:
             - type: music
             - type: dialogue
-              line: l1
-              cast: taro_voice
+              line: {ref: l1}
+              cast: {ref: taro_voice}
               text: "[静かに] 今夜も灯をともす。"
               direction:
                 pace: ゆっくり
@@ -133,10 +156,36 @@ locations:
     longitude: 135.0
 relationships:
   - key: taro_father
-    source: taro
-    target: father
+    source: {ref: taro}
+    target: {ref: father}
     label: 親子
-    period: childhood
+    form_of_address: 父さん
+    tone: 敬語
+    period: {ref: childhood}
+characters:
+  - key: taro
+    name: 太郎
+    speech_style:
+      first_person: 僕
+      tone: 穏やか
+      endings:
+        - kind: normal
+          examples: [〜だ。, 〜だよ。]
+    characteristics:
+      - item: 仕事
+        features:
+          - item: 職業
+            value: 灯台守
+          - item: 灯台守
+            definition: 灯台の灯をともし、守る人
+      - item: 性格
+        description: 無口
+    biographies:
+      - period: {ref: childhood}
+        episode: 父と灯台に登った
+        involved_relationships: [{ref: taro_father}]
+  - key: father
+    name: 父
 dramaturgy:
   title: 港町の灯
   synopsis: 灯台守の家族の物語
@@ -146,55 +195,41 @@ dramaturgy:
     text: |
       観光の振興。
       港の歴史を伝える。
-  characters:
-    - key: taro
-      name: 太郎
-      characteristics:
-        - item: 仕事
-          features:
-            - item: 職業
-              value: 灯台守
-            - item: 灯台守
-              definition: 灯台の灯をともし、守る人
-        - item: 性格
-          description: 無口
-      biographies:
-        - period: childhood
-          episode: 父と灯台に登った
-          involved_relationship: taro_father
-    - key: father
-      name: 父
+  characters: [{ref: taro}, {ref: father}]
+  relationships: [{ref: taro_father}]
   casts:
     - key: taro_voice
-      character: taro
-      provider: gemini
-      voice_name: Kore
+      character: {ref: taro}
+      performance:
+        title: Quiet Keeper
+        description: 口数は少ないが温かい
+        pace: ゆっくり
   acts:
     - key: act1
       title: 第一幕
       scenes:
         - key: night
           title: 灯台の夜
-          period: now
-          location: lighthouse
+          period: {ref: now}
+          location: {ref: lighthouse}
           script:
             lines:
               - key: l1
-                cast: taro_voice
+                cast: {ref: taro_voice}
                 text: 今夜も灯をともす。
           elements:
             - type: music
             - type: dialogue
-              line: l1
-              cast: taro_voice
+              line: {ref: l1}
+              cast: {ref: taro_voice}
               text: "[静かに] 今夜も灯をともす。"
               direction:
                 pace: ゆっくり
   history:
     edges:
       - kind: before
-        source: childhood
-        target: now
+        source: {ref: childhood}
+        target: {ref: now}
 """
 
 
@@ -212,9 +247,16 @@ def test_build_from_keys_resolves_references():
     assert (personality.item, personality.description, personality.features) == ("性格", "無口", [])
     biography = taro.biographies[0]
     assert biography.period.label == "少年時代"
-    assert biography.involved_relationship.source is taro
-    assert biography.involved_relationship.target is father
-    assert biography.involved_relationship.period is biography.period
+    (involved,) = biography.involved_relationships
+    assert involved.source is taro and involved.target is father
+    assert involved.period is biography.period
+    assert (involved.form_of_address, involved.tone) == ("父さん", "敬語")
+    speech = taro.speech_style
+    assert (speech.first_person, speech.tone) == ("僕", "穏やか")
+    assert [(e.kind, e.examples) for e in speech.endings] == [
+        (SentenceEndingKind.NORMAL, ["〜だ。", "〜だよ。"])
+    ]
+    assert dramaturgy.casts[0].performance.pace == "ゆっくり"
     edge = dramaturgy.history.edges[0]
     assert edge.kind is TemporalRelationKind.BEFORE
     assert edge.source is biography.period
@@ -243,13 +285,13 @@ def test_single_file_round_trip_keeps_ids(tmp_path):
     restored = read_dramaturgy(path)
 
     assert restored.id == original.id
-    assert restored.characters[0].biographies[0].involved_relationship.id == (
-        original.characters[0].biographies[0].involved_relationship.id
+    assert restored.characters[0].biographies[0].involved_relationships[0].id == (
+        original.characters[0].biographies[0].involved_relationships[0].id
     )
     assert dramaturgy_to_spec(restored) == dramaturgy_to_spec(original)
     text = path.read_text(encoding="utf-8")
     assert "  premise:\n    text: |" in text  # 所有は入れ子。複数行はブロックの形
-    assert "\n  characters:\n" in text and "\n    biographies:\n" in text
+    assert "\ncharacters:\n" in text and "\n  biographies:\n" in text  # 人物は作品の外
 
 
 def test_split_files_round_trip(tmp_path):
@@ -283,8 +325,8 @@ dramaturgy:
           title: 夜明け
           elements:
             - type: dialogue
-              line: l2
-              cast: taro_voice
+              line: {ref: l2}
+              cast: {ref: taro_voice}
               text: 朝だ。
 """
 
@@ -297,7 +339,7 @@ dramaturgy:
           script:
             lines:
               - key: l2
-                cast: taro_voice
+                cast: {ref: taro_voice}
                 text: 朝だ。
 """
 
@@ -369,12 +411,31 @@ def test_same_value_in_two_documents_is_allowed():
 
 def test_list_sections_are_concatenated():
     more = """
+characters:
+  - key: mother
+    name: 母
 dramaturgy:
-  characters:
-    - name: 母
+  characters: [{ref: mother}]
 """
-    dramaturgy = build_dramaturgy_from_yaml(SINGLE, more)
-    assert [c.name for c in dramaturgy.characters] == ["太郎", "父", "母"]
+    definition = build_model_definition_from_yaml(SINGLE, more)
+    assert [c.name for c in definition.characters] == ["太郎", "父", "母"]
+    assert [c.name for c in definition.dramaturgy.characters] == ["太郎", "父", "母"]
+
+
+def test_characters_are_shared_not_owned():
+    # 人物・人物関係は作品の外にあり(持ち主はProject。今はModelDefinition)、作品は関わるものを参照で持つ
+    extra = """
+characters:
+  - key: stranger
+    name: 作品に関わらない人物
+"""
+    definition = build_model_definition_from_yaml(SINGLE, extra)
+    assert [c.name for c in definition.characters] == ["太郎", "父", "作品に関わらない人物"]
+    assert [c.name for c in definition.dramaturgy.characters] == ["太郎", "父"]
+    assert definition.dramaturgy.characters[0] is definition.characters[0]
+    assert definition.dramaturgy.relationships == definition.relationships
+    with pytest.raises(ValueError, match="nobody"):
+        build_dramaturgy_from_yaml(SINGLE, "dramaturgy:\n  characters: [{ref: nobody}]\n")
 
 
 def test_split_output_is_readable_per_file():
@@ -382,7 +443,7 @@ def test_split_output_is_readable_per_file():
     assert texts["dramaturgy.yaml"].startswith("protocol_version:")
     assert (
         "title: 港町の灯" in texts["dramaturgy.yaml"]
-        and "characters:" not in texts["dramaturgy.yaml"]
+        and "name: 太郎" not in texts["dramaturgy.yaml"]  # 作品は人物を参照するだけ
     )
     assert texts["casts.yaml"].startswith("dramaturgy:\n  casts:\n")  # 分けても入れ子の形
 
@@ -391,8 +452,8 @@ def test_split_output_is_readable_per_file():
     "extra, message",
     [
         ("dramaturgy:\n  title: 別の題\n", "dramaturgy.title"),
-        ("dramaturgy:\n  casts:\n    - character: nobody\n", "nobody"),
-        ("dramaturgy:\n  characters:\n    - key: taro\n      name: 二人目の太郎\n", "taro"),
+        ("dramaturgy:\n  casts:\n    - character: {ref: nobody}\n", "nobody"),
+        ("characters:\n  - key: taro\n    name: 二人目の太郎\n", "taro"),
     ],
 )
 def test_invalid_definitions_raise(extra, message):
@@ -402,7 +463,7 @@ def test_invalid_definitions_raise(extra, message):
 
 def test_unknown_field_and_missing_title_raise():
     with pytest.raises(ValidationError):
-        build_dramaturgy_from_yaml(SINGLE.replace("voice_name:", "voice:"))
+        build_dramaturgy_from_yaml(SINGLE.replace("title: Quiet Keeper", "titel: Quiet Keeper"))
     with pytest.raises(ValidationError):
         build_dramaturgy_from_yaml(CHARACTERS)
 
@@ -413,21 +474,50 @@ def test_split_refuses_directory_with_other_yaml(tmp_path):
         write_split_dramaturgy(build_dramaturgy_from_yaml(SINGLE), tmp_path)
 
 
-def test_written_yaml_refers_by_id_without_keys():
-    text = dramaturgy_to_yaml(build_dramaturgy_from_yaml(SINGLE))
-    assert "key:" not in text
+def test_written_yaml_has_id_and_key_and_refers_by_ref():
+    dramaturgy = build_dramaturgy_from_yaml(SINGLE)
+    spec = dramaturgy_to_spec(dramaturgy)
+    taro = spec["characters"][0]
+    cast = spec["dramaturgy"]["casts"][0]
+    line = spec["dramaturgy"]["acts"][0]["scenes"][0]["script"]["lines"][0]
+
+    # すべてのエンティティにidとkey(種類と通し番号)
+    assert (taro["id"], taro["key"]) == (dramaturgy.characters[0].id, "character_001")
+    assert taro["biographies"][0]["key"] == "biography_001"
+    assert line["key"] == "scene_001_line_001"
+    # 参照は {ref: key}(idでは書かない)
+    assert cast["character"] == {"ref": "character_001"}
+    assert line["cast"] == {"ref": "cast_001"}
+    assert "character: {ref: character_001}" in dramaturgy_to_yaml(dramaturgy)
 
 
-def test_sample_data_is_readable():
-    # apps/sample_data(apps/sample_projectの人物・プロットを変換した、分割方式のモデル定義YAML)。読むだけ
+def test_reference_by_id_is_not_accepted():
+    taro_id = build_dramaturgy_from_yaml(SINGLE).characters[0].id
+    with_ids = SINGLE.replace("  - key: taro\n", f"  - id: {taro_id}\n    key: taro\n", 1)
+    assert build_dramaturgy_from_yaml(with_ids).characters[0].id == taro_id  # idは保たれる
+    with pytest.raises(ValueError, match="key"):
+        build_dramaturgy_from_yaml(
+            with_ids.replace("character: {ref: taro}", f"character: {{ref: {taro_id}}}", 1)
+        )
+
+
+def test_sample_data_is_readable(tmp_path):
+    # apps/sample_data(分割方式のモデル定義YAML)。モデル定義はdrama/とagent/で、
+    # 直下のproject.yamlはプロジェクトの見本(モデル定義ではない)。main.pyと同じく、2つをmodel/に複製して読む
     repo = Path(__file__).resolve().parents[2]
-    dramaturgy = read_dramaturgy(repo / "apps" / "sample_data")
+    for part in ("drama", "agent"):
+        shutil.copytree(repo / "apps" / "sample_data" / part, tmp_path / "model" / part)
+    definition = read_model_definition(tmp_path / "model")
+    dramaturgy = definition.dramaturgy
 
-    plots = sorted((repo / "apps" / "sample_project" / "plot").glob("*.txt"))
-    assert [s.synopsis for s in dramaturgy.acts[0].scenes] == [
-        p.read_text(encoding="utf-8") for p in plots
-    ]
+    scenes = dramaturgy.acts[0].scenes
+    assert len(scenes) == 5 and all(scene.synopsis for scene in scenes)
     assert {"加藤 喜一", "水野 弥千代"} <= {c.name for c in dramaturgy.characters}
+    assert [(c.character.name, c.voice_gender) for c in dramaturgy.casts] == [
+        ("加藤 喜一", VoiceGender.MALE),
+        ("水野 弥千代", VoiceGender.FEMALE),
+    ]
+    assert [a.voice_name for a in definition.agents] == ["Charon", "Kore"]
 
 
 def _without_ids(value):
@@ -459,8 +549,8 @@ def test_relationships_are_reachable_from_both_characters():
     # 経歴から参照されない人物関係も、人物の側から引け、書き出しで失われない
     extra = """
 relationships:
-  - source: father
-    target: taro
+  - source: {ref: father}
+    target: {ref: taro}
     label: 息子
 dramaturgy:
   title: 港町の灯
@@ -472,3 +562,114 @@ dramaturgy:
     assert [r.label for r in father.relationships] == ["親子", "息子"]
     restored = build_dramaturgy_from_yaml(dramaturgy_to_yaml(dramaturgy))
     assert [r.label for r in restored.characters[1].relationships] == ["親子", "息子"]
+
+
+AGENTS = """
+agents:
+  scriptwriters:
+    - key: writer
+      name: 脚本家
+      persona: 簡潔な文体
+  actors:
+    - key: taro_actor
+      name: 太郎役の演者
+      cast: {ref: taro_voice}
+      voice_name: Charon
+"""
+
+
+def test_agents_are_read_with_dramaturgy_and_round_trip(tmp_path):
+    definition = build_model_definition_from_yaml(SINGLE, AGENTS)
+    writer, actor = definition.agents
+
+    assert isinstance(writer, Scriptwriter) and writer.persona == "簡潔な文体"
+    assert isinstance(actor, Actor)
+    cast = definition.dramaturgy.casts[0]
+    assert (actor.casting_id, actor.voice_name) == (cast.id, "Charon")
+    assert cast.performance.title == "Quiet Keeper"
+
+    write_split_dramaturgy(definition.dramaturgy, tmp_path / "model", definition.agents)
+    assert (tmp_path / "model" / "agents.yaml").exists()
+    restored = read_model_definition(tmp_path / "model")
+    assert [type(a).__name__ for a in restored.agents] == ["Scriptwriter", "Actor"]
+    assert restored.agents[1].casting_id == restored.dramaturgy.casts[0].id == cast.id
+    with pytest.raises(ValueError, match="nobody"):
+        build_model_definition_from_yaml(
+            SINGLE, AGENTS.replace("cast: {ref: taro_voice}", "cast: {ref: nobody}")
+        )
+
+
+def test_voice_gender_must_be_one_of_the_values():
+    def with_voice_gender(value: str) -> str:
+        return SINGLE.replace(
+            "      performance:\n", f"      voice_gender: {value}\n      performance:\n", 1
+        )
+
+    with pytest.raises(ValidationError):
+        build_dramaturgy_from_yaml(with_voice_gender("both"))
+    cast = build_dramaturgy_from_yaml(with_voice_gender("neutral")).casts[0]
+    assert cast.voice_gender is VoiceGender.NEUTRAL
+
+
+def test_character_groups_reference_characters():
+    groups = """
+character_groups:
+  - key: family
+    name: 灯台守の家
+    kind: 家族
+    members: [{ref: taro}, {ref: father}]
+"""
+    definition = build_model_definition_from_yaml(SINGLE, groups)
+    (group,) = definition.character_groups
+    assert (group.name, group.kind) == ("灯台守の家", "家族")
+    assert group.members == definition.characters  # 人物を参照で持つ(同じオブジェクト)
+
+    spec = dramaturgy_to_spec(definition.dramaturgy, character_groups=definition.character_groups)
+    assert spec["character_groups"][0]["members"] == [
+        {"ref": "character_001"},
+        {"ref": "character_002"},
+    ]
+    with pytest.raises(ValueError, match="nobody"):
+        build_model_definition_from_yaml(SINGLE, groups.replace("{ref: father}", "{ref: nobody}"))
+
+
+def test_scene_situation_and_dialogue_override():
+    situation = """
+dramaturgy:
+  acts:
+    - key: act1
+      scenes:
+        - key: night
+          situation:
+            description: 灯台の灯を点検している
+            time_of_day: 夜
+            environment: 雪
+"""
+    # 台詞は、場面の途中で変わるときだけ自分の状況を持つ(場所も上書きできる)
+    override = SINGLE.replace(
+        "              direction:\n                pace: ゆっくり\n",
+        "              direction:\n                pace: ゆっくり\n"
+        "              situation:\n"
+        "                location: {ref: lighthouse}\n"
+        "                description: 灯室に上がった\n",
+        1,
+    )
+    dramaturgy = build_dramaturgy_from_yaml(override, situation)
+    scene = dramaturgy.acts[0].scenes[0]
+    assert (
+        scene.situation.description,
+        scene.situation.time_of_day,
+        scene.situation.environment,
+    ) == (
+        "灯台の灯を点検している",
+        "夜",
+        "雪",
+    )
+    music, dialogue = scene.elements
+    assert dialogue.situation.location is scene.location
+    assert dialogue.situation.description == "灯室に上がった"
+
+    restored = build_dramaturgy_from_yaml(dramaturgy_to_yaml(dramaturgy))
+    restored_scene = restored.acts[0].scenes[0]
+    assert restored_scene.situation.environment == "雪"
+    assert restored_scene.elements[1].situation.location.name == "灯台"

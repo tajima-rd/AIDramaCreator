@@ -6,6 +6,7 @@
 
 from typing import Optional
 
+from core.model.drama.situation import Situation
 from core.model.identifier import new_id
 
 
@@ -37,7 +38,8 @@ class ScriptElement:
 
 class Dialogue(ScriptElement):
     """演出付きの台詞。line_idは元になったLine、cast_idは話者(Cast)で、どちらも識別子で参照する。textには音声タグを含められる。
-    actionはト書き(動作・状況)。translated_textはDramaturgyのoutput_languageへの訳文。"""
+    actionはト書き(動作・状況)。translated_textはDramaturgyのoutput_languageへの訳文。situationは、場面の途中で
+    状況(場所・状況・時間帯・天候等)が変わるときだけ持つ(無ければシーンの状況)。"""
 
     def __init__(
         self,
@@ -48,6 +50,7 @@ class Dialogue(ScriptElement):
         action: Optional[str] = None,
         direction: Optional[Direction] = None,
         translated_text: Optional[str] = None,
+        situation: Optional[Situation] = None,
     ):
         super().__init__(order)
         self.line_id: str = line_id
@@ -56,6 +59,7 @@ class Dialogue(ScriptElement):
         self.action: Optional[str] = action
         self.direction: Direction = direction if direction is not None else Direction()
         self.translated_text: Optional[str] = translated_text
+        self.situation: Optional[Situation] = situation
 
 
 class SoundEffect(ScriptElement):

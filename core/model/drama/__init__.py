@@ -4,8 +4,9 @@
 """
 
 from core.model.drama.act import Act
-from core.model.drama.cast import Cast
+from core.model.drama.cast import Cast, Performance, VoiceGender
 from core.model.drama.character import Biography, Character
+from core.model.drama.character_group import CharacterGroup
 from core.model.drama.dramaturgy import Dramaturgy
 from core.model.drama.feature import AdditionalFeature, Characteristic
 from core.model.drama.history import History
@@ -22,6 +23,8 @@ from core.model.drama.script_element import (
     ScriptElement,
     SoundEffect,
 )
+from core.model.drama.situation import Situation
+from core.model.drama.speech_style import SentenceEnding, SentenceEndingKind, SpeechStyle
 from core.model.drama.temporal import (
     StringDateType,
     TemporalEdge,
@@ -36,6 +39,7 @@ __all__ = [
     "Biography",
     "Cast",
     "Character",
+    "CharacterGroup",
     "Characteristic",
     "Dialogue",
     "Direction",
@@ -44,14 +48,20 @@ __all__ = [
     "Line",
     "Location",
     "Music",
+    "Performance",
     "Premise",
     "Relationship",
     "Scene",
     "Script",
     "ScriptElement",
+    "SentenceEnding",
+    "SentenceEndingKind",
+    "Situation",
     "SoundEffect",
+    "SpeechStyle",
     "StringDateType",
     "TemporalEdge",
     "TemporalNode",
     "TemporalRelationKind",
+    "VoiceGender",
 ]

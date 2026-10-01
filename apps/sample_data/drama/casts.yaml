@@ -1,0 +1,26 @@
+# actor/actors.yaml(apps/sample_project)から変換した配役(人物と演じ方)
+dramaturgy:
+  casts:
+  - id: c1b7fd96-83e7-535f-9454-0620d986860c
+    key: cast_001
+    character: {ref: character_001}
+    performance:
+      title: Strict Guy
+      description: A strictly serious, perfectionist, and emotionally detached young person.
+      pace: 比較的ゆっくり
+    voice_gender: male
+    accent: Japanese
+  - id: 215fc682-9527-522e-8855-0597fbce0cb2
+    key: cast_002
+    character: {ref: character_023}
+    performance:
+      title: Cheerful Woman
+      description: Cheerful and approachable young woman.
+    voice_gender: female
+    accent: Japanese
+
+# ===== モデルに置き場所が無いため、取り込んでいない情報(原文のまま) =====
+# [Kiichi]
+#   label: 喜一
+# [Yachiyo]
+#   label: 弥千代

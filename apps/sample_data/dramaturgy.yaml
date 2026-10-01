@@ -1,5 +1,0 @@
-# 題は、人物のファイルにある物語の名前(「明治の弥次喜多道中」の物語はスタートする)から
-protocol_version: 0.1.0
-dramaturgy:
-  title: 明治の弥次喜多道中
-  input_language: ja

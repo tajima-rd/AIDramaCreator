@@ -1,0 +1,105 @@
+# 人物の時期(過去のエピソード・人物関係の見出し)と、その順序。
+# 2人は互いを知らない間は別々の時間のネットワークにあり、出会い(城崎温泉)の時点で初めて合流する
+temporal_nodes:
+- id: 3beef36b-3914-5682-82d6-4e80979a7686
+  key: temporal_node_001
+  label: 喜一の小学校時代
+- id: df088c2e-0920-59e2-9452-c149182be76d
+  key: temporal_node_002
+  label: 喜一の中学校時代
+- id: a6395102-fd56-574e-8b49-14830f073b4d
+  key: temporal_node_003
+  label: 喜一の高校時代
+- id: 77bd7c97-38a4-5e67-bbfc-6db4a9fa3ee3
+  key: temporal_node_004
+  label: 喜一の浪人時代
+- id: 2255ccda-87b5-5cea-a1d1-2a961d93484e
+  key: temporal_node_005
+  label: 喜一の大学時代
+- id: 3593cee2-96f1-50b0-8261-65892c480cd0
+  key: temporal_node_006
+  label: 喜一の現在
+- id: 0e77f4fd-80a2-50d6-848d-3b67bd66e8c8
+  key: temporal_node_007
+  label: 弥千代の小学校時代
+- id: 5f723997-0168-509c-aa23-f68ad465f88d
+  key: temporal_node_008
+  label: 弥千代の中学校時代
+- id: c16c7961-2771-5954-8c09-2b9b4ee41b7b
+  key: temporal_node_009
+  label: 弥千代の高校時代
+- id: 64b9b7ea-bbbc-5413-af5e-83979b397175
+  key: temporal_node_010
+  label: 弥千代の大学時代
+- id: 2b76a7aa-9b3b-58e4-8214-a5bb09bb1639
+  key: temporal_node_011
+  label: 弥千代の大手テレビ局時代
+- id: 4f783389-1a00-5c7f-ae7a-a04b263e6d15
+  key: temporal_node_012
+  label: 弥千代の現在
+- id: c8021fec-1018-5e60-abcf-43062080bc8e
+  key: temporal_node_013
+  label: 喜一と弥千代の出会い（城崎温泉）
+dramaturgy:
+  history:
+    edges:
+    - id: 22bb18be-6b51-5ff1-82ac-a309a139f95b
+      key: temporal_edge_001
+      kind: meets
+      source: {ref: temporal_node_001}
+      target: {ref: temporal_node_002}
+    - id: 7a81ea59-b0c0-50bb-950a-a0882808df98
+      key: temporal_edge_002
+      kind: meets
+      source: {ref: temporal_node_002}
+      target: {ref: temporal_node_003}
+    - id: 3e4a4819-7970-50fd-81f8-a325962ec6e2
+      key: temporal_edge_003
+      kind: meets
+      source: {ref: temporal_node_003}
+      target: {ref: temporal_node_004}
+    - id: 881c9395-6933-5862-98be-af7a0a19ec9d
+      key: temporal_edge_004
+      kind: meets
+      source: {ref: temporal_node_004}
+      target: {ref: temporal_node_005}
+    - id: c63418d9-eabc-5fd2-9dcb-d76b64e6404c
+      key: temporal_edge_005
+      kind: before
+      source: {ref: temporal_node_005}
+      target: {ref: temporal_node_006}
+    - id: ca75281b-e2b9-52a9-9b60-29ce37212642
+      key: temporal_edge_006
+      kind: meets
+      source: {ref: temporal_node_007}
+      target: {ref: temporal_node_008}
+    - id: f5bffe38-c9f3-54e9-9d93-97b5f2da7bf0
+      key: temporal_edge_007
+      kind: meets
+      source: {ref: temporal_node_008}
+      target: {ref: temporal_node_009}
+    - id: d682d82b-ab75-54ae-a6da-bde22a0164f1
+      key: temporal_edge_008
+      kind: meets
+      source: {ref: temporal_node_009}
+      target: {ref: temporal_node_010}
+    - id: 93ff5592-56c4-5720-bc53-2772cfb1057f
+      key: temporal_edge_009
+      kind: meets
+      source: {ref: temporal_node_010}
+      target: {ref: temporal_node_011}
+    - id: 797e5cc1-ba5d-5d12-965f-84d5c91b7105
+      key: temporal_edge_010
+      kind: meets
+      source: {ref: temporal_node_011}
+      target: {ref: temporal_node_012}
+    - id: de6ec5d7-fc3f-5bd0-b70e-6fb617c4e0f4
+      key: temporal_edge_011
+      kind: during
+      source: {ref: temporal_node_013}
+      target: {ref: temporal_node_006}
+    - id: 2646be3e-4d52-5222-8724-2d704efc03e1
+      key: temporal_edge_012
+      kind: during
+      source: {ref: temporal_node_013}
+      target: {ref: temporal_node_012}
