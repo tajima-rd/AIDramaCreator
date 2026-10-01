@@ -1,0 +1,23 @@
+# CastingDirectorの既定(core.model.agent.casting_director.CastingDirectorの既定の文面から書き出したもの。2026-10-01、暫定)。
+# 作品の分割ファイルと同じ形(dramaturgy.agents)で、作品に重ねればこの職能のエージェントが1人加わる。
+# idとkeyは書かない(使うたびに新しいエージェントになる)。
+dramaturgy:
+  agents:
+    casting_directors:
+    - name: キャスティング・ディレクター
+      role: 人物に配役し、その役の演じ方を決め、どの声で演じるかを選ぶ。
+      rules:
+      - 人物の年齢・性別・人物像に合う声を選ぶ。
+      prohibitions:
+      - 人物の設定を書き換えない。
+      tasks:
+      - code: cast_character
+        title: 配役と演じ方を決める
+        description: 人物ごとに配役を作り、演じ方(役の説明・話す速さ)と声の性別を決める。
+        rules: []
+        prohibitions: []
+      - code: assign_voice
+        title: 声を選ぶ
+        description: 配役ごとに、音声合成の声の一覧から演じる声を選ぶ。
+        rules: []
+        prohibitions: []

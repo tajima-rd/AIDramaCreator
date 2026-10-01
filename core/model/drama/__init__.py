@@ -12,6 +12,7 @@ from core.model.drama.feature import AdditionalFeature, Characteristic
 from core.model.drama.history import History
 from core.model.drama.location import Location
 from core.model.drama.premise import Premise
+from core.model.drama.proposal import Proposal, ProposalCharacter
 from core.model.drama.relationship import Relationship
 from core.model.drama.scene import Scene
 from core.model.drama.script import Line, Script
@@ -50,6 +51,8 @@ __all__ = [
     "Music",
     "Performance",
     "Premise",
+    "Proposal",
+    "ProposalCharacter",
     "Relationship",
     "Scene",
     "Script",

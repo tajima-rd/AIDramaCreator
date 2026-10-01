@@ -5,7 +5,8 @@
 
 - 一覧の要素は、idがあればidで、無ければkeyで同じ要素を探して重ねる。無ければ末尾に追加する。
 - 同じ場所の値は上書きする。nullを書くと、その属性を消す。
-- idもkeyも持たない一覧(_REPLACED_LISTS。作品の中ではcharacters・relationshipsも)は、書いた一覧で丸ごと置き換える。
+- idもkeyも持たない一覧(_REPLACED_LISTS。作品の中ではcharacters・relationships、企画書の中ではcharactersも)は、
+  書いた一覧で丸ごと置き換える。
 - {id: …, delete: true}(keyでも可)で要素を消す。所有している子も一緒に消える。
 - dramaturgy(単数)は、dramaturgiesの1要素として扱う。
 
@@ -15,12 +16,27 @@
 import copy
 from typing import Any, Optional
 
-# idもkeyも持たない要素の一覧(書いた一覧で丸ごと置き換える)
+# idもkeyも持たない要素の一覧(書いた一覧で丸ごと置き換える)。rules・prohibitions・tasksはエージェントとそのタスクの
+# 一覧(タスクはcodeで特定するが、一覧ごと送る)
 _REPLACED_LISTS = frozenset(
-    {"members", "involved_relationships", "characteristics", "features", "endings", "examples"}
+    {
+        "members",
+        "involved_relationships",
+        "characteristics",
+        "features",
+        "endings",
+        "examples",
+        "rules",
+        "prohibitions",
+        "tasks",
+    }
 )
-# 作品(dramaturgy)の中では参照の一覧なので、丸ごと置き換える(最上位では人物・人物関係そのものの一覧)
-_REPLACED_IN_DRAMATURGY = frozenset({"characters", "relationships"})
+# 区画ごとに、丸ごと置き換える一覧(区画の名前→一覧の名前)。作品(dramaturgy)の中のcharacters・relationshipsは
+# 参照の一覧(最上位では人物・人物関係そのものの一覧)。企画書(proposal)のcharactersは識別子の無い仮の登場人物
+_REPLACED_IN_SECTION = {
+    "dramaturgy": frozenset({"characters", "relationships"}),
+    "proposal": frozenset({"characters"}),
+}
 
 DELETE = "delete"
 
@@ -33,7 +49,7 @@ def patch_spec(base: dict[str, Any], documents: list[Optional[dict[str, Any]]]) 
             continue
         if not isinstance(document, dict):
             raise ValueError("部分YAMLの文書は、区画名をキーにした対応表でなければなりません")
-        _patch_map(result, _with_dramaturgies(copy.deepcopy(document), "部分YAML"), "", False)
+        _patch_map(result, _with_dramaturgies(copy.deepcopy(document), "部分YAML"), "", None)
     return result
 
 
@@ -50,14 +66,15 @@ def _with_dramaturgies(spec: dict[str, Any], where: str) -> dict[str, Any]:
 
 
 def _patch_map(
-    target: dict[str, Any], patch: dict[str, Any], path: str, in_dramaturgy: bool
+    target: dict[str, Any], patch: dict[str, Any], path: str, section: Optional[str]
 ) -> None:
+    """sectionは対応表が属する区画("dramaturgy"・"proposal"。それ以外はNone)。"""
     for key, value in patch.items():
         where = f"{path}.{key}" if path else str(key)
         if value is None:
             target.pop(key, None)
         elif isinstance(value, list) and (
-            key in _REPLACED_LISTS or (in_dramaturgy and key in _REPLACED_IN_DRAMATURGY)
+            key in _REPLACED_LISTS or key in _REPLACED_IN_SECTION.get(section, frozenset())
         ):
             target[key] = value
         elif isinstance(value, list) and isinstance(target.get(key), list):
@@ -66,7 +83,8 @@ def _patch_map(
             target[key] = []
             _patch_list(target[key], value, where, key == "dramaturgies")
         elif isinstance(value, dict) and isinstance(target.get(key), dict):
-            _patch_map(target[key], value, where, in_dramaturgy)
+            inner = "proposal" if section == "dramaturgy" and key == "proposal" else None
+            _patch_map(target[key], value, where, inner)
         else:
             _check_no_delete(value, where)
             target[key] = value
@@ -90,7 +108,7 @@ def _patch_list(target: list[Any], items: list[Any], path: str, dramaturgies: bo
             _check_no_delete(item, where)
             target.append(item)
         else:
-            _patch_map(same, item, where, dramaturgies)
+            _patch_map(same, item, where, "dramaturgy" if dramaturgies else None)
 
 
 def _find(items: list[Any], item: dict[str, Any]) -> Optional[dict[str, Any]]:

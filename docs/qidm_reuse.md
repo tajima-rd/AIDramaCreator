@@ -4,7 +4,7 @@ QIDM(`/home/yufujimoto/Git/QuantumInspiredDomainModel`、2026-09-29時点のHEAD
 QIDMは全く別のプロジェクト(量子に着想を得た領域モデル)なので、Domain・Feature・Factor・Association・Simulation等の
 **QIDM固有の概念は持ち込まない**。
 
-2026-09-29に、A群とB群は持ち込み済み(「持ち込み済み」と書いたもの以外に、GUI・`.claude/skills`はインターフェースの設計まで保留)。
+2026-09-29に、A群とB群は持ち込み済み(GUI・`.claude/skills`は保留していた)。2026-10-01にGUIの枠を`apps/AIDC-Console`へ持ち込んだ(下の「持ち込み済み」)。
 持ち込んだ内容は [status.md](status.md)。QIDMのDomainはDramaへ仮に置き換えた([future_design.md](future_design.md))。
 
 「Domain依存」は、そのファイルの中でDomain・Feature等に触れている箇所の数の目安。
@@ -26,7 +26,7 @@ QIDMは全く別のプロジェクト(量子に着想を得た領域モデル)�
 | `requirements/`(base・dev・genai・rag-ja)・`pyproject.toml` | 用途別の依存と、ruff・black・pytestの設定 | 依存をAIDCに合わせて入れ替え |
 | `scripts/server/`(start・stop・restart)・`scripts/llamacpp/` | APIサーバー・llama.cppの起動と停止 | 環境変数名(`QIDM_*`)を変更 |
 | `tests/core/test_genai_*.py`・`test_character_check.py`・`test_reference_searcher.py`、`tests/api/test_preference.py` | genai・設定のテスト(`test_genai_independence.py`はgenaiの独立性を確かめる) | なし〜小 |
-| `apps/QIDM/static/project_genai_tab.js`・`data_viewer_panel.js`・`vendor/js-yaml.min.js` | GUI: 生成AIの設定タブ、Datasetの表示(CSV・PDF) | インターフェース(保留)が決まってから |
+| `apps/QIDM/static/project_genai_tab.js`・`data_viewer_panel.js`・`vendor/js-yaml.min.js` | GUI: 生成AIの設定タブ、Datasetの表示(CSV・PDF) | **持ち込み済み**(`apps/AIDC-Console/static/`、2026-10-01) |
 | `.claude/skills/qidm-browser-verify/` | headless ChromeによるGUIの検証 | GUIを作ってから |
 
 ## B. Domainへの依存を外せば使える
@@ -43,7 +43,7 @@ QIDMは全く別のプロジェクト(量子に着想を得た領域モデル)�
 | `core/service/api/dataset.py`・`core/schema/api/dataset.py`・`api/routers/dataset.py` | Datasetの公開API・DTO・HTTP | 76・15・19 |
 | `api/main.py` | FastAPIの生成・routerのinclude・静的ファイル・共通の例外ハンドラ | 29。include・例外の一覧を入れ替える。AIDCにある版はimport文だけ |
 | `tests/conftest.py`・`tests/api/test_project.py`・`test_dataset.py`・`test_dataset_file.py` | テストの共通部品とプロジェクト・Datasetのテスト | 7・2・25・12 |
-| `apps/QIDM/static/app.js`・`app.css`・`project_overview_panel.js` | GUIの枠(メニュー・Tree・Properties・APIクライアント)とプロジェクトの概要 | インターフェース(保留)が決まってから |
+| `apps/QIDM/static/app.js`・`app.css`・`project_overview_panel.js` | GUIの枠(メニュー・Tree・Properties・APIクライアント)とプロジェクトの概要 | **持ち込み済み**(2026-10-01。Domain系・Propertiesの区画・QIDM専用のCSSは除いた) |
 
 ## C. 仕組み・設計を参考にする(そのままは使えない)
 

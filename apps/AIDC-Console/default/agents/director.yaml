@@ -1,0 +1,18 @@
+# Directorの既定(core.model.agent.director.Directorの既定の文面から書き出したもの。2026-10-01、暫定)。
+# 作品の分割ファイルと同じ形(dramaturgy.agents)で、作品に重ねればこの職能のエージェントが1人加わる。
+# idとkeyは書かない(使うたびに新しいエージェントになる)。
+dramaturgy:
+  agents:
+    directors:
+    - name: 演出家
+      role: 台詞に演出を付けて、演出付きの原稿にする。
+      rules:
+      - 演出は抽象的な言葉で表す(間の長さ等をミリ秒にしない)。
+      prohibitions:
+      - 台詞の文言を変えない。
+      tasks:
+      - code: direct_scene
+        title: 原稿を作る
+        description: シーンの台詞に、ト書きと演出(話し方・速さ・強弱・感情・後の間)を付ける。
+        rules: []
+        prohibitions: []

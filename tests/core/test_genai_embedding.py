@@ -28,8 +28,13 @@ def posted(monkeypatch):
 
     def fake_post(url, headers, json, timeout):
         calls.append((url, headers, json))
-        data = [{"index": i, "embedding": [float(i), float(len(text))]} for i, text in enumerate(json["input"])]
-        return SimpleNamespace(raise_for_status=lambda: None, json=lambda: {"data": list(reversed(data))})
+        data = [
+            {"index": i, "embedding": [float(i), float(len(text))]}
+            for i, text in enumerate(json["input"])
+        ]
+        return SimpleNamespace(
+            raise_for_status=lambda: None, json=lambda: {"data": list(reversed(data))}
+        )
 
     monkeypatch.setattr(openai_compatible_generator.requests, "post", fake_post)
     return calls
@@ -37,7 +42,10 @@ def posted(monkeypatch):
 
 def test_openai_compatible_embedding(posted):
     embedder = OpenAiCompatibleEmbeddingGenerator(
-        "http://localhost:8080", "bge-m3", api_key="k", config=EmbeddingConfig(dimensions=2, query_prefix="q: ")
+        "http://localhost:8080",
+        "bge-m3",
+        api_key="k",
+        config=EmbeddingConfig(dimensions=2, query_prefix="q: "),
     )
     embedder.batch_size = 2
     vectors = embedder.embed(["a", "bb", "ccc"], "document")
@@ -48,18 +56,25 @@ def test_openai_compatible_embedding(posted):
     assert payload["model"] == "bge-m3" and payload["dimensions"] == 2
     embedder.embed(["x"], "query")
     assert posted[-1][2]["input"] == ["q: x"]
-    assert OpenAiCompatibleEmbeddingGenerator("http://h/v1/embeddings", "m").url == "http://h/v1/embeddings"
+    assert (
+        OpenAiCompatibleEmbeddingGenerator("http://h/v1/embeddings", "m").url
+        == "http://h/v1/embeddings"
+    )
 
 
 def test_factory_embedding():
     assert EMBEDDING_CLIENTS == ("Gemini", "LlamaCpp", "Ollama")
-    gen = create_embedding_generator("Ollama", "nomic-embed-text", api_url="http://localhost:11434/v1/chat/completions")
+    gen = create_embedding_generator(
+        "Ollama", "nomic-embed-text", api_url="http://localhost:11434/v1/chat/completions"
+    )
     assert isinstance(gen, OpenAiCompatibleEmbeddingGenerator)
     assert gen.url == "http://localhost:11434/v1/embeddings" and "Authorization" not in gen.headers
     with pytest.raises(ValueError):
         create_embedding_generator("LlamaCpp", "m")  # URLが無い
     with pytest.raises(ValueError):
-        create_embedding_generator("OpenWebUI", "m", api_url="http://localhost:3000", api_key="k")  # 未対応
+        create_embedding_generator(
+            "OpenWebUI", "m", api_url="http://localhost:3000", api_key="k"
+        )  # 未対応
     with pytest.raises(ValueError):
         create_embedding_generator("Gemini", "gemini-embedding-2")  # キーが無い
     with pytest.raises(ValueError):
@@ -71,7 +86,9 @@ def test_list_embedding_models(monkeypatch):
     monkeypatch.setattr(
         server_inspector.requests,
         "get",
-        lambda url, headers, timeout: SimpleNamespace(raise_for_status=lambda: None, json=lambda: body),
+        lambda url, headers, timeout: SimpleNamespace(
+            raise_for_status=lambda: None, json=lambda: body
+        ),
     )
     assert list_models("embedding", "LlamaCpp", api_url="http://localhost:8080") == [
         "bge-m3",
@@ -99,11 +116,17 @@ def test_gemini_embedding_task_type(monkeypatch):
         def embed_content(self, model, contents, config):
             calls.append((model, list(contents), config))
             return SimpleNamespace(
-                embeddings=[SimpleNamespace(values=[1.0, float(len(c.parts[0].text))]) for c in contents]
+                embeddings=[
+                    SimpleNamespace(values=[1.0, float(len(c.parts[0].text))]) for c in contents
+                ]
             )
 
-    monkeypatch.setattr(gemini_generator.genai, "Client", lambda api_key: SimpleNamespace(models=_Models()))
-    embedder = gemini_generator.GeminiEmbeddingGenerator("k", config=EmbeddingConfig(dimensions=768))
+    monkeypatch.setattr(
+        gemini_generator.genai, "Client", lambda api_key: SimpleNamespace(models=_Models())
+    )
+    embedder = gemini_generator.GeminiEmbeddingGenerator(
+        "k", config=EmbeddingConfig(dimensions=768)
+    )
     assert embedder.embed(["ab"], "query") == [[1.0, 2.0]]
     model, contents, config = calls[0]
     assert model == "gemini-embedding-2" and [c.parts[0].text for c in contents] == ["ab"]
@@ -121,9 +144,18 @@ def test_gemini_embedding_separates_texts(monkeypatch):
         def embed_content(self, model, contents, config):
             texts = [p.text for c in contents for p in c.parts]
             calls.append(texts)
-            return SimpleNamespace(embeddings=[SimpleNamespace(values=[float(len("".join(texts)))])])
+            return SimpleNamespace(
+                embeddings=[SimpleNamespace(values=[float(len("".join(texts)))])]
+            )
 
-    monkeypatch.setattr(gemini_generator.genai, "Client", lambda api_key: SimpleNamespace(models=_Merging()))
+    monkeypatch.setattr(
+        gemini_generator.genai, "Client", lambda api_key: SimpleNamespace(models=_Merging())
+    )
     embedder = gemini_generator.GeminiEmbeddingGenerator("k")
     assert embedder.embed(["a", "bb", "ccc"], "document") == [[1.0], [2.0], [3.0]]
-    assert calls == [["a", "bb", "ccc"], ["a"], ["bb"], ["ccc"]]  # まとめて送り、数が合わないので1件ずつ
+    assert calls == [
+        ["a", "bb", "ccc"],
+        ["a"],
+        ["bb"],
+        ["ccc"],
+    ]  # まとめて送り、数が合わないので1件ずつ

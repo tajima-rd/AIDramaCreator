@@ -20,7 +20,7 @@ from typing import Any, Optional, Union
 import yaml
 
 from core.infra.io.model_definition_reader import YAML_SUFFIXES, ModelDefinition
-from core.model.agent import Actor, Agent
+from core.model.agent import Actor, BaseAgent
 from core.model.agent.factory import AGENT_ROLES
 from core.model.drama import (
     Atmosphere,
@@ -30,6 +30,7 @@ from core.model.drama import (
     Dramaturgy,
     Location,
     Music,
+    Proposal,
     Relationship,
     Scene,
     ScriptElement,
@@ -48,7 +49,7 @@ SPLIT_FILES: dict[str, tuple[str, ...]] = {
     "characters.yaml": ("characters", "character_groups", "relationships"),
     "casts.yaml": ("dramaturgy.casts",),
     "acts.yaml": ("dramaturgy.acts",),
-    "agents.yaml": ("agents",),
+    "agents.yaml": ("dramaturgy.agents",),
 }
 
 # 分割して書くとき、シーンを制作の段階ごとに分けて、シーンごとに1つずつ書くファイルを置くディレクトリ
@@ -112,7 +113,6 @@ class _Keys:
 
 def dramaturgy_to_spec(
     dramaturgy: Dramaturgy,
-    agents: Sequence[Agent] = (),
     characters: Optional[Sequence[Character]] = None,
     relationships: Optional[Sequence[Relationship]] = None,
     character_groups: Sequence[CharacterGroup] = (),
@@ -124,9 +124,7 @@ def dramaturgy_to_spec(
     (ModelDefinitionの同名の属性)。
     省略すれば、作品から辿れるもの(作品・配役の人物、人物と経歴の人物関係)を書く。作品の側には参照の一覧を書く。
     """
-    return _to_spec(
-        [dramaturgy], agents, characters, relationships, character_groups, (), (), "dramaturgy"
-    )
+    return _to_spec([dramaturgy], characters, relationships, character_groups, (), (), "dramaturgy")
 
 
 def model_definition_to_spec(definition: ModelDefinition) -> dict[str, Any]:
@@ -136,7 +134,6 @@ def model_definition_to_spec(definition: ModelDefinition) -> dict[str, Any]:
     """
     return _to_spec(
         definition.dramaturgies,
-        definition.agents,
         definition.characters,
         definition.relationships,
         definition.character_groups,
@@ -148,7 +145,6 @@ def model_definition_to_spec(definition: ModelDefinition) -> dict[str, Any]:
 
 def _to_spec(
     dramaturgies: Sequence[Dramaturgy],
-    agents: Sequence[Agent],
     characters: Optional[Sequence[Character]],
     relationships: Optional[Sequence[Relationship]],
     character_groups: Sequence[CharacterGroup],
@@ -264,9 +260,26 @@ def _to_spec(
             _relationship(relationship, keys) for relationship in owned_relationships.items.values()
         ],
         section: dramaturgy_specs[0] if section == "dramaturgy" else dramaturgy_specs,
-        "agents": _agents(agents, keys),
     }
     return _compact(spec)
+
+
+def _proposal(proposal: Proposal) -> dict[str, Any]:
+    """企画書(何も書かれていなければ空の対応表になり、_compactで省かれる)。"""
+    return _compact(
+        {
+            "title": proposal.title,
+            "catchphrase": proposal.catchphrase,
+            "logline": proposal.logline,
+            "intent": proposal.intent,
+            "target_area": proposal.target_area,
+            "synopsis": proposal.synopsis,
+            "characters": [
+                _compact({"name": c.name, "description": c.description})
+                for c in proposal.characters
+            ],
+        }
+    )
 
 
 def _dramaturgy(dramaturgy: Dramaturgy, keys: _Keys) -> dict[str, Any]:
@@ -279,6 +292,7 @@ def _dramaturgy(dramaturgy: Dramaturgy, keys: _Keys) -> dict[str, Any]:
             "input_language": dramaturgy.input_language,
             "output_language": dramaturgy.output_language,
             "premise": _compact({"text": dramaturgy.premise.text}),
+            "proposal": _proposal(dramaturgy.proposal),
             "characters": [keys.ref(character) for character in dramaturgy.characters],
             "relationships": [keys.ref(relationship) for relationship in dramaturgy.relationships],
             "casts": [
@@ -331,12 +345,17 @@ def _dramaturgy(dramaturgy: Dramaturgy, keys: _Keys) -> dict[str, Any]:
                     ]
                 }
             ),
+            "agents": _agents(dramaturgy.agents, keys),
         }
     )
 
 
-def _agents(agents: Sequence[Agent], keys: _Keys) -> dict[str, Any]:
-    """エージェントを職能ごとの区画にする(区画名は職能の複数形、keyは職能と通し番号)。Actorの配役は{ref: key}。"""
+def _agents(agents: Sequence[BaseAgent], keys: _Keys) -> dict[str, Any]:
+    """
+    エージェントを職能ごとの区画にする(区画名は職能の複数形、keyは職能と通し番号)。Actorの配役は{ref: key}。
+    role・rules・prohibitions・タスクは、既定と同じでもすべて書く(作品ごとの全文を残す)。rules・prohibitionsは、
+    省略(=既定)と区別するため、空の一覧も書く。
+    """
     roles = {cls: role for role, cls in AGENT_ROLES.items()}
     sections: dict[str, list[dict[str, Any]]] = {}
     for agent in agents:
@@ -346,15 +365,31 @@ def _agents(agents: Sequence[Agent], keys: _Keys) -> dict[str, Any]:
             role = roles[type(agent)]
         else:
             raise ValueError(f"モデル定義YAMLに書けないエージェントです: {type(agent).__name__}")
-        values = {
-            "id": agent.id,
-            "key": keys.assign(role, agent),
-            "name": agent.name,
-            "persona": agent.persona,
-        }
+        values = _compact(
+            {
+                "id": agent.id,
+                "key": keys.assign(role, agent),
+                "name": agent.name,
+                "role": agent.role,
+                "persona": agent.persona,
+            }
+        )
+        values.update({"rules": list(agent.rules), "prohibitions": list(agent.prohibitions)})
+        values["tasks"] = [
+            {
+                **_compact(
+                    {"code": task.code, "title": task.title, "description": task.description}
+                ),
+                "rules": list(task.rules),
+                "prohibitions": list(task.prohibitions),
+            }
+            for task in agent.tasks
+        ]
         if isinstance(agent, Actor):
-            values.update({"cast": keys.ref(agent.casting_id), "voice_name": agent.voice_name})
-        sections.setdefault(f"{role}s", []).append(_compact(values))
+            values.update(
+                _compact({"cast": keys.ref(agent.casting_id), "voice_name": agent.voice_name})
+            )
+        sections.setdefault(f"{role}s", []).append(values)
     return sections
 
 
@@ -582,15 +617,12 @@ def _dump(values: dict[str, Any]) -> str:
 
 def dramaturgy_to_yaml(
     dramaturgy: Dramaturgy,
-    agents: Sequence[Agent] = (),
     characters: Optional[Sequence[Character]] = None,
     relationships: Optional[Sequence[Relationship]] = None,
     character_groups: Sequence[CharacterGroup] = (),
 ) -> str:
     """1つのファイルに書くモデル定義YAMLの文字列。引数の意味はdramaturgy_to_specと同じ。"""
-    return _dump(
-        dramaturgy_to_spec(dramaturgy, agents, characters, relationships, character_groups)
-    )
+    return _dump(dramaturgy_to_spec(dramaturgy, characters, relationships, character_groups))
 
 
 def model_definition_to_yaml(definition: ModelDefinition) -> str:
@@ -605,7 +637,6 @@ def scene_filename(act_index: int, scene_index: int, directory: str) -> str:
 
 def dramaturgy_to_split_yaml(
     dramaturgy: Dramaturgy,
-    agents: Sequence[Agent] = (),
     characters: Optional[Sequence[Character]] = None,
     relationships: Optional[Sequence[Relationship]] = None,
     character_groups: Sequence[CharacterGroup] = (),
@@ -615,7 +646,7 @@ def dramaturgy_to_split_yaml(
     プロット(PLOT_DIR)・台詞(SCRIPT_DIR)・原稿(SCENE_DIR)のファイル(台詞・原稿は、あるときだけ)。どのファイルも
     1ファイルのときと同じ入れ子の形で、その一部だけを持つ。シーンごとのファイルは、属する幕・シーンをidとkeyで示す。
     """
-    rest = dramaturgy_to_spec(dramaturgy, agents, characters, relationships, character_groups)
+    rest = dramaturgy_to_spec(dramaturgy, characters, relationships, character_groups)
     scene_parts: dict[str, dict[str, Any]] = {}
     for act_index, act in enumerate(rest["dramaturgy"].get("acts", [])):
         for scene_index, scene in enumerate(act.pop("scenes", [])):
@@ -663,7 +694,6 @@ def _is_scene_file(relative_path: str) -> bool:
 def write_dramaturgy(
     dramaturgy: Dramaturgy,
     path: Union[str, Path],
-    agents: Sequence[Agent] = (),
     characters: Optional[Sequence[Character]] = None,
     relationships: Optional[Sequence[Relationship]] = None,
     character_groups: Sequence[CharacterGroup] = (),
@@ -672,7 +702,7 @@ def write_dramaturgy(
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
-        dramaturgy_to_yaml(dramaturgy, agents, characters, relationships, character_groups),
+        dramaturgy_to_yaml(dramaturgy, characters, relationships, character_groups),
         encoding="utf-8",
     )
 
@@ -680,7 +710,6 @@ def write_dramaturgy(
 def write_split_dramaturgy(
     dramaturgy: Dramaturgy,
     directory: Union[str, Path],
-    agents: Sequence[Agent] = (),
     characters: Optional[Sequence[Character]] = None,
     relationships: Optional[Sequence[Relationship]] = None,
     character_groups: Sequence[CharacterGroup] = (),
@@ -692,9 +721,7 @@ def write_split_dramaturgy(
     - それ以外のYAML(このモジュールが書く名前でないもの)があれば、何も書かずにValueError。
     """
     directory = Path(directory)
-    texts = dramaturgy_to_split_yaml(
-        dramaturgy, agents, characters, relationships, character_groups
-    )
+    texts = dramaturgy_to_split_yaml(dramaturgy, characters, relationships, character_groups)
     stale: list[Path] = []
     if directory.is_dir():
         others = []

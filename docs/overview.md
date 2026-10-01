@@ -8,7 +8,7 @@
 
 - 現状はローカルで実行する(`main.py`をスクリプトとして実行)。
 - 将来はWebアプリにする。そのため、システムの機能は**API方式**(インターフェースに依存しない公開APIを通して使う)で提供する。
-- 具体的なインターフェース(HTTP・GUI・CLI)の設計は保留([future_design.md](future_design.md))。
+- インターフェースは、HTTP(`api/`、YAML)と、その上のWeb GUI(`apps/AIDC-Console`、[architecture.md](architecture.md) 8節)。CLIは保留([future_design.md](future_design.md))。
 
 ## 制作の流れ
 

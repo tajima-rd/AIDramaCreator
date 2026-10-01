@@ -32,7 +32,7 @@
 - 生成AIを呼ぶ工程はAPIキーと課金を伴う。実行の前にユーザーに確認すること。
 - 自動テスト: `.venv/bin/python -m pytest`(依存は`requirements/dev.txt`)。テストはtmp_pathの
   中だけで動き、実レジストリ(`~/.aidc/`)に触れない。
-- 動かすときは`apps/sample_data/`を`Project/TEST_PROJECT_##`(01からの連番)へ複製して使う([architecture.md](architecture.md) 5節。`drama/`・`agent/`を`model/`に、`project.yaml`を直下に)。`Project/`はgitの管理外。
+- 動かすときは`apps/sample_data/`を`Project/TEST_PROJECT_##`(01からの連番)へ複製して使う([architecture.md](architecture.md) 5節。作品のディレクトリ(例: `令和但馬道中膝栗毛/`)の`drama/`・`agent/`を`model/`に、`project.yaml`を直下に)。`Project/`はgitの管理外。
 
 ## 5. 秘密情報
 

@@ -79,11 +79,15 @@
 - **`core/model/`には純粋なモデルだけを置く**(2026-09-30ユーザー決定)。API・生成AI・ファイル・DBに関わるもの(ファイルのパス・
   Datasetのfile_id・生成AIへの指示・生成器・pydantic・読み書き)を置かない。`core.model`は`core.model`の外をimportしない。
 - エージェントのモデルには、エージェントどうしのやり取り(発注・提案・相談)と、動かす手段(生成AIの種類等)を置かない。
+- **エージェントは生成AIが担う職能で、抽象クラス`BaseAgent`の下に置く**(2026-10-01ユーザー決定)。プロンプトを組み立てるための情報
+  (役割・性格づけ・厳守事項・禁止事項・タスク`AgentTask`)を属性として持ち、プロンプトの文は持たない(組み立ては`core/prompt`)。
+  既定は職能のクラスが決め、作品ごとに書き換える(`Dramaturgy.agents`。作品の下書き・版・DBに入る)。Producerは利用者本人なのでモデルに置かない。
+  詳細は[model_design.md](model_design.md)「`core/model/agent/`」。
 
 ## 5. 実験用のプロジェクトと、旧来の形(2026-10-01ユーザー決定)
 
 - 実験用のプロジェクトは`Project/TEST_PROJECT_##`(リポジトリ直下、`##`は01からの連番)に、`apps/sample_data/`を複製して作る
-  (`drama/`・`agent/`を`model/`に、`project.yaml`を直下に)。`apps/sample_data/`を直接`root_dir`にしない。`Project/`はgitの管理外。
+  (作品のディレクトリ(例: `令和但馬道中膝栗毛/`)の`drama/`・`agent/`を`model/`に、`apps/sample_data/project.yaml`を直下に)。`apps/sample_data/`を直接`root_dir`にしない。`Project/`はgitの管理外。
 - 旧来の形(`apps/sample_project`のテキストのファイル、`<root_dir>/project/`の下の構成)は使わない。互換性は考えず、移行が済んだものは
   設計も含めて残さない。`apps/sample_project`と旧来の`Project`(`_legacy_project.py`)は削除した。
 
@@ -105,7 +109,7 @@
 テーブルの定義と実装の場所は [database_design.md](database_design.md)(2026-10-01承認・実装)。
 
 - **DBが正本**。モデル定義YAMLは、取り込み・書き出しと、生成AIとの受け渡しに使う。
-- 対象は今回は`core/model/drama`だけ(`agent`とDatasetの台帳は後で)。
+- 対象は`core/model/drama`と、作品が所有するエージェント(`core/model/agent`。2026-10-01から)。Datasetの台帳は後で。
 - **版と下書きの単位は、プロジェクトの作品モデル全体**(Dramaturgyごとにしない)。人物・人物関係はProjectが持ち、
   複数の作品から参照されるため。
 - 3つの層: ①今の状態(正本。作品のテーブル)・②下書きの履歴・③版。
@@ -131,3 +135,40 @@
 - 作品の中身のDTOは、モデル定義YAMLの形(`DramaturgyDefinition`)で兼ねる(取り込み・生成AIとの受け渡し・GUIが同じ形)。要素は`id`で特定する。
 - 部分的な反映は**idで重ねる部分YAML**: 変えたい部分だけをモデル定義YAMLの形で渡し、下書きの中身に重ねる
   (同じidの要素は上書き、idの無い要素は追加、削除は明示的に書く)。細かい規則は [database_design.md](database_design.md)。
+
+## 8. Web GUI(AIDC Console)(2026-10-01ユーザー決定)
+
+- GUIは`apps/AIDC-Console/`に、QIDM Console(QIDMの`apps/QIDM`)にならって作る。ビルド不要の素のHTML/CSS/JSで、
+  `static/vendor/js-yaml.min.js`をベンダリングする。APIサーバー(`api/main.py`)が`/app`に静的ファイルとしてmountする。
+- 画面の構成: 上部にメニューバー、左にTree、右にパネルの入れ物(main-area。一度に1つのパネル)。**Propertiesの区画は置かない**。
+- **メニューの表記は英語**(Project・Connection…)。
+- QIDMのGUIのファイルは、実行時に参照せず**複製して直す**(別リポジトリに依存しないため)。
+- **APIサーバーの既定のポートは8100**(QIDMの8000と競合するため。`scripts/server/start.sh`の`AIDC_SERVER_PORT`・
+  `core/project/project.py`の`DEFAULT_SERVER_BASE_URL`・`app.js`の`DEFAULT_SERVER_BASE_URL`・`apps/sample_data/project.yaml`を揃える)。
+- パネルはShadow DOMを使わない(light DOM)Custom Elementとし、`app.css`の共通クラス(`.field`・`.btn`・`.panel-*`等)を使う。
+- メニュー: Project・**Edit**・Connection。Editに`New Dramaturgy...`(題・幕数・言語。空の幕を持つ作品を作り、すぐに確定する)と
+  `Dramaturgy Editor`(Treeで選んだ作品。QIDMのDomain Editorにあたる)。
+- **Dramaturgy Editorは編集用の下書きを通す**(正本を変えるのは下書きの確定だけ、7節): 題が`Dramaturgy Editor`のopenな下書きを
+  プロジェクトに1つ持ち、各タブのSaveは部分YAMLの直接編集(`edit`)、ヘッダーの`Save Version`が確定(版を1つ作る。QIDMのSave Schemaに
+  あたる。未確定の変更があれば緑)。確定したら新しい版から下書きを作り直す。下書きの元の版が古ければ、変更が無ければ黙って、
+  あれば利用者に確かめてから破棄して作り直す。Saveのたびに確定する案(Saveごとに版が増える)は採らなかった。
+- 幕数は、Actsタブでの幕の追加・削除で決める(Propertiesに数の欄は置かない)。
+- タブ: Properties・Proposal(企画書)・Agents(エージェント)・Acts。Agentsタブは作品のエージェントの文面を書き換える。空にした項目と
+  Reset to Defaultは職能の既定に戻る(部分YAMLの`null`)。幕の`order`は0から連番で、削除したら詰める。
+- New Dramaturgyは別の下書きで作品を足して確定するため、Dramaturgy Editorの下書きに未確定の変更があれば断る(先にSave Versionを求める)。
+
+### GUI実装上の落とし穴(QIDMから引き継いだもの)
+
+- **`[hidden]`属性のCSS競合**: `app.css`冒頭の`[hidden] { display: none !important; }`を削除しない
+  (`display`を明示するクラスを持つ要素(`#modal-backdrop`等)が隠れなくなり、画面全体がクリック不能になる)。
+- **`.toast`はクリックを透過させる**(`pointer-events: none`)。重なる位置のボタンのクリックを奪う不具合があった。
+  この種の不具合はDOMの`.click()`では再現しないので、座標ベースのクリックで確かめる。トーストの種類は`error`・`warn`・`info`・`ok`の4つ
+  (`showToast(message, kind)`)。完了したが確かめることがあるものは`warn`にし、赤(`error`)にしない。
+- **main-areaのパネルの`display`**: Custom Elementは既定で`display: inline`のため、`#main-area > *`を一律に
+  flex columnにしている(QIDMはタグ名の列挙で、追加漏れでスクロールが効かなくなった)。main-areaの直下にはパネルだけを置く。
+- **`.field`と`.panel-form-row`を同じ要素に付けない**(`flex-direction`が中途半端に残る)。横並びは`.panel-form-row`の下に`.field`を並べる。
+- **表**: `.data-table-wrap`(`.data-table`と組)を使い、表がその区画の主な内容なら`.data-table-wrap--fill`で残りの領域を埋める
+  (直後に常に見せたいボタンがある場合は付けない)。`.panel-body`直下の他の要素は`flex-shrink: 0`で潰れない。
+- **複数ファイルの保存にフォルダ選択(`showDirectoryPicker`)を使わない**(Chromeがホーム等のフォルダを拒否する)。
+  サーバー側でZIPにまとめ、`saveBlobToFile`(`showSaveFilePicker`)で1回で保存する。
+

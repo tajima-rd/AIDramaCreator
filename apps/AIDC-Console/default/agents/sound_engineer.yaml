@@ -1,0 +1,16 @@
+# SoundEngineerの既定(core.model.agent.sound_engineer.SoundEngineerの既定の文面から書き出したもの。2026-10-01、暫定)。
+# 作品の分割ファイルと同じ形(dramaturgy.agents)で、作品に重ねればこの職能のエージェントが1人加わる。
+# idとkeyは書かない(使うたびに新しいエージェントになる)。
+dramaturgy:
+  agents:
+    sound_engineers:
+    - name: 音響技師
+      role: シーンの音響を担う。効果音・環境音・BGMを決める。
+      rules: []
+      prohibitions: []
+      tasks:
+      - code: design_sound
+        title: 音響を設計する
+        description: シーンの状況から、効果音・環境音・BGMを決める。
+        rules: []
+        prohibitions: []

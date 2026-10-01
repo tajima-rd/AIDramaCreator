@@ -26,8 +26,13 @@ def test_blocking_characters():
 
 def test_characters_not_in_sources():
     sources = Sources.of(["baseline eGFR ≥35 mL/min – CKD", "Featureを提案してください。"])
-    assert _issues("baseline eGFR ╦′ 35 ╦", sources) == [("╦", "not_in_sources", False), ("′", "not_in_sources", False)]
+    assert _issues("baseline eGFR ╦′ 35 ╦", sources) == [
+        ("╦", "not_in_sources", False),
+        ("′", "not_in_sources", False),
+    ]
     assert _issues("eGFR ≥ 35 “quoted” — ok… 病期の進行、ステージ", sources) == []
-    assert _issues("Сtage", sources) == [("С", "not_in_sources", False)]  # キリル文字のС(英字のCに似る)
+    assert _issues("Сtage", sources) == [
+        ("С", "not_in_sources", False)
+    ]  # キリル文字のС(英字のCに似る)
     assert _issues("±5%", sources, accepted={"±"}) == []
     assert _issues("╦") == []  # 出典が無ければ文字の種類だけで判定する

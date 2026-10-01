@@ -8,11 +8,14 @@
 write_modelは、すべての行を消してから書き直す(コミットしない)。
 
 - 識別子を持つものは1クラス=1テーブル。1つだけ持つ値(Premise・Situation・Direction・Performance・SpeechStyle)は
-  持ち主の列、一覧で持つ値(Characteristic→AdditionalFeature・SentenceEnding)は持ち主のidと並び順で特定する子テーブル。
+  持ち主の列、一覧で持つ値(Characteristic→AdditionalFeature・SentenceEnding・ProposalCharacter)は持ち主のidと並び順で
+  特定する子テーブル。企画書(Proposal)は登場人物の一覧を持つため、作品ごとに1行のproposalテーブルにする。
 - ScriptElementは1テーブル+種別の列(kind)。Dialogue.line_id・cast_idはID参照なので外部キーの制約を付けない。
 - sort_orderは、Act・Scene・Line・ScriptElementではモデルのorder、それ以外は一覧の中の位置。並びの無い一覧(人物・場所等)は
   書いた順(rowid)に読む。
-- Character.relationshipsは保存しない(人物関係を組み立てるとそろう)。エージェント(core.model.agent)は対象外。
+- Character.relationshipsは保存しない(人物関係を組み立てるとそろう)。
+- エージェント(core.model.agent。作品が所有する)は1テーブル+職能の列(kind)。rules・prohibitions(文字列の一覧)はJSONの列、
+  タスクはagent_task(並び順はタスクの並び。codeで特定)。Actor.casting_idはID参照なので外部キーの制約を付けない。
 """
 
 import json
@@ -20,6 +23,8 @@ import sqlite3
 from typing import Any, Optional
 
 from core.infra.io.model_definition_reader import ModelDefinition
+from core.model.agent import Actor, AgentTask, BaseAgent
+from core.model.agent.factory import AGENT_ROLES, build_actor, build_agent
 from core.model.drama import (
     AdditionalFeature,
     Atmosphere,
@@ -32,6 +37,8 @@ from core.model.drama import (
     Music,
     Performance,
     Premise,
+    Proposal,
+    ProposalCharacter,
     Relationship,
     Script,
     ScriptElement,
@@ -145,6 +152,45 @@ CREATE TABLE IF NOT EXISTS dramaturgy (
     output_language TEXT,
     premise_text TEXT
 );
+CREATE TABLE IF NOT EXISTS proposal (
+    dramaturgy_id TEXT PRIMARY KEY REFERENCES dramaturgy(id) ON DELETE CASCADE,
+    title TEXT,
+    catchphrase TEXT,
+    logline TEXT,
+    intent TEXT,
+    target_area TEXT,
+    synopsis TEXT
+);
+CREATE TABLE IF NOT EXISTS agent (
+    id TEXT PRIMARY KEY,
+    dramaturgy_id TEXT NOT NULL REFERENCES dramaturgy(id) ON DELETE CASCADE,
+    sort_order INTEGER NOT NULL,
+    kind TEXT NOT NULL,
+    name TEXT NOT NULL,
+    role TEXT NOT NULL,
+    persona TEXT,
+    rules TEXT NOT NULL,
+    prohibitions TEXT NOT NULL,
+    casting_id TEXT,
+    voice_name TEXT
+);
+CREATE TABLE IF NOT EXISTS agent_task (
+    agent_id TEXT NOT NULL REFERENCES agent(id) ON DELETE CASCADE,
+    sort_order INTEGER NOT NULL,
+    code TEXT NOT NULL,
+    title TEXT,
+    description TEXT,
+    rules TEXT NOT NULL,
+    prohibitions TEXT NOT NULL,
+    PRIMARY KEY (agent_id, code)
+);
+CREATE TABLE IF NOT EXISTS proposal_character (
+    dramaturgy_id TEXT NOT NULL REFERENCES proposal(dramaturgy_id) ON DELETE CASCADE,
+    sort_order INTEGER NOT NULL,
+    name TEXT,
+    description TEXT,
+    PRIMARY KEY (dramaturgy_id, sort_order)
+);
 CREATE TABLE IF NOT EXISTS temporal_edge (
     id TEXT PRIMARY KEY,
     dramaturgy_id TEXT NOT NULL REFERENCES dramaturgy(id) ON DELETE CASCADE,
@@ -252,6 +298,10 @@ _TABLES = (
     "act",
     '"cast"',
     "temporal_edge",
+    "agent_task",
+    "agent",
+    "proposal_character",
+    "proposal",
     "dramaturgy",
     "relationship",
     "character_group",
@@ -263,6 +313,12 @@ _TABLES = (
     "location",
     "temporal_node",
 )
+
+# エージェントのクラス→職能の列(kind)の値。値はモデル定義YAMLの区画名の単数形
+_AGENT_KINDS: dict[type[BaseAgent], str] = {
+    **{cls: name for name, cls in AGENT_ROLES.items()},
+    Actor: "actor",
+}
 
 # 原稿の要素のクラス→種別の列(kind)の値。値はモデル定義YAMLのtypeと同じ
 _ELEMENT_KINDS: dict[type[ScriptElement], str] = {
@@ -307,8 +363,6 @@ def write_model(conn: sqlite3.Connection, definition: ModelDefinition) -> None:
     正本のすべての行を消し、definition(プロジェクトの作品モデル全体)を書く。コミットしない(呼ぶ側のトランザクション)。
     外部キーの検査はコミットの時まで遅らせる(書く順に左右されないため)。
     """
-    if definition.agents:
-        raise ValueError("エージェントはDBに保存しません(対象はcore.model.dramaだけ)")
     conn.execute("PRAGMA defer_foreign_keys = ON")
     for table in _TABLES:
         conn.execute(f"DELETE FROM {table}")
@@ -469,6 +523,33 @@ def _write_dramaturgy(conn: sqlite3.Connection, dramaturgy: Dramaturgy, index: i
             "premise_text": dramaturgy.premise.text,
         },
     )
+    proposal = dramaturgy.proposal
+    _insert(
+        conn,
+        "proposal",
+        {
+            "dramaturgy_id": dramaturgy.id,
+            "title": proposal.title,
+            "catchphrase": proposal.catchphrase,
+            "logline": proposal.logline,
+            "intent": proposal.intent,
+            "target_area": proposal.target_area,
+            "synopsis": proposal.synopsis,
+        },
+    )
+    for position, agent in enumerate(dramaturgy.agents):
+        _write_agent(conn, dramaturgy.id, agent, position)
+    for position, character in enumerate(proposal.characters):
+        _insert(
+            conn,
+            "proposal_character",
+            {
+                "dramaturgy_id": dramaturgy.id,
+                "sort_order": position,
+                "name": character.name,
+                "description": character.description,
+            },
+        )
     for position, character in enumerate(dramaturgy.characters):
         _insert(
             conn,
@@ -611,6 +692,104 @@ def _situation(row: sqlite3.Row, locations: dict[str, Any]) -> Situation:
     )
 
 
+def _write_agent(
+    conn: sqlite3.Connection, dramaturgy_id: str, agent: BaseAgent, position: int
+) -> None:
+    kind = _AGENT_KINDS.get(type(agent))
+    if kind is None:
+        raise ValueError(f"保存できないエージェントです: {type(agent).__name__}")
+    is_actor = isinstance(agent, Actor)
+    _insert(
+        conn,
+        "agent",
+        {
+            "id": agent.id,
+            "dramaturgy_id": dramaturgy_id,
+            "sort_order": position,
+            "kind": kind,
+            "name": agent.name,
+            "role": agent.role,
+            "persona": agent.persona,
+            "rules": json.dumps(agent.rules, ensure_ascii=False),
+            "prohibitions": json.dumps(agent.prohibitions, ensure_ascii=False),
+            "casting_id": agent.casting_id if is_actor else None,
+            "voice_name": agent.voice_name if is_actor else None,
+        },
+    )
+    for order, task in enumerate(agent.tasks):
+        _insert(
+            conn,
+            "agent_task",
+            {
+                "agent_id": agent.id,
+                "sort_order": order,
+                "code": task.code,
+                "title": task.title,
+                "description": task.description,
+                "rules": json.dumps(task.rules, ensure_ascii=False),
+                "prohibitions": json.dumps(task.prohibitions, ensure_ascii=False),
+            },
+        )
+
+
+def _read_agents(conn: sqlite3.Connection, dramaturgy_id: str) -> list[BaseAgent]:
+    agents: list[BaseAgent] = []
+    for row in _rows(
+        conn, "SELECT * FROM agent WHERE dramaturgy_id = ? ORDER BY sort_order", dramaturgy_id
+    ):
+        tasks = [
+            AgentTask(
+                task["code"],
+                task["title"],
+                task["description"],
+                json.loads(task["rules"]),
+                json.loads(task["prohibitions"]),
+            )
+            for task in _rows(
+                conn, "SELECT * FROM agent_task WHERE agent_id = ? ORDER BY sort_order", row["id"]
+            )
+        ]
+        common = (
+            row["role"],
+            row["persona"],
+            json.loads(row["rules"]),
+            json.loads(row["prohibitions"]),
+            tasks,
+        )
+        if row["kind"] == "actor":
+            agent = build_actor(
+                row["casting_id"], row["name"], row["voice_name"], *common, id=row["id"]
+            )
+        else:
+            agent = build_agent(row["kind"], row["name"], *common, id=row["id"])
+        agents.append(agent)
+    return agents
+
+
+def _read_proposal(conn: sqlite3.Connection, dramaturgy_id: str) -> Proposal:
+    rows = _rows(conn, "SELECT * FROM proposal WHERE dramaturgy_id = ?", dramaturgy_id)
+    if not rows:
+        return Proposal()
+    row = rows[0]
+    characters = [
+        ProposalCharacter(item["name"], item["description"])
+        for item in _rows(
+            conn,
+            "SELECT * FROM proposal_character WHERE dramaturgy_id = ? ORDER BY sort_order",
+            dramaturgy_id,
+        )
+    ]
+    return Proposal(
+        row["title"],
+        row["catchphrase"],
+        row["logline"],
+        row["intent"],
+        row["target_area"],
+        row["synopsis"],
+        characters,
+    )
+
+
 def read_model(conn: sqlite3.Connection) -> ModelDefinition:
     """正本から、プロジェクトの作品モデル全体を組み立てる(組み立てはcore.model.drama.factory)。"""
     nodes = {
@@ -737,7 +916,6 @@ def read_model(conn: sqlite3.Connection) -> ModelDefinition:
     ]
     return ModelDefinition(
         dramaturgies,
-        [],
         list(characters.values()),
         list(relationships.values()),
         character_groups,
@@ -857,6 +1035,8 @@ def _read_dramaturgy(
         list(casts.values()),
         acts,
         history,
+        _read_proposal(conn, dramaturgy_id),
+        _read_agents(conn, dramaturgy_id),
         id=dramaturgy_id,
     )
 

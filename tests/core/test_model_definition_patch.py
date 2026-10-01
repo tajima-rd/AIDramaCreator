@@ -8,6 +8,7 @@ import pytest
 import yaml
 
 from core.infra.io.model_definition_patch import patch_spec
+from core.model.agent import Scriptwriter
 from core.service.process.edit import drama_draft_editor as editor
 from tests.core.test_drama_draft_editor import PROJECT_MODEL
 
@@ -83,6 +84,76 @@ dramaturgies:
     # 作品の人物は参照の一覧なので丸ごと置き換わる(最上位の人物はそのまま)
     assert after["dramaturgies"][0]["characters"] == [{"ref": _character(after, "父")["key"]}]
     assert len(after["characters"]) == 2
+
+
+def test_proposal_is_overlaid_and_its_characters_are_replaced_whole(db_path, draft_id):
+    first = _content(db_path, draft_id)["dramaturgies"][0]
+    patch = f"""
+dramaturgies:
+  - id: {first['id']}
+    proposal:
+      logline: 灯台守の少女が、祖父の秘密を知る。
+      characters: [{{name: 少女}}]
+"""
+    editor.edit_draft(db_path, draft_id, patch)
+    proposal = _content(db_path, draft_id)["dramaturgies"][0]["proposal"]
+    # 書かなかった項目は残り、登場人物(識別子の無い仮の設定)の一覧は丸ごと置き換わる
+    assert proposal["title"] == first["proposal"]["title"]
+    assert proposal["logline"] == "灯台守の少女が、祖父の秘密を知る。"
+    assert proposal["characters"] == [{"name": "少女"}]
+    # 企画書の登場人物は作品の人物(参照)とは別
+    assert _content(db_path, draft_id)["dramaturgies"][0]["characters"] == first["characters"]
+
+
+def test_proposal_can_be_added_to_dramaturgy_without_one(db_path, draft_id):
+    second = _content(db_path, draft_id)["dramaturgies"][1]
+    assert "proposal" not in second
+    editor.edit_draft(
+        db_path,
+        draft_id,
+        f"dramaturgies: [{{id: {second['id']}, proposal: {{target_area: 山村}}}}]",
+    )
+    assert _content(db_path, draft_id)["dramaturgies"][1]["proposal"] == {"target_area": "山村"}
+
+
+def _writer(content: dict) -> dict:
+    return content["dramaturgies"][0]["agents"]["scriptwriters"][0]
+
+
+def test_agent_lists_are_replaced_whole_and_null_restores_defaults(db_path, draft_id):
+    first = _content(db_path, draft_id)["dramaturgies"][0]
+    writer = _writer(_content(db_path, draft_id))
+    patch = f"""
+dramaturgies:
+  - id: {first['id']}
+    agents:
+      scriptwriters:
+        - id: {writer['id']}
+          prohibitions: [長い独白を書かない。]
+          tasks: [{{code: draft_proposal, title: 企画を相談する}}]
+"""
+    editor.edit_draft(db_path, draft_id, patch)
+    after = _writer(_content(db_path, draft_id))
+    assert after["prohibitions"] == ["長い独白を書かない。"]
+    # タスクの一覧は丸ごと置き換わり、書かなかったタスクは既定に戻る
+    titles = {t["code"]: t["title"] for t in after["tasks"]}
+    assert titles["draft_proposal"] == "企画を相談する"
+    dialogue = next(t for t in after["tasks"] if t["code"] == "write_dialogue")
+    assert dialogue["prohibitions"] == Scriptwriter.default_task("write_dialogue").prohibitions
+    # 書かなかった属性は残る
+    assert after["rules"] == writer["rules"] and after["persona"] == writer["persona"]
+
+    # nullで消すと、職能の既定に戻る
+    editor.edit_draft(
+        db_path,
+        draft_id,
+        f"dramaturgies: [{{id: {first['id']}, agents: {{scriptwriters: "
+        f"[{{id: {writer['id']}, rules: null, prohibitions: null, tasks: null}}]}}}}]",
+    )
+    reset = _writer(_content(db_path, draft_id))
+    assert reset["rules"] == Scriptwriter.default_rules()
+    assert reset["prohibitions"] == Scriptwriter.default_prohibitions()
+    assert [t["title"] for t in reset["tasks"]] == [t.title for t in Scriptwriter.default_tasks()]
 
 
 def test_delete_removes_item_and_owned_children(db_path, draft_id):

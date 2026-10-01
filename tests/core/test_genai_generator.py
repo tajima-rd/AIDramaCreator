@@ -29,7 +29,9 @@ def test_to_messages():
     assert to_messages("hello") == [Message(role="user", text="hello")]
 
     prompt = Prompt([Section("役割", [TextBlock("x")])])
-    assert to_messages(prompt, [PDF]) == [Message(role="user", text=prompt.to_text(), attachments=[PDF])]
+    assert to_messages(prompt, [PDF]) == [
+        Message(role="user", text=prompt.to_text(), attachments=[PDF])
+    ]
 
     history = [
         Message(role="user", text="q1"),
@@ -54,10 +56,12 @@ def test_attachment_from_file(tmp_path):
 
 
 def test_build_contents():
-    contents = build_contents([
-        Message(role="user", text="q", attachments=[PDF]),
-        Message(role="assistant", text="a"),
-    ])
+    contents = build_contents(
+        [
+            Message(role="user", text="q", attachments=[PDF]),
+            Message(role="assistant", text="a"),
+        ]
+    )
     assert [c.role for c in contents] == ["user", "model"]
     assert contents[0].parts[0].inline_data.mime_type == "application/pdf"
     assert contents[0].parts[1].text == "q"
@@ -99,7 +103,11 @@ def test_text_config_defaults():
 def test_generate_text():
     gen = _text_generator(
         config=TextConfig(thinking_level=ThinkingLevel.HIGH, use_url_context=True),
-        chunks=[SimpleNamespace(text="Hello, "), SimpleNamespace(text=None), SimpleNamespace(text="world ")],
+        chunks=[
+            SimpleNamespace(text="Hello, "),
+            SimpleNamespace(text=None),
+            SimpleNamespace(text="world "),
+        ],
     )
     assert gen.generate("hi", system_instruction="be brief") == "Hello, world"
     config = gen.client.models.calls[0]["config"]
@@ -126,7 +134,8 @@ def test_generate_structured_truncated():
 
     gen = _text_generator(text='{"name": "haz')
     gen.client.models.generate_content = lambda **kwargs: SimpleNamespace(
-        text='{"name": "haz', candidates=[SimpleNamespace(finish_reason=types.FinishReason.MAX_TOKENS)]
+        text='{"name": "haz',
+        candidates=[SimpleNamespace(finish_reason=types.FinishReason.MAX_TOKENS)],
     )
     with pytest.raises(OutputTruncatedError):
         gen.generate_structured("extract", _Schema)
@@ -139,13 +148,19 @@ def _audio_chunk(data, mime_type="audio/L16;codec=pcm;rate=24000"):
 
 def test_synthesize_joins_pcm_into_one_wav():
     gen = GeminiSpeechGenerator(api_key="dummy-key", model_name="gemini-3.1-flash-tts-preview")
-    gen.client = SimpleNamespace(models=_FakeModels(
-        chunks=[_audio_chunk(b"\x01\x00" * 3), SimpleNamespace(parts=None), _audio_chunk(b"\x02\x00" * 2)]
-    ))
+    gen.client = SimpleNamespace(
+        models=_FakeModels(
+            chunks=[
+                _audio_chunk(b"\x01\x00" * 3),
+                SimpleNamespace(parts=None),
+                _audio_chunk(b"\x02\x00" * 2),
+            ]
+        )
+    )
     wav = gen.synthesize("こんにちは", voice="Kore")
     assert wav[:4] == b"RIFF" and wav[8:12] == b"WAVE"
-    sample_rate, = struct.unpack("<I", wav[24:28])
-    data_size, = struct.unpack("<I", wav[40:44])
+    (sample_rate,) = struct.unpack("<I", wav[24:28])
+    (data_size,) = struct.unpack("<I", wav[40:44])
     assert sample_rate == 24000 and data_size == 10
     config = gen.client.models.calls[0]["config"]
     assert config.speech_config.voice_config.prebuilt_voice_config.voice_name == "Kore"

@@ -7,7 +7,7 @@ model_definition_reader・model_definition_writer。準備の各項目(前提・
 
 【区画】モデルのコンポジション(所有)は、YAMLでも入れ子にする。作品が所有しない要素(TemporalNode・Location・
 Character・CharacterGroup・Relationship)は、dramaturgyと並ぶ最上位の区画に書き、参照する(人物・人物関係の持ち主はProjectで、作品は参照で持つ)。作品作りに参加するエージェント(core.model.agent)は、
-最上位のagentsに職能ごとに書く(エージェントは作品の一部ではないので、dramaturgyの外)。
+作品が所有するので、dramaturgyの中のagentsに職能ごとに書く(作品ごとに役割・厳守事項等を書き換えられる。2026-10-01)。
 
     protocol_version: "0.1.0"   # 省略可
     temporal_nodes: [{id, key, label, date_type, string_date}]
@@ -23,6 +23,8 @@ Character・CharacterGroup・Relationship)は、dramaturgyと並ぶ最上位の�
     dramaturgy:
       id, key, title, synopsis, input_language, output_language
       premise: {text}
+      proposal: {title, catchphrase, logline, intent, target_area, synopsis,   # 企画書(初期シード。題・あらすじ・人物は作品と共有しない)
+                 characters: [{name, description}]}                          # 企画書の登場人物(仮の設定。Characterとは別)
       characters: [{ref}]             # この作品に関わる人物(参照。人物はdramaturgyの外にある)
       relationships: [{ref}]          # この作品に関わる人物関係(参照)
       casts: [{id, key, character, performance: {title, description, pace}, voice_gender, language, accent}]   # voice_genderはmale・female・neutral
@@ -34,11 +36,16 @@ Character・CharacterGroup・Relationship)は、dramaturgyと並ぶ最上位の�
                                     situation}
                                    | {type: sound_effect | atmosphere | music, id, key, order}]}]}]
       history: {edges: [{id, key, label, kind, source, target}]}   # source/targetはTemporalNodeへの参照
+      agents:                         # 作品作りに参加するエージェント(生成AIが担う職能。作品が所有する)
+        researchers | casting_directors | scriptwriters | directors | stage_managers | sound_engineers:
+          [{id, key, name, role, persona, rules: [...], prohibitions: [...],
+            tasks: [{code, title, description, rules: [...], prohibitions: [...]}]}]
+        actors: [{同上, cast, voice_name}]   # castはCastへの参照(モデルではActor.casting_id)
     dramaturgies: [{dramaturgyと同じ形}]   # 作品が複数のとき
-    agents:
-      producers | researchers | casting_directors | scriptwriters | directors | stage_managers | sound_engineers:
-        [{id, key, name, persona}]
-      actors: [{id, key, name, persona, cast, voice_name}]   # castはCastへの参照(モデルではActor.casting_id)
+
+【エージェントの既定値】role・rules・prohibitionsを省略すれば職能の既定(core.model.agentの各クラス)。書けば(空の一覧[]も)
+その値。tasksは職能ごとに決まったタスク(code)のうち、書き換えたものだけを書けばよく、省略したタスクと、タスクの中で
+省略した項目は既定になる。職能に無いcodeはエラー。書き出しでは、既定と同じでもすべてを書く(作品ごとの全文を残す)。
 
 【分割】1つのファイル(複数のYAML文書を`---`で区切ってもよい)にも、複数のファイルにも書ける。分けた文書は、
 どれも上と同じ入れ子の形で、その一部だけを書く(例: 人物だけのファイルは`dramaturgy: {characters: [...]}`)。
@@ -91,6 +98,23 @@ class Ref(_Spec):
 
 class PremiseSpec(_Spec):
     text: Optional[str] = None
+
+
+class ProposalCharacterSpec(_Spec):
+    name: Optional[str] = None
+    description: Optional[str] = None
+
+
+class ProposalSpec(_Spec):
+    """企画書(core.model.drama.proposal)。すべて省略できる。"""
+
+    title: Optional[str] = None
+    catchphrase: Optional[str] = None
+    logline: Optional[str] = None
+    intent: Optional[str] = None
+    target_area: Optional[str] = None
+    synopsis: Optional[str] = None
+    characters: list[ProposalCharacterSpec] = []
 
 
 class TemporalNodeSpec(_Spec):
@@ -299,26 +323,27 @@ class ActSpec(_Spec):
     scenes: list[SceneSpec] = []
 
 
-class DramaturgySpec(_Spec):
-    id: Optional[str] = None
-    key: Optional[str] = None
-    title: str
-    synopsis: Optional[str] = None
-    input_language: Optional[str] = None
-    output_language: Optional[str] = None
-    premise: Optional[PremiseSpec] = None
-    characters: list[Ref] = []  # 人物への参照
-    relationships: list[Ref] = []  # 人物関係への参照
-    casts: list[CastSpec] = []
-    acts: list[ActSpec] = []
-    history: Optional[HistorySpec] = None
+class AgentTaskSpec(_Spec):
+    """エージェントのタスク(core.model.agent.AgentTask)。codeで職能のタスクを特定し、省略した項目は既定。"""
+
+    code: str
+    title: Optional[str] = None
+    description: Optional[str] = None
+    rules: Optional[list[str]] = None
+    prohibitions: Optional[list[str]] = None
 
 
 class AgentSpec(_Spec):
+    """role・rules・prohibitionsは省略すれば職能の既定(空の一覧[]と区別する)。"""
+
     id: Optional[str] = None
     key: Optional[str] = None
     name: str
+    role: Optional[str] = None
     persona: Optional[str] = None
+    rules: Optional[list[str]] = None
+    prohibitions: Optional[list[str]] = None
+    tasks: list[AgentTaskSpec] = []
 
 
 class ActorSpec(AgentSpec):
@@ -329,7 +354,6 @@ class ActorSpec(AgentSpec):
 class AgentsSpec(_Spec):
     """職能ごとのエージェント。区画名は職能の複数形(core.model.agent.factory.AGENT_ROLESの名前+s)。"""
 
-    producers: list[AgentSpec] = []
     researchers: list[AgentSpec] = []
     casting_directors: list[AgentSpec] = []
     scriptwriters: list[AgentSpec] = []
@@ -337,6 +361,23 @@ class AgentsSpec(_Spec):
     stage_managers: list[AgentSpec] = []
     sound_engineers: list[AgentSpec] = []
     actors: list[ActorSpec] = []
+
+
+class DramaturgySpec(_Spec):
+    id: Optional[str] = None
+    key: Optional[str] = None
+    title: str
+    synopsis: Optional[str] = None
+    input_language: Optional[str] = None
+    output_language: Optional[str] = None
+    premise: Optional[PremiseSpec] = None
+    proposal: Optional[ProposalSpec] = None  # 企画書
+    characters: list[Ref] = []  # 人物への参照
+    relationships: list[Ref] = []  # 人物関係への参照
+    casts: list[CastSpec] = []
+    acts: list[ActSpec] = []
+    history: Optional[HistorySpec] = None
+    agents: Optional[AgentsSpec] = None  # 作品作りに参加するエージェント
 
 
 class DramaturgyDefinition(_Spec):
@@ -350,4 +391,3 @@ class DramaturgyDefinition(_Spec):
     relationships: list[RelationshipSpec] = []
     dramaturgy: Optional[DramaturgySpec] = None
     dramaturgies: list[DramaturgySpec] = []  # 作品が複数のとき(プロジェクトの作品モデル全体)
-    agents: Optional[AgentsSpec] = None

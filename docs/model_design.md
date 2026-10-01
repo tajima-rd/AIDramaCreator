@@ -27,7 +27,10 @@ Project(core/project。今はモデル定義の読み込み結果 ModelDefinitio
  └ Dramaturgy ×n ─ 作品全体。メタメタストーリー、input_language / output_language
      ├ (参照) characters: Character ×n・relationships: Relationship ×n ─ この作品に関わる人物・人物関係(所有しない)
      ├ Premise ─ 前提の知識
+     ├ Proposal ─ 企画書(初期シード。題・あらすじ・登場人物は作品と共有しない)
+     │   └ ProposalCharacter ×n ─ 企画書の登場人物(仮の設定。名前と説明だけ。Characterとは別)
      ├ Cast ×n ─ character: Character の配役(演じ方・声の性別)。台詞の話者
+     ├ BaseAgent ×n ─ 作品作りに参加するエージェント(作品ごとに文面を書き換えられる。下の「core/model/agent/」)
      ├ History ─ TemporalEdge ×n(時間の位相)
      └ Act ×n ─ メタストーリー
          └ Scene ×n ─ あらすじ、period: TemporalNode(描く時期)、location: Location
@@ -51,8 +54,10 @@ store(台帳)の側で持つ。
 
 | ファイル | クラス | 属性 |
 | --- | --- | --- |
-| `dramaturgy.py` | `Dramaturgy` | `id`・`title`・`synopsis`(メタメタストーリー)・`input_language`・`output_language`・`premise`・`characters`(参照)・`relationships`(参照)・`casts`・`acts`・`history`。人物・人物関係は所有しない(2026-10-01) |
+| `dramaturgy.py` | `Dramaturgy` | `id`・`title`・`synopsis`(メタメタストーリー)・`input_language`・`output_language`・`premise`・`proposal`(企画書)・`characters`(参照)・`relationships`(参照)・`casts`・`acts`・`history`。人物・人物関係は所有しない(2026-10-01) |
 | `premise.py` | `Premise` | `text` |
+| `proposal.py` | `Proposal` | `title`・`catchphrase`(キャッチコピー)・`logline`(ログライン)・`intent`(企画意図)・`target_area`(対象地域。文字列、暫定)・`synopsis`(企画書のあらすじ)・`characters`。作品制作の初期シードで、仮の設定が多いため、題・あらすじ・登場人物を作品と共有しない。`Dramaturgy.synopsis`は作品を確定する段階で(生成AIの力を借りて)作るもので別。後から修正できる(すべて省略可)(2026-10-01ユーザー決定。UMLへの反映はユーザー) |
+| | `ProposalCharacter` | `name`・`description`(企画書の登場人物。仮の設定で、`Character`とは別) |
 | `act.py` | `Act` | `id`・`order`・`title`・`synopsis`(メタストーリー)・`scenes` |
 | `scene.py` | `Scene` | `id`・`order`・`title`・`synopsis`・`period: TemporalNode`・`location: Location`・`situation: Situation`(場面の状況。場所はlocationが持つ)・`script`・`elements` |
 | `situation.py` | `Situation` | `location: Location`(参照)・`description`(状況)・`time_of_day`(時間帯)・`environment`(天候・環境)。シーン・台詞が値として所有する(2026-10-01) |
@@ -95,25 +100,38 @@ UMLからの変更(2026-09-30ユーザー承認): `Profile`をなくし、`Chara
 
 ## `core/model/agent/`
 
-エージェントは職能ごとのクラス(基底`Agent`のサブクラス)。どの手段で動かすか(利用者・文章生成・音声合成・プログラム)は
-モデルに持たず、処理の側(`service/process`)が決める。どの生成AI(提供元・モデル)を使うかは、仮に既存の`project.yaml`の`genai`
-(`llm`・`tts`)に置く。ただし演者(`Actor`)は、どの声で演じるか(`voice_name`)を自分で持つ(2026-10-01ユーザー決定)。
-エージェントもモデル定義YAMLに書ける(最上位の`agents:`に職能ごと。`core/model/agent/factory.py`で組み立てる。`apps/sample_data/agent/`)。エージェントどうしのやり取り(発注・提案と反映・利用者との相談)はエージェントのモデルではないので、
-ここには置かない(公開API・処理の側で設計する。QIDMのdraftsに相当)。
+エージェントは**生成AIが担う職能**で、職能ごとのクラス(抽象クラス`BaseAgent`のサブクラス)。**作品(`Dramaturgy.agents`)が所有する**
+(作品ごとに文面を書き換えられる。下書き・版・DBにも入る。2026-10-01ユーザー決定)。**Producerは利用者本人なので、モデルに置かない**
+(2026-10-01ユーザー決定)。チャットで対話するかどうかに関わらず、生成AIを使う職能(文章生成・音声合成)はすべてエージェント。
+どの生成AI(提供元・モデル)で動かすかはモデルに持たず、処理の側(`service/process`)が決める(仮に`project.yaml`の`genai`)。
+演者(`Actor`)は、どの声で演じるか(`voice_name`)を自分で持つ(2026-10-01ユーザー決定)。
 
-| ファイル | クラス | 実行の手段 | 固有の属性 | 読む | 書く |
-| --- | --- | --- | --- | --- | --- |
-| `agent.py` | `Agent`(基底) | — | `id`・`name`・`persona`(性格づけ) | | |
-| `producer.py` | `Producer` | human(利用者) | なし | すべて | Premise・提案の反映/却下 |
-| `researcher.py` | `Researcher` | text+検索 | なし | 資料・Premise | (根拠のみ。作品は書き換えない) |
-| `casting_director.py` | `CastingDirector` | text | なし | Character | Cast(配役と演じ方)・どのActorに任せるか |
-| `scriptwriter.py` | `Scriptwriter` | text | なし | Premise・Character・Relationship・TemporalNode・あらすじ | Character・Biography・Relationship・あらすじ・Script |
-| `director.py` | `Director` | text | なし | Script・Character・Location | ScriptElement |
-| `stage_manager.py` | `StageManager` | program | なし | ScriptElement・音声 | キューシート・翻訳の呼び出し(**暫定**) |
-| `actor.py` | `Actor` | speech | `casting_id`(Castごとに1つ。ID参照)・`voice_name`(使う声) | Dialogue・Cast | 台詞の音声 |
-| `sound_engineer.py` | `SoundEngineer` | program | なし | キューシート | シーンの音声 |
+**生成AIへのプロンプトを組み立てるための情報を属性として持つ**(プロンプトの文そのもの・応答の型・渡す情報の範囲は持たない。組み立ては
+`core/prompt`、実行は`service/process`。2026-10-01ユーザー決定。ai_drama_creator_2のプロンプトの節(Role・Tasks・厳守事項・禁止事項)を参考にした):
 
-「読む」「書く」は、機能を定義するときにコードへ入れる。
+| ファイル | クラス | 属性 |
+| --- | --- | --- |
+| `base_agent.py` | `BaseAgent`(抽象) | `id`・`name`・`role`(役割の説明)・`persona`(性格づけ)・`rules`(どのタスクでも守ること)・`prohibitions`(どのタスクでもしてはいけないこと)・`tasks: list[AgentTask]`。職能ごとの既定は`default_role`・`default_rules`・`default_prohibitions`・`default_tasks`(サブクラスが上書き) |
+| `agent_task.py` | `AgentTask` | `code`(タスクの識別子。職能ごとにコードで決まる)・`title`・`description`・`rules`・`prohibitions`。**職務の定義**で、発注(担当・状態・結果)ではない |
+
+- 既定の値は職能のクラス(コード)が決め、作品ごとに書き換えた後の**全文**を持つ。省略(None)すれば既定。
+- **タスクの一覧は職能ごとに固定**(codeで特定)。書き換えられるのは文面だけ。職能に無いcodeはエラー。タスクごとの応答の型・渡す情報・
+  反映の処理は、codeで`core/prompt`・`service/process`の側と結び付ける。
+- `AgentTask.code`は、モデル定義YAMLの`key`(書き出すたびに振り直す呼び名)と区別するため`key`にしなかった。
+- 各職能の既定の文面(役割・厳守事項・禁止事項・タスク)は**暫定**(2026-10-01。ユーザーの見直しを待つ)。
+
+| ファイル | クラス | 生成AI | 固有の属性 | 既定のタスク(code) |
+| --- | --- | --- | --- | --- |
+| `researcher.py` | `Researcher` | text+検索 | なし | `answer_question`・`check_consistency` |
+| `casting_director.py` | `CastingDirector` | text | なし | `cast_character`・`assign_voice` |
+| `scriptwriter.py` | `Scriptwriter` | text | なし | `draft_proposal`・`create_character`・`write_synopsis`・`write_dialogue` |
+| `director.py` | `Director` | text | なし | `direct_scene` |
+| `stage_manager.py` | `StageManager` | text(翻訳) | なし | `translate`(キューシートの組み立てはプログラムで、タスクにしない) |
+| `sound_engineer.py` | `SoundEngineer` | (将来) | なし | `design_sound`(結合はプログラム) |
+| `actor.py` | `Actor` | speech | `casting_id`(Castごとに1つ。ID参照)・`voice_name`(使う声) | `perform_dialogue` |
+
+エージェントどうしのやり取り(発注・提案と反映・利用者との相談)はエージェントのモデルではないので、ここには置かない
+(公開API・処理の側で設計する。QIDMのdraftsに相当)。
 
 ## モデルの組み立てと生成AIとの受け渡し(2026-09-30ユーザー決定。作品・agentとも実装済み)
 
@@ -153,7 +171,7 @@ QIDMに準じる(`core/model/factory.py`・`core/schema/formats/domain_definitio
   シーンの題・あらすじ・時期・場所)・`scripts/…`(台詞)・`scenes/…`(演出付きの原稿)。**プロット単位で取り込める**(2026-09-30ユーザー。
   Plotのクラスは作らず、プロット=`Scene.synopsis`)。書き直すとき、減ったシーンの古いファイルは消し、それ以外の名前のYAMLがあれば書かない。
 
-### サンプルデータ(`apps/sample_data/`)と、変換で見つかった構造上の問題
+### サンプルデータ(`apps/sample_data/令和但馬道中膝栗毛/`)と、変換で見つかった構造上の問題
 
 旧来のサンプル(`apps/sample_project`。2026-10-01に削除)の`character/*.txt`・`plot/*.txt`・`actor/actors.yaml`を、分割方式のモデル定義YAMLに変換したもの(2026-09-30、10-01)。
 作品は`drama/`、エージェントは`agent/`(2026-10-01ユーザーの構成)。原文は言い換えずに写し、

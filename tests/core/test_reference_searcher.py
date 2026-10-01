@@ -46,7 +46,9 @@ def test_index_is_reused_or_rebuilt(tmp_path):
     embedded = load_or_build_index(datasets_dir, "t.csv", DATA, _Embedder("m1"))
     assert embedded.embedding_model == "m1"  # 埋め込みの無い索引は作り直す
     assert load_or_build_index(datasets_dir, "t.csv", DATA, _Embedder("m2")).embedding_model == "m2"
-    assert not load_or_build_index(datasets_dir, "t.csv", DATA, None).has_embeddings  # 設定が無ければ使わない
+    assert not load_or_build_index(
+        datasets_dir, "t.csv", DATA, None
+    ).has_embeddings  # 設定が無ければ使わない
 
     changed = load_or_build_index(datasets_dir, "t.csv", b"gamma\n3\n", None)
     assert changed.is_current(b"gamma\n3\n")  # 資料が変われば作り直す
@@ -60,7 +62,9 @@ def test_index_follows_rename_and_delete(tmp_path):
     reference_language(datasets_dir, index, DATA, ["q"], _Translator())
     rename_dataset_files(datasets_dir, "t.csv", "u.csv")
     assert not os.path.exists(index_path(datasets_dir, "t.csv"))
-    assert os.path.isfile(index_path(datasets_dir, "u.csv")) and os.path.isfile(language_path(datasets_dir, "u.csv"))
+    assert os.path.isfile(index_path(datasets_dir, "u.csv")) and os.path.isfile(
+        language_path(datasets_dir, "u.csv")
+    )
     # 改名した索引は名前(断片の場所の見出しに使う)が違うため、使うときに作り直す
     assert load_or_build_index(datasets_dir, "u.csv", DATA, None).source == "u.csv"
     remove_dataset_files(datasets_dir, "u.csv")
@@ -77,8 +81,13 @@ class _Translator:
     def generate_structured(self, prompt, schema, *, system_instruction=None, attachments=None):
         self.requests.append((schema, prompt))
         if schema is ReferenceLanguageResponse:
-            queries = [line.split(". ", 1)[1] for line in prompt.split("## Search queries\n")[1].splitlines()]
-            return ReferenceLanguageResponse(language="Japanese", queries=[f"訳:{q}" for q in queries])
+            queries = [
+                line.split(". ", 1)[1]
+                for line in prompt.split("## Search queries\n")[1].splitlines()
+            ]
+            return ReferenceLanguageResponse(
+                language="Japanese", queries=[f"訳:{q}" for q in queries]
+            )
         return SearchTermsResponse(queries=[{"language": "Japanese", "query": "開始時点の分布"}])
 
 
@@ -95,11 +104,22 @@ def test_reference_language_is_cached(tmp_path):
     assert len(translator.requests) == 1  # 訳済みなら呼ばない
     more = reference_language(datasets_dir, index, data, ["a", "c"], translator)
     assert more.queries == {"a": "訳:a", "b": "訳:b", "c": "訳:c"}
-    assert "## Beginning of the document" not in translator.requests[1][1]  # 足りない問いだけ訳させる
-    assert "1. c" in translator.requests[1][1] and "a" not in translator.requests[1][1].split("queries")[1]
+    assert (
+        "## Beginning of the document" not in translator.requests[1][1]
+    )  # 足りない問いだけ訳させる
+    assert (
+        "1. c" in translator.requests[1][1]
+        and "a" not in translator.requests[1][1].split("queries")[1]
+    )
 
     changed = "病期,割合\n2,34%\n".encode()
-    reference_language(datasets_dir, load_or_build_index(datasets_dir, "j.csv", changed, None), changed, ["a"], translator)
+    reference_language(
+        datasets_dir,
+        load_or_build_index(datasets_dir, "j.csv", changed, None),
+        changed,
+        ["a"],
+        translator,
+    )
     assert "## Beginning of the document" in translator.requests[2][1]  # 資料が変われば判定し直す
 
 
@@ -109,8 +129,15 @@ def test_message_search_terms_only_for_other_languages(tmp_path):
     lexical = LexicalRetriever([index])
     translator = _Translator()
     languages = {"j.csv": "Japanese"}
-    assert message_search_terms("病期の分布を提案してください", [index], languages, lexical, translator) == []
+    assert (
+        message_search_terms(
+            "病期の分布を提案してください", [index], languages, lexical, translator
+        )
+        == []
+    )
     assert translator.requests == []  # 同じ言語なら呼ばない
-    terms = message_search_terms("Please propose the distribution of stages", [index], languages, lexical, translator)
+    terms = message_search_terms(
+        "Please propose the distribution of stages", [index], languages, lexical, translator
+    )
     assert terms == ["開始時点の分布"]
     assert "Japanese" in translator.requests[0][1]

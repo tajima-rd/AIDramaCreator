@@ -5,7 +5,8 @@
 ## インターフェース(保留)
 
 - 作品モデルの公開APIの形は決まった([architecture.md](architecture.md) 7節、2026-10-01)。HTTPはYAML。
-- Web GUI・CLIの要否。`main.py`の扱い。
+- Web GUIは`apps/AIDC-Console`に作ることに決まった([architecture.md](architecture.md) 8節、2026-10-01)。
+- CLIの要否。`main.py`の扱い。
 
 ## GUIで扱う制作の準備(2026-09-29ユーザー提供。GUIはQIDMの`apps/QIDM`を参考に設計する)
 
@@ -39,9 +40,9 @@
 - 職能(2026-09-30ユーザー決定): Producer・**Researcher**・**CastingDirector**・Scriptwriter・Director・
   StageManager・**Actor**・SoundEngineer。
   - **Producerは利用者(人)が担当する。** 生成AIのエージェントではない。前提(項目1)を与え、エージェントの提案を
-    反映・却下する。そのため、エージェントのモデルは人の参加者も表せる形にする。
+    反映・却下する。2026-10-01、人なのでモデルには置かないことにした(エージェントは生成AIの職能だけ。architecture.md 4節)。
   - 準備の項目3(キャラクターの作成)の相談相手は**Scriptwriter**(2026-09-30ユーザー決定)。項目5(プロット)と同じ相手。
-- エージェントの定義(2026-09-30ユーザー決定): 職能の一覧と責務はコードに固定し、プロジェクトごとに調整できる部分
+- エージェントの定義(2026-09-30ユーザー決定。2026-10-01に、作品ごとに書き換える形で実装した。model_design.md): 職能の一覧と責務はコードに固定し、調整できる部分
   (性格づけ・追加の指示等)だけをデータで持つ。生成AIの設定は、当面プロジェクトの設定(文章生成・音声合成)を全員で共有する。
   職能ごとの上書きは、必要になったら拡張する。
   - Researcher: 準備の項目1・2の資料を索引にし、他のエージェントの問いに根拠を出典付きで返す。考証(プロット・台詞と資料の
@@ -115,7 +116,7 @@
 ## SQLite
 
 - 作品モデルのDBは決まり、実装した([architecture.md](architecture.md) 7節・[database_design.md](database_design.md)、2026-10-01)。
-- 未定: `agent`(`Actor.voice_name`等)をDBに入れるか。Datasetの台帳との関係。下書きの根拠・会話と、提案の形
+- エージェントは作品が所有し、DBに入れた(2026-10-01)。未定: Datasetの台帳との関係。下書きの根拠・会話と、提案の形
   (今はApplyも下書きの中身を作品モデル全体で置き換える。対話方式の制作で設計)。版から下書きを作る(過去の版に戻す)か。
 - 暫定で、プロジェクトに`project.db`を置き、Datasetの台帳(`dataset_registry`)だけを持たせている(QIDMではdomain.dbの中)。
   作品モデルのテーブルも`project.db`に置いた。

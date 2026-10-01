@@ -51,7 +51,10 @@ def posted(monkeypatch):
         calls.append(SimpleNamespace(url=url, headers=headers, json=json))
         body = {
             "choices": [
-                {"message": {"content": calls.reply, "reasoning_content": "think"}, "finish_reason": calls.finish_reason}
+                {
+                    "message": {"content": calls.reply, "reasoning_content": "think"},
+                    "finish_reason": calls.finish_reason,
+                }
             ],
             "usage": {"completion_tokens": 20000},
         }
@@ -63,17 +66,28 @@ def posted(monkeypatch):
 
 def test_url_normalization():
     base = OpenAiCompatibleTextGenerator(api_url="http://localhost:8080/", model_name="m")
-    full = OpenAiCompatibleTextGenerator(api_url="http://localhost:8080/v1/chat/completions", model_name="m")
+    full = OpenAiCompatibleTextGenerator(
+        api_url="http://localhost:8080/v1/chat/completions", model_name="m"
+    )
     assert base.url == full.url == "http://localhost:8080/v1/chat/completions"
-    webui = OpenAiCompatibleTextGenerator(api_url="http://localhost:3000", model_name="m", path="/api/chat/completions")
+    webui = OpenAiCompatibleTextGenerator(
+        api_url="http://localhost:3000", model_name="m", path="/api/chat/completions"
+    )
     assert webui.url == "http://localhost:3000/api/chat/completions"
 
 
 def test_generate(posted):
     gen = OpenAiCompatibleTextGenerator(
-        api_url="http://localhost:8080", model_name="qwen", api_key="1234", config=TextConfig(top_k=40)
+        api_url="http://localhost:8080",
+        model_name="qwen",
+        api_key="1234",
+        config=TextConfig(top_k=40),
     )
-    history = [Message(role="user", text="q1"), Message(role="assistant", text="a1"), Message(role="user", text="q2")]
+    history = [
+        Message(role="user", text="q1"),
+        Message(role="assistant", text="a1"),
+        Message(role="user", text="q2"),
+    ]
     assert gen.generate(history, system_instruction="be brief") == "answer"
 
     call = posted[0]
@@ -84,7 +98,11 @@ def test_generate(posted):
         {"role": "assistant", "content": "a1"},
         {"role": "user", "content": "q2"},
     ]
-    assert call.json["model"] == "qwen" and call.json["top_k"] == 40 and call.json["temperature"] == 0.7
+    assert (
+        call.json["model"] == "qwen"
+        and call.json["top_k"] == 40
+        and call.json["temperature"] == 0.7
+    )
     assert "max_tokens" not in call.json and "response_format" not in call.json
 
 
@@ -104,10 +122,13 @@ def test_generate_structured(posted):
 
 def test_attachments(posted):
     gen = OpenAiCompatibleTextGenerator(api_url="http://localhost:8080", model_name="qwen")
-    gen.generate("describe", attachments=[
-        Attachment(data=b"\x89PNG", mime_type="image/png"),
-        Attachment(data="本文".encode(), mime_type="text/plain"),
-    ])
+    gen.generate(
+        "describe",
+        attachments=[
+            Attachment(data=b"\x89PNG", mime_type="image/png"),
+            Attachment(data="本文".encode(), mime_type="text/plain"),
+        ],
+    )
     content = posted[0].json["messages"][0]["content"]
     assert content[0]["image_url"]["url"].startswith("data:image/png;base64,")
     assert content[1] == {"type": "text", "text": "本文"}
@@ -119,7 +140,9 @@ def test_attachments(posted):
 
 def test_unsupported_options(posted):
     for config in (TextConfig(thinking_level=ThinkingLevel.LOW), TextConfig(use_url_context=True)):
-        gen = OpenAiCompatibleTextGenerator(api_url="http://localhost:8080", model_name="qwen", config=config)
+        gen = OpenAiCompatibleTextGenerator(
+            api_url="http://localhost:8080", model_name="qwen", config=config
+        )
         with pytest.raises(ValueError):
             gen.generate("x")
     assert posted == []
@@ -134,12 +157,19 @@ def _project(client, api_url=None):
 def test_api_key_name():
     assert api_key_name("Gemini") == "AIDC_GEMINI_API_KEY"
     assert api_key_name("Gemini", "http://ignored") == "AIDC_GEMINI_API_KEY"  # URLを持たない提供元
-    for url in ("http://localhost:8080", "http://127.0.0.1:8080/v1/chat/completions", "0.0.0.0:8080"):
+    for url in (
+        "http://localhost:8080",
+        "http://127.0.0.1:8080/v1/chat/completions",
+        "0.0.0.0:8080",
+    ):
         assert api_key_name("LlamaCpp", url) == "AIDC_LLAMACPP_LOCALHOST_8080_API_KEY"
     assert api_key_name("LlamaCpp", "https://llama.at-hyogo.xyz/v1/chat/completions") == (
         "AIDC_LLAMACPP_LLAMA_AT_HYOGO_XYZ_API_KEY"
     )
-    assert api_key_name("OpenWebUI", "http://localhost:3000") == "AIDC_OPENWEBUI_LOCALHOST_3000_API_KEY"
+    assert (
+        api_key_name("OpenWebUI", "http://localhost:3000")
+        == "AIDC_OPENWEBUI_LOCALHOST_3000_API_KEY"
+    )
 
 
 def test_factory(monkeypatch):
@@ -152,13 +182,21 @@ def test_factory(monkeypatch):
     assert gen.url == "http://localhost:8080/v1/chat/completions"
     secret_env_store.save_secret("AIDC_LLAMACPP_LOCALHOST_8080_API_KEY", "1234")
     secret_env_store.save_secret("AIDC_LLAMACPP_LLAMA_EXAMPLE_API_KEY", "remote-key")
-    assert build_text_generator(_project("LlamaCpp", "http://localhost:8080")).headers["Authorization"] == "Bearer 1234"
+    assert (
+        build_text_generator(_project("LlamaCpp", "http://localhost:8080")).headers["Authorization"]
+        == "Bearer 1234"
+    )
     remote = build_text_generator(_project("LlamaCpp", "https://llama.example"))
-    assert remote.headers["Authorization"] == "Bearer remote-key"  # 同じ種類の別のサーバーは別のキー
+    assert (
+        remote.headers["Authorization"] == "Bearer remote-key"
+    )  # 同じ種類の別のサーバーは別のキー
 
     # Ollama: キーは使わない
     gen = build_text_generator(_project("Ollama", "http://localhost:11434"))
-    assert gen.url == "http://localhost:11434/v1/chat/completions" and "Authorization" not in gen.headers
+    assert (
+        gen.url == "http://localhost:11434/v1/chat/completions"
+        and "Authorization" not in gen.headers
+    )
 
     # Open WebUI: パスが違い、キーは必須。シェルの環境変数は読まない
     monkeypatch.setenv("OPEN_WEBUI_API_KEY", "from-shell")
@@ -174,8 +212,15 @@ def test_build_embedding_generator():
     project = _project("LlamaCpp", "http://localhost:8080")
     with pytest.raises(ValueError, match="Embedding"):
         build_embedding_generator(project)  # 設定が無い
-    project.embedding = EmbeddingSetting(client="LlamaCpp", model="bge-m3", api_url="http://localhost:8080")
-    secret_env_store.save_secret("AIDC_LLAMACPP_LOCALHOST_8080_API_KEY", "1234")  # 文章生成と同じ接続先なら同じキー
+    project.embedding = EmbeddingSetting(
+        client="LlamaCpp", model="bge-m3", api_url="http://localhost:8080"
+    )
+    secret_env_store.save_secret(
+        "AIDC_LLAMACPP_LOCALHOST_8080_API_KEY", "1234"
+    )  # 文章生成と同じ接続先なら同じキー
     gen = build_embedding_generator(project)
     assert isinstance(gen, OpenAiCompatibleEmbeddingGenerator) and gen.model_name == "bge-m3"
-    assert gen.url == "http://localhost:8080/v1/embeddings" and gen.headers["Authorization"] == "Bearer 1234"
+    assert (
+        gen.url == "http://localhost:8080/v1/embeddings"
+        and gen.headers["Authorization"] == "Bearer 1234"
+    )

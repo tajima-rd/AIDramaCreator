@@ -35,7 +35,8 @@
 | `core/service/api/` | システムの公開API。識別子(project_id・file_id)とschemaの型でやり取りし、`schema/api`・`api/routers`と同名のリソース単位(`project`・`preference`・`dataset`・`drama_model`・`drama_draft`)で構成する |
 | `core/schema/` | 契約(pydantic)。`api/`=公開APIのDTO、`formats/`=ディスクに残るファイル形式 |
 | `api/` | インターフェース: HTTP(FastAPI、要`requirements/api.txt`)。`main.py`はinclude_routerと共通の例外ハンドラ(Project/Datasetの不在→404)のみ、`routers/`はHTTPとschemaを橋渡しするだけ |
-| `apps/sample_data/` | サンプルの作品・エージェントの、分割方式のモデル定義YAML(`drama/`=作品、`agent/`=エージェント、直下の`project.yaml`=プロジェクトの見本)。`main.py`で使うときは`drama/`・`agent/`を`Project/TEST_PROJECT_##/model/`に、`project.yaml`をその直下に複製する |
+| `apps/AIDC-Console/` | インターフェース: Web GUI(素のHTML/CSS/JS。APIサーバーが`/app/`で配信。[docs/architecture.md](docs/architecture.md) 8節) |
+| `apps/sample_data/` | サンプルの作品・エージェントの、分割方式のモデル定義YAML。作品ごとのディレクトリ(`令和但馬道中膝栗毛/`・`ハチ北スキー場ガイド/`)の下に`drama/`=作品、`agent/`=エージェント。直下の`project.yaml`=プロジェクトの見本。`main.py`で使うときは作品のディレクトリの`drama/`・`agent/`を`Project/TEST_PROJECT_##/model/`に、`project.yaml`をその直下に複製する |
 | `tests/` | pytest(`api/`=結合テスト、`core/`=コアのテスト。要`pip install -r requirements/dev.txt`) |
 | `requirements/` | 依存(`base`=本体、`api`=HTTP、`dev`=開発用、`rag-ja`=日本語の形態素解析) |
 | `scripts/` | 起動・停止のシェルスクリプト(`server/`=APIサーバー、`llamacpp/`=手元のLLMサーバー) |

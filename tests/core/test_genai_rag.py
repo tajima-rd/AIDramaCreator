@@ -54,7 +54,9 @@ class _CountingEmbedder(EmbeddingGenerator):
 
 def _index(source, texts):
     """1つの文章を1つの断片にした索引(ページごと)。"""
-    chunks = [Chunk(f"{source}#{i}", source, t, "text", f"page {i + 1}") for i, t in enumerate(texts)]
+    chunks = [
+        Chunk(f"{source}#{i}", source, t, "text", f"page {i + 1}") for i, t in enumerate(texts)
+    ]
     return ChunkIndex(source=source, chunks=chunks)
 
 
@@ -63,11 +65,26 @@ def tokenize(text):
 
 
 def test_tokenize():
-    assert tokenize("CKD Stage 3: 0.25 and 3% (n=1,234)") == ["ckd", "stage", "3", "0.25", "and", "3%", "n", "1,234"]
+    assert tokenize("CKD Stage 3: 0.25 and 3% (n=1,234)") == [
+        "ckd",
+        "stage",
+        "3",
+        "0.25",
+        "and",
+        "3%",
+        "n",
+        "1,234",
+    ]
     assert tokenize("初期分布") == ["初期", "期分", "分布"]
     assert tokenize("状態A") == ["状態", "a"]
     assert tokenize("鍵") == ["鍵"]
-    assert tokenize("ＣＫＤ ステージ３") == ["ckd", "ステ", "テー", "ージ", "3"]  # 全角・半角をそろえる
+    assert tokenize("ＣＫＤ ステージ３") == [
+        "ckd",
+        "ステ",
+        "テー",
+        "ージ",
+        "3",
+    ]  # 全角・半角をそろえる
 
 
 def test_chunk_text_packs_paragraphs_with_overlap():
@@ -77,7 +94,9 @@ def test_chunk_text_packs_paragraphs_with_overlap():
     assert [c.locator for c in chunks] == ["page 1", "page 1", "page 1–page 2"]
     assert [c.chunk_id for c in chunks] == ["doc#0", "doc#1", "doc#2"]
 
-    long = chunk_blocks([Block("One two. Three four. Five six.", "text", "p")], "doc", max_chars=12, overlap=0)
+    long = chunk_blocks(
+        [Block("One two. Three four. Five six.", "text", "p")], "doc", max_chars=12, overlap=0
+    )
     assert [c.text for c in long] == ["One two.", "Three four.", "Five six."]
     assert chunk_blocks([Block("  ", "text", "p")], "doc") == []
     with pytest.raises(ValueError):
@@ -86,7 +105,9 @@ def test_chunk_text_packs_paragraphs_with_overlap():
 
 def test_chunk_table_repeats_header_and_caption():
     table = "| state | share |\n| --- | --- |\n| A | 0.1 |\n| B | 0.2 |\n| C | 0.3 |"
-    chunks = chunk_blocks([Block(table, "table", "table 1", "Table 1. Shares")], "doc", max_chars=60)
+    chunks = chunk_blocks(
+        [Block(table, "table", "table 1", "Table 1. Shares")], "doc", max_chars=60
+    )
     assert len(chunks) > 1 and all(c.kind == "table" for c in chunks)
     for c in chunks:
         assert c.text.startswith("Table 1. Shares\n| state | share |\n| --- | --- |\n")
@@ -99,7 +120,9 @@ def test_chunk_table_repeats_header_and_caption():
 
 
 def test_lexical_search():
-    retriever = LexicalRetriever([_index("a.pdf", ["alpha beta", "gamma gamma", "delta"]), _index("b.pdf", ["beta gamma"])])
+    retriever = LexicalRetriever(
+        [_index("a.pdf", ["alpha beta", "gamma gamma", "delta"]), _index("b.pdf", ["beta gamma"])]
+    )
     hits = retriever.search("gamma", top_k=5)
     assert [h.chunk.label for h in hits] == ["a.pdf page 2", "b.pdf page 1"]
     assert hits[0].ranks == {"lexical": 1} and hits[0].score > hits[1].score
@@ -124,7 +147,9 @@ def test_embedding_search_and_model_check():
 
 
 def test_embedding_prefix_by_purpose():
-    embedder = _CountingEmbedder(config=EmbeddingConfig(document_prefix="doc: ", query_prefix="query: "))
+    embedder = _CountingEmbedder(
+        config=EmbeddingConfig(document_prefix="doc: ", query_prefix="query: ")
+    )
     embedder.embed(["alpha"], "document")
     embedder.embed(["alpha"], "query")
     assert embedder.calls == [("document", ["doc: alpha"]), ("query", ["query: alpha"])]
@@ -142,7 +167,9 @@ def test_hybrid_merges_by_rank():
     assert [h.score for h in hits] == sorted((h.score for h in hits), reverse=True)
     # 語による検索では見つからない「初期分布」も、埋め込みの順位で統合の結果に入る
     assert retriever.search("初期分布", top_k=1)[0].chunk.text == "alpha 初期分布"
-    assert isinstance(create_retriever([index]), LexicalRetriever)  # 埋め込みが無ければ語による検索だけ
+    assert isinstance(
+        create_retriever([index]), LexicalRetriever
+    )  # 埋め込みが無ければ語による検索だけ
 
 
 def test_search_many_merges_queries():
@@ -150,7 +177,11 @@ def test_search_many_merges_queries():
     hits = search_many(retriever, ["alpha", "beta", "  "], top_k=4)
     assert hits[0].chunk.text == "alpha beta"  # 両方の問いで見つかる断片が上
     assert hits[0].ranks.keys() == {"q0", "q1"}
-    assert {h.chunk.text for h in hits} == {"alpha", "beta", "alpha beta"}  # どちらか一方の問いの断片も残る
+    assert {h.chunk.text for h in hits} == {
+        "alpha",
+        "beta",
+        "alpha beta",
+    }  # どちらか一方の問いの断片も残る
     assert search_many(retriever, [], top_k=4) == []
 
 
@@ -184,7 +215,9 @@ def test_build_context_limits_and_orders():
 
 @requires_reference_samples
 def test_supplement_table_found_by_caption():
-    with open(os.path.join(REFERENCE_SAMPLE_DIR, "389456.docx"), "rb") as f:  # ゴールデン入力は読むだけ
+    with open(
+        os.path.join(REFERENCE_SAMPLE_DIR, "389456.docx"), "rb"
+    ) as f:  # ゴールデン入力は読むだけ
         index = index_document("supplement.docx", f.read(), "docx")
     hits = create_retriever([index]).search("Health state at diagnosis", top_k=3)
     top = hits[0].chunk
@@ -193,17 +226,31 @@ def test_supplement_table_found_by_caption():
 
 
 def test_language_differs():
-    english = _index("en.pdf", ["The model uses a cycle length of one month and a lifetime horizon."] * 3)
-    japanese = _index("ja.pdf", ["本研究のモデルのサイクルの長さは1か月、観察期間は生涯とした。Markov model"] * 3)
+    english = _index(
+        "en.pdf", ["The model uses a cycle length of one month and a lifetime horizon."] * 3
+    )
+    japanese = _index(
+        "ja.pdf", ["本研究のモデルのサイクルの長さは1か月、観察期間は生涯とした。Markov model"] * 3
+    )
     german = _index("de.pdf", ["Die Zykluslänge des Modells beträgt einen Monat."] * 3)
     lexical = LexicalRetriever([english, japanese, german])
 
     def differs(query):
-        return {i.source for i in (english, japanese, german) if language_differs(query, i, lexical)}
+        return {
+            i.source for i in (english, japanese, german) if language_differs(query, i, lexical)
+        }
 
-    assert differs("時間の刻みを提案してください") == {"en.pdf", "de.pdf"}  # 同じ日本語は言い回しが違っても同じ
-    assert differs("propose the cycle length of the model") == {"ja.pdf", "de.pdf"}  # 英字を含む日本語の資料も
-    assert differs("ok") == set()  # 語が少なければ語の一致の割合では見分けない(日本語の資料にも英字がある)
+    assert differs("時間の刻みを提案してください") == {
+        "en.pdf",
+        "de.pdf",
+    }  # 同じ日本語は言い回しが違っても同じ
+    assert differs("propose the cycle length of the model") == {
+        "ja.pdf",
+        "de.pdf",
+    }  # 英字を含む日本語の資料も
+    assert (
+        differs("ok") == set()
+    )  # 語が少なければ語の一致の割合では見分けない(日本語の資料にも英字がある)
     assert differs("") == set()
 
 
@@ -214,4 +261,6 @@ def test_search_many_per_source():
     retriever = create_retriever([long, short])
     assert "short.docx" not in {h.chunk.source for h in search_many(retriever, ["alpha"], top_k=3)}
     hits = search_many(retriever, ["alpha"], top_k=3, per_source=True)
-    assert hits[0].chunk.source != hits[1].chunk.source and "short.docx" in {h.chunk.source for h in hits[:2]}
+    assert hits[0].chunk.source != hits[1].chunk.source and "short.docx" in {
+        h.chunk.source for h in hits[:2]
+    }

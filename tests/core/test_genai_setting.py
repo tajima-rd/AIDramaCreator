@@ -64,16 +64,29 @@ def test_settings_round_trip(project):
     # 手元のサーバー: URLまで(APIキーに関わる項目は無い)
     project.llm = LlmSetting(client="LlamaCpp", model="qwen", api_url="http://localhost:8080")
     write_project(project)
-    assert _spec(project)["genai"]["llm"] == {"client": "LlamaCpp", "model": "qwen", "api_url": "http://localhost:8080"}
+    assert _spec(project)["genai"]["llm"] == {
+        "client": "LlamaCpp",
+        "model": "qwen",
+        "api_url": "http://localhost:8080",
+    }
     assert read_project(project.layout.root_dir).llm == project.llm
 
 
 def test_legacy_api_key_env_is_ignored(project):
     spec = _spec(project)
-    spec["genai"] = {"llm": {"client": "LlamaCpp", "model": "qwen", "api_url": "http://x", "api_key_env": "OLD_KEY"}}
+    spec["genai"] = {
+        "llm": {
+            "client": "LlamaCpp",
+            "model": "qwen",
+            "api_url": "http://x",
+            "api_key_env": "OLD_KEY",
+        }
+    }
     with open(project.layout.project_yaml_path, "w", encoding="utf-8") as f:
         yaml.safe_dump(spec, f)
-    assert read_project(project.layout.root_dir).llm == LlmSetting(client="LlamaCpp", model="qwen", api_url="http://x")
+    assert read_project(project.layout.root_dir).llm == LlmSetting(
+        client="LlamaCpp", model="qwen", api_url="http://x"
+    )
 
 
 def test_build_generators(project):

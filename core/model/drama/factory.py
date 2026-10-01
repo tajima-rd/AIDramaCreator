@@ -5,12 +5,13 @@ DB・ファイルには触れず、組み立てたオブジェクトを返すだ
 model_definition_reader)と生成AIの提案の反映が、同じ組み立ての規則を共有するためにここへ置く。
 
 識別子を持つエンティティのbuild_*は、キーワード引数idで既存の識別子を保てる(QIDMの_keeps_id)。
-識別子を持たない値(Premise・Characteristic・AdditionalFeature・Performance・Situation・SpeechStyle・SentenceEnding・Script・History・Direction)は、クラスをそのまま使う。
+識別子を持たない値(Premise・Proposal・ProposalCharacter・Characteristic・AdditionalFeature・Performance・Situation・SpeechStyle・SentenceEnding・Script・History・Direction)は、クラスをそのまま使う。
 """
 
 import functools
 from typing import Optional
 
+from core.model.agent.base_agent import BaseAgent
 from core.model.drama.act import Act
 from core.model.drama.cast import Cast, Performance, VoiceGender
 from core.model.drama.character import Biography, Character
@@ -20,6 +21,7 @@ from core.model.drama.feature import Characteristic
 from core.model.drama.history import History
 from core.model.drama.location import Location
 from core.model.drama.premise import Premise
+from core.model.drama.proposal import Proposal
 from core.model.drama.relationship import Relationship
 from core.model.drama.scene import Scene
 from core.model.drama.script import Line, Script
@@ -69,6 +71,8 @@ def build_dramaturgy(
     casts: Optional[list[Cast]] = None,
     acts: Optional[list[Act]] = None,
     history: Optional[History] = None,
+    proposal: Optional[Proposal] = None,
+    agents: Optional[list[BaseAgent]] = None,
 ) -> Dramaturgy:
     return Dramaturgy(
         title,
@@ -81,6 +85,8 @@ def build_dramaturgy(
         casts,
         acts,
         history,
+        proposal,
+        agents,
     )
 
 

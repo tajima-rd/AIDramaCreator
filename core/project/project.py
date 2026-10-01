@@ -26,7 +26,7 @@ DATASETS_DIRNAME = "datasets"
 DRAFTS_DIRNAME = "drafts"
 
 PROTOCOL_VERSION = "0.1.0"
-DEFAULT_SERVER_BASE_URL = "http://127.0.0.1:8000"
+DEFAULT_SERVER_BASE_URL = "http://127.0.0.1:8100"
 
 
 class ProjectNotFoundError(LookupError):

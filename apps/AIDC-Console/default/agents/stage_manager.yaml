@@ -1,0 +1,17 @@
+# StageManagerの既定(core.model.agent.stage_manager.StageManagerの既定の文面から書き出したもの。2026-10-01、暫定)。
+# 作品の分割ファイルと同じ形(dramaturgy.agents)で、作品に重ねればこの職能のエージェントが1人加わる。
+# idとkeyは書かない(使うたびに新しいエージェントになる)。
+dramaturgy:
+  agents:
+    stage_managers:
+    - name: 舞台監督
+      role: 制作の進行を管理する。原稿を音声の生成に回し、作品の出力の言語が違えば翻訳する。
+      rules: []
+      prohibitions: []
+      tasks:
+      - code: translate
+        title: 翻訳する
+        description: 原稿の台詞を、作品の入力の言語から出力の言語へ訳す。
+        rules:
+        - 話者・演出・意味を保って訳す。
+        prohibitions: []

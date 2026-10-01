@@ -12,12 +12,12 @@ from core.service.process.production._model_definition_project import (
     is_model_definition_project,
 )
 
-SAMPLE_DATA = Path(__file__).resolve().parents[2] / "apps" / "sample_data"
+SAMPLE_DATA = Path(__file__).resolve().parents[2] / "apps" / "sample_data" / "令和但馬道中膝栗毛"
 
 
 @pytest.fixture
 def project(tmp_path) -> ModelDefinitionProject:
-    # モデル定義はdrama/とagent/(直下のproject.yamlはプロジェクトの見本で、main.pyではプロジェクトの直下に置く)
+    # モデル定義はdrama/とagent/(apps/sample_data直下のproject.yamlはプロジェクトの見本で、main.pyではプロジェクトの直下に置く)
     for part in ("drama", "agent"):
         shutil.copytree(SAMPLE_DATA / part, tmp_path / "model" / part)
     return ModelDefinitionProject(str(tmp_path))
@@ -110,7 +110,8 @@ def test_speaker_names_match_without_spaces(project):
 
 def test_only_casts_with_an_actor_are_speakers(project, tmp_path):
     (tmp_path / "model" / "agent" / "actors.yaml").write_text(
-        "agents:\n  actors:\n    - name: 喜一役の演者\n      cast: {ref: cast_001}\n      voice_name: Charon\n",
+        "dramaturgy:\n  agents:\n    actors:\n      - name: 喜一役の演者\n"
+        "        cast: {ref: cast_001}\n        voice_name: Charon\n",
         encoding="utf-8",
     )
     project.reload()

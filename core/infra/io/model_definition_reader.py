@@ -15,7 +15,7 @@ from typing import Any, Optional, Union
 
 import yaml
 
-from core.model.agent import Agent
+from core.model.agent import Actor, AgentTask, BaseAgent
 from core.model.agent.factory import AGENT_ROLES, build_actor, build_agent
 from core.model.drama import (
     AdditionalFeature,
@@ -27,6 +27,8 @@ from core.model.drama import (
     Location,
     Performance,
     Premise,
+    Proposal,
+    ProposalCharacter,
     Relationship,
     Scene,
     Script,
@@ -53,11 +55,13 @@ from core.model.drama.factory import (
 )
 from core.model.drama.script_element import Direction
 from core.schema.formats.dramaturgy_definition import (
+    AgentSpec,
     AgentsSpec,
     CharacteristicSpec,
     DialogueSpec,
     DramaturgyDefinition,
     DramaturgySpec,
+    ProposalSpec,
     Ref,
     SceneSpec,
     SituationSpec,
@@ -152,8 +156,8 @@ def read_spec(path: Union[str, Path]) -> dict[str, Any]:
 
 class ModelDefinition:
     """
-    モデル定義YAMLから組み立てたもの。作品(Dramaturgy。複数あり得る)、作品作りに参加するエージェント、人物と人物関係、
-    所有者を持たない時点・場所。エージェントは作品の参照(Actor.casting_idのCast)を持つので、作品と一緒に組み立てる。
+    モデル定義YAMLから組み立てたもの。作品(Dramaturgy。複数あり得る。エージェントは作品が所有する)、人物と人物関係、
+    所有者を持たない時点・場所。
     人物・人物のまとまり・人物関係・時点・場所の持ち主はProjectだが、Projectの作り直しまでは、ここに仮置きする
     (作品は参照で持つ。2026-10-01ユーザー)。プロジェクトの作品モデル全体(DBの正本。core.infra.store.drama_model_store)もこの形で扱う。
     """
@@ -161,7 +165,6 @@ class ModelDefinition:
     def __init__(
         self,
         dramaturgies: Optional[list[Dramaturgy]] = None,
-        agents: Optional[list[Agent]] = None,
         characters: Optional[list[Character]] = None,
         relationships: Optional[list[Relationship]] = None,
         character_groups: Optional[list[CharacterGroup]] = None,
@@ -169,7 +172,6 @@ class ModelDefinition:
         locations: Optional[list[Location]] = None,
     ):
         self.dramaturgies: list[Dramaturgy] = list(dramaturgies or [])
-        self.agents: list[Agent] = list(agents or [])
         self.characters: list[Character] = list(characters or [])
         self.relationships: list[Relationship] = list(relationships or [])
         self.character_groups: list[CharacterGroup] = list(character_groups or [])
@@ -340,7 +342,6 @@ def build_model_definition_from_spec(spec: dict[str, Any]) -> ModelDefinition:
     dramaturgies = [_dramaturgy(dramaturgy_spec, refs) for dramaturgy_spec in dramaturgy_specs]
     return ModelDefinition(
         dramaturgies,
-        _agents(definition.agents, refs),
         characters,
         relationships,
         character_groups,
@@ -471,30 +472,74 @@ def _dramaturgy(dramaturgy_spec: DramaturgySpec, refs: "_References") -> Dramatu
         casts,
         acts,
         history,
+        _proposal(dramaturgy_spec.proposal),
+        _agents(dramaturgy_spec.agents, refs),
         id=dramaturgy_spec.id,
     )
     refs.register("Dramaturgy", dramaturgy_spec.key, dramaturgy)
     return dramaturgy
 
 
-def _agents(spec: Optional[AgentsSpec], refs: "_References") -> list[Agent]:
-    """エージェントを職能の順(AGENT_ROLES、最後にActor)に組み立てる。Actorの配役はIDで参照する。"""
+def _agents(spec: Optional[AgentsSpec], refs: "_References") -> list[BaseAgent]:
+    """作品のエージェントを職能の順(AGENT_ROLES、最後にActor)に組み立てる。Actorの配役はIDで参照する。
+    省略したrole・rules・prohibitions・タスク(とタスクの中の項目)は、職能の既定になる。"""
     if spec is None:
         return []
-    agents: list[Agent] = []
-    for role in AGENT_ROLES:
-        for agent_spec in getattr(spec, f"{role}s"):
-            agent = build_agent(role, agent_spec.name, agent_spec.persona, id=agent_spec.id)
+    agents: list[BaseAgent] = []
+    for role_name in AGENT_ROLES:
+        for agent_spec in getattr(spec, f"{role_name}s"):
+            agent = build_agent(
+                role_name,
+                agent_spec.name,
+                agent_spec.role,
+                agent_spec.persona,
+                agent_spec.rules,
+                agent_spec.prohibitions,
+                _agent_tasks(AGENT_ROLES[role_name], agent_spec),
+                id=agent_spec.id,
+            )
             refs.register("Agent", agent_spec.key, agent)
             agents.append(agent)
     for actor_spec in spec.actors:
         cast = refs.resolve("Cast", actor_spec.cast, f"演者 '{actor_spec.name}'")
         actor = build_actor(
-            cast.id, actor_spec.name, actor_spec.voice_name, actor_spec.persona, id=actor_spec.id
+            cast.id,
+            actor_spec.name,
+            actor_spec.voice_name,
+            actor_spec.role,
+            actor_spec.persona,
+            actor_spec.rules,
+            actor_spec.prohibitions,
+            _agent_tasks(Actor, actor_spec),
+            id=actor_spec.id,
         )
         refs.register("Agent", actor_spec.key, actor)
         agents.append(actor)
     return agents
+
+
+def _agent_tasks(agent_class: type[BaseAgent], spec: AgentSpec) -> list[AgentTask]:
+    """書いたタスクを、職能の既定のタスクに重ねる(省略した項目は既定)。職能に無いcodeはValueError。"""
+    tasks = []
+    for task_spec in spec.tasks:
+        try:
+            default = agent_class.default_task(task_spec.code)
+        except ValueError as exc:
+            raise ValueError(f"エージェント '{spec.name}': {exc}") from exc
+        tasks.append(
+            AgentTask(
+                task_spec.code,
+                task_spec.title if task_spec.title is not None else default.title,
+                task_spec.description if task_spec.description is not None else default.description,
+                task_spec.rules if task_spec.rules is not None else default.rules,
+                (
+                    task_spec.prohibitions
+                    if task_spec.prohibitions is not None
+                    else default.prohibitions
+                ),
+            )
+        )
+    return tasks
 
 
 def _situation(
@@ -534,6 +579,21 @@ def _characteristics(specs: list[CharacteristicSpec]) -> list[Characteristic]:
         )
         for spec in specs
     ]
+
+
+def _proposal(spec: Optional[ProposalSpec]) -> Optional[Proposal]:
+    """企画書(省略されていればNone。作品は空の企画書を持つ)。"""
+    if spec is None:
+        return None
+    return Proposal(
+        spec.title,
+        spec.catchphrase,
+        spec.logline,
+        spec.intent,
+        spec.target_area,
+        spec.synopsis,
+        [ProposalCharacter(c.name, c.description) for c in spec.characters],
+    )
 
 
 def _order(order: Optional[int], index: int) -> int:

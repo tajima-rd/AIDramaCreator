@@ -12,7 +12,7 @@ from pathlib import Path
 from tests.conftest import REPO_ROOT, parse_yaml
 from tests.core.test_drama_draft_editor import PROJECT_MODEL
 
-SAMPLE_DRAMA_DIR = Path(REPO_ROOT) / "apps" / "sample_data" / "drama"
+SAMPLE_DRAMA_DIR = Path(REPO_ROOT) / "apps" / "sample_data" / "令和但馬道中膝栗毛" / "drama"
 
 
 def _create(client, project, title="下書き"):

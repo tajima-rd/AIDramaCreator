@@ -5,7 +5,7 @@ project:
   created_at: '2026-10-01T03:13:59+00:00'
   modified_at: '2026-10-01T03:13:59+00:00'
 server:
-  base_url: http://127.0.0.1:8000
+  base_url: http://127.0.0.1:8100
 paths:
   project_db: project.db
   datasets_dir: datasets/

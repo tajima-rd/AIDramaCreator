@@ -8,7 +8,7 @@ REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$REPO_ROOT"
 
 HOST="${AIDC_SERVER_HOST:-127.0.0.1}"
-PORT="${AIDC_SERVER_PORT:-8000}"
+PORT="${AIDC_SERVER_PORT:-8100}"
 PID_FILE="$REPO_ROOT/server.pid"
 LOG_FILE="$REPO_ROOT/server.log"
 PYTHON_BIN="$REPO_ROOT/.venv/bin/python3"

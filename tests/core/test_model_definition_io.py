@@ -18,6 +18,7 @@ from core.infra.io.model_definition_writer import (
     dramaturgy_to_spec,
     dramaturgy_to_split_yaml,
     dramaturgy_to_yaml,
+    model_definition_to_yaml,
     write_dramaturgy,
     write_split_dramaturgy,
 )
@@ -502,11 +503,13 @@ def test_reference_by_id_is_not_accepted():
 
 
 def test_sample_data_is_readable(tmp_path):
-    # apps/sample_data(分割方式のモデル定義YAML)。モデル定義はdrama/とagent/で、
-    # 直下のproject.yamlはプロジェクトの見本(モデル定義ではない)。main.pyと同じく、2つをmodel/に複製して読む
+    # apps/sample_data/令和但馬道中膝栗毛(分割方式のモデル定義YAML)。モデル定義はdrama/とagent/で、
+    # apps/sample_data直下のproject.yamlはプロジェクトの見本(モデル定義ではない)。main.pyと同じく、2つをmodel/に複製して読む
     repo = Path(__file__).resolve().parents[2]
     for part in ("drama", "agent"):
-        shutil.copytree(repo / "apps" / "sample_data" / part, tmp_path / "model" / part)
+        shutil.copytree(
+            repo / "apps" / "sample_data" / "令和但馬道中膝栗毛" / part, tmp_path / "model" / part
+        )
     definition = read_model_definition(tmp_path / "model")
     dramaturgy = definition.dramaturgy
 
@@ -517,7 +520,7 @@ def test_sample_data_is_readable(tmp_path):
         ("加藤 喜一", VoiceGender.MALE),
         ("水野 弥千代", VoiceGender.FEMALE),
     ]
-    assert [a.voice_name for a in definition.agents] == ["Charon", "Kore"]
+    assert [a.voice_name for a in dramaturgy.agents] == ["Charon", "Kore"]
 
 
 def _without_ids(value):
@@ -545,6 +548,21 @@ def _without_ids(value):
     return replace(value)
 
 
+def test_hachikita_sample_has_proposal():
+    # apps/sample_data/ハチ北スキー場ガイド: 企画書だけを持つ作品(幕・人物はまだ無い)
+    repo = Path(__file__).resolve().parents[2]
+    drama_dir = repo / "apps" / "sample_data" / "ハチ北スキー場ガイド" / "drama"
+    definition = read_model_definition(drama_dir)
+    proposal = definition.dramaturgy.proposal
+    assert proposal.target_area == "ハチ北スキー場"
+    assert proposal.title != definition.dramaturgy.title
+    assert [c.name for c in proposal.characters] == ["西谷"]
+    assert definition.dramaturgy.characters == [] and definition.dramaturgy.acts == []
+    # 書き出して読み直しても同じ
+    text = model_definition_to_yaml(definition)
+    assert model_definition_to_yaml(build_model_definition_from_yaml(text)) == text
+
+
 def test_relationships_are_reachable_from_both_characters():
     # 経歴から参照されない人物関係も、人物の側から引け、書き出しで失われない
     extra = """
@@ -565,22 +583,27 @@ dramaturgy:
 
 
 AGENTS = """
-agents:
-  scriptwriters:
-    - key: writer
-      name: 脚本家
-      persona: 簡潔な文体
-  actors:
-    - key: taro_actor
-      name: 太郎役の演者
-      cast: {ref: taro_voice}
-      voice_name: Charon
+dramaturgy:
+  agents:
+    scriptwriters:
+      - key: writer
+        name: 脚本家
+        persona: 簡潔な文体
+        prohibitions: []
+        tasks:
+          - code: write_dialogue
+            rules: [方言で書く。]
+    actors:
+      - key: taro_actor
+        name: 太郎役の演者
+        cast: {ref: taro_voice}
+        voice_name: Charon
 """
 
 
 def test_agents_are_read_with_dramaturgy_and_round_trip(tmp_path):
     definition = build_model_definition_from_yaml(SINGLE, AGENTS)
-    writer, actor = definition.agents
+    writer, actor = definition.dramaturgy.agents
 
     assert isinstance(writer, Scriptwriter) and writer.persona == "簡潔な文体"
     assert isinstance(actor, Actor)
@@ -588,11 +611,29 @@ def test_agents_are_read_with_dramaturgy_and_round_trip(tmp_path):
     assert (actor.casting_id, actor.voice_name) == (cast.id, "Charon")
     assert cast.performance.title == "Quiet Keeper"
 
-    write_split_dramaturgy(definition.dramaturgy, tmp_path / "model", definition.agents)
+    # 省略した項目は職能の既定、空の一覧[]は空のまま。タスクは書いたものだけを重ね、ほかは既定
+    assert writer.role == Scriptwriter.default_role()
+    assert writer.rules == Scriptwriter.default_rules()
+    assert writer.prohibitions == []
+    assert [t.code for t in writer.tasks] == [t.code for t in Scriptwriter.default_tasks()]
+    dialogue = next(t for t in writer.tasks if t.code == "write_dialogue")
+    assert dialogue.rules == ["方言で書く。"]
+    assert dialogue.description == Scriptwriter.default_task("write_dialogue").description
+    assert actor.tasks[0].code == "perform_dialogue"
+
+    write_split_dramaturgy(definition.dramaturgy, tmp_path / "model")
     assert (tmp_path / "model" / "agents.yaml").exists()
     restored = read_model_definition(tmp_path / "model")
-    assert [type(a).__name__ for a in restored.agents] == ["Scriptwriter", "Actor"]
-    assert restored.agents[1].casting_id == restored.dramaturgy.casts[0].id == cast.id
+    agents = restored.dramaturgy.agents
+    assert [type(a).__name__ for a in agents] == ["Scriptwriter", "Actor"]
+    assert agents[1].casting_id == restored.dramaturgy.casts[0].id == cast.id
+    # 書き出しは全文を残すので、空の一覧も書き換えたタスクも保たれる
+    assert agents[0].prohibitions == []
+    assert next(t for t in agents[0].tasks if t.code == "write_dialogue").rules == ["方言で書く。"]
+    with pytest.raises(ValueError, match="タスク 'no_such_task'"):
+        build_model_definition_from_yaml(
+            SINGLE, AGENTS.replace("code: write_dialogue", "code: no_such_task")
+        )
     with pytest.raises(ValueError, match="nobody"):
         build_model_definition_from_yaml(
             SINGLE, AGENTS.replace("cast: {ref: taro_voice}", "cast: {ref: nobody}")

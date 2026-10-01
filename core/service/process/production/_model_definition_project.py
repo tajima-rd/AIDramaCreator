@@ -25,7 +25,7 @@ from core.genai import SpeechGenerator, TextGenerator
 from core.infra.io.model_definition_reader import build_model_definition_from_spec, read_spec
 from core.infra.io.model_definition_writer import SCRIPT_DIR, dump_model_definition, scene_filename
 from core.model.agent import Actor as ActorAgent
-from core.model.agent import Agent
+from core.model.agent import BaseAgent
 from core.model.drama import Cast, Character, Dramaturgy, Scene
 from core.model.identifier import new_id
 from core.prompt.drama_production import character_profile
@@ -96,7 +96,7 @@ class ModelDefinitionProject:
         self.spec: dict[str, Any] = read_spec(self.model_dir)
         definition = build_model_definition_from_spec(self.spec)
         self.dramaturgy: Dramaturgy = definition.dramaturgy
-        self.agents: list[Agent] = definition.agents
+        self.agents: list[BaseAgent] = self.dramaturgy.agents
         # 話者(演者のいる配役の人物)。名前→配役。声は演者(Actor)が持つ
         performers = {
             agent.casting_id: agent for agent in self.agents if isinstance(agent, ActorAgent)

@@ -12,6 +12,7 @@ from enum import Enum
 from typing import Optional, List, Union
 from pathlib import Path
 
+
 class AudioTag(Enum):
     AMAZED = "[amazed]"
     CRYING = "[crying]"
@@ -35,6 +36,7 @@ class AudioTag(Enum):
     @classmethod
     def get_all_values(cls):
         return {item.value for item in cls}
+
 
 class GeminiVoice(Enum):
     # ID = (Display Name for API, Gender, Character Description)
@@ -87,13 +89,17 @@ class GeminiVoice(Enum):
     def __str__(self):
         return f"{self.voice_name} ({self.gender}, {self.description})"
 
+
 class DirectorNotes(BaseModel):
     # Required attributes
     style: str = Field(..., description="Specific vocal style instructions")
     pace: str = Field(..., description="Speed and cadence of delivery")
 
     # Optional attributes
-    dynamics: Optional[str] = Field(default=None, description="Instructions for volume and emphasis")
+    dynamics: Optional[str] = Field(
+        default=None, description="Instructions for volume and emphasis"
+    )
+
 
 class Actor(BaseModel):
     # Required attributes
@@ -101,30 +107,36 @@ class Actor(BaseModel):
     voice: GeminiVoice = Field(..., description="Selected Gemini prebuilt voice")
     label: str = Field(..., description="Label for the character")
     gender: str = Field(..., description="Gender of the character")
-    personality_title: str = Field(..., description="Short archetype title, e.g., 'The Morning Hype'")
+    personality_title: str = Field(
+        ..., description="Short archetype title, e.g., 'The Morning Hype'"
+    )
 
     # Optional attributes
-    personality_description: Optional[str] = Field(default=None, description="Detailed personality traits")
+    personality_description: Optional[str] = Field(
+        default=None, description="Detailed personality traits"
+    )
     accent: str = Field(default="General English", description="Character's accent")
 
     @property
     def character_name(self) -> str:
         return self.character_name
-    
+
     @property
     def voice_name(self) -> str:
         # Access the voice_name property from the updated 3-item tuple Enum structure
         return self.voice.voice_name
+
     @property
     def label(self) -> str:
         return self.label
-    
+
     @property
     def gender(self) -> str:
         return self.gender
 
     def get_character_map(self):
         return [self.character_name, self.label]
+
 
 class Transcript(BaseModel):
     # Required attributes
@@ -140,8 +152,11 @@ class Transcript(BaseModel):
         recommended = AudioTag.get_all_values()
         for tag in found_tags:
             if tag not in recommended:
-                print(f"Warning: Unknown or custom tag found: {tag}. (Recommended tags: {sorted(list(recommended))})")
-    
+                print(
+                    f"Warning: Unknown or custom tag found: {tag}. (Recommended tags: {sorted(list(recommended))})"
+                )
+
+
 class Scene(BaseModel):
     # Required attributes
     scene_id: str = Field(..., description="Unique identifier for the scene")
@@ -154,7 +169,9 @@ class Scene(BaseModel):
     # def add_prompt(self, prompt: Transcript):
     #     self.prompts.append(prompt)
 
-    def export_json(self, target: Optional[Union[str, Path]] = None, indent: int = 2) -> Optional[str]:
+    def export_json(
+        self, target: Optional[Union[str, Path]] = None, indent: int = 2
+    ) -> Optional[str]:
         """Returns JSON string if target is None, else writes to the provided path."""
         json_data = self.model_dump_json(indent=indent, by_alias=True)
         if target:
@@ -169,4 +186,3 @@ class Scene(BaseModel):
         if isinstance(source, Path) or (isinstance(source, str) and os.path.exists(source)):
             return cls.model_validate_json(Path(source).read_text(encoding="utf-8"))
         return cls.model_validate_json(source)
-

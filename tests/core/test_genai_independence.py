@@ -44,7 +44,10 @@ def test_genai_does_not_import_outside_itself():
 def test_create_generator_from_plain_values():
     gen = create_text_generator("LlamaCpp", "qwen", api_url="http://localhost:8080", api_key="k")
     assert isinstance(gen, OpenAiCompatibleTextGenerator)
-    assert gen.url == "http://localhost:8080/v1/chat/completions" and gen.headers["Authorization"] == "Bearer k"
+    assert (
+        gen.url == "http://localhost:8080/v1/chat/completions"
+        and gen.headers["Authorization"] == "Bearer k"
+    )
     with pytest.raises(ValueError):
         create_text_generator("OpenWebUI", "m", api_url="http://localhost:3000")  # キーが必須
     with pytest.raises(ValueError):

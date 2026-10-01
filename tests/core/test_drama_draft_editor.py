@@ -15,11 +15,14 @@ from core.infra.io.model_definition_reader import (
 )
 from core.infra.io.model_definition_writer import model_definition_to_yaml
 from core.infra.store.drama_version_store import DraftNotFoundError
+from core.model.agent import Scriptwriter
 from core.model.drama import Dialogue, SoundEffect
 from core.service.process.edit import drama_draft_editor as editor
 from core.service.process.edit.drama_draft_editor import DraftConflictError
 
-SAMPLE_DRAMA_DIR = Path(__file__).resolve().parents[2] / "apps" / "sample_data" / "drama"
+SAMPLE_DRAMA_DIR = (
+    Path(__file__).resolve().parents[2] / "apps" / "sample_data" / "令和但馬道中膝栗毛" / "drama"
+)
 
 # 作品が2つ。人物・人物関係は両方の作品が参照する。どこからも参照しない時点・場所もある
 PROJECT_MODEL = """
@@ -91,6 +94,17 @@ dramaturgies:
       text: |
         観光の振興。
         港の歴史を伝える。
+    proposal:
+      title: 港の灯(仮)
+      catchphrase: 灯台が見てきた百年
+      logline: 灯台守の少年が、父の秘密を知る。
+      intent: 港の歴史を、地元の子どもに伝える。
+      target_area: 港町
+      synopsis: 少年は灯台で古い日誌を見つける。
+      characters:
+        - name: 少年
+          description: 灯台守の息子(仮)
+        - name: 父
     characters: [{ref: taro}, {ref: father}]
     relationships: [{ref: taro_father}]
     casts:
@@ -100,6 +114,20 @@ dramaturgies:
         performance:
           title: Quiet Keeper
           pace: ゆっくり
+    agents:
+      scriptwriters:
+        - key: writer
+          name: 脚本家
+          persona: 港町の生まれ
+          rules: [潮の香りを言葉で描く。]
+          tasks:
+            - code: write_dialogue
+              prohibitions: [標準語にしない。]
+      actors:
+        - key: taro_actor
+          name: 太郎役の演者
+          cast: {ref: taro_voice}
+          voice_name: Charon
     acts:
       - key: act1
         title: 第一幕
@@ -224,6 +252,30 @@ def test_confirmed_model_round_trips_through_db(db_path):
     assert taro.biographies[0].involved_relationships == loaded.relationships
     assert [m.name for m in loaded.character_groups[0].members] == ["父", "太郎"]
 
+    # 企画書は作品の人物とは別に、仮の登場人物を持つ。企画書を書かなかった作品は空の企画書を持つ
+    proposal = loaded.dramaturgies[0].proposal
+    assert (proposal.title, proposal.target_area) == ("港の灯(仮)", "港町")
+    assert [(c.name, c.description) for c in proposal.characters] == [
+        ("少年", "灯台守の息子(仮)"),
+        ("父", None),
+    ]
+    assert loaded.dramaturgies[1].proposal.title is None
+    assert loaded.dramaturgies[1].proposal.characters == []
+
+    # エージェントは作品が持つ。書き換えた文面と、既定のままの文面の両方が保たれる
+    writer, actor = loaded.dramaturgies[0].agents
+    assert (writer.name, writer.persona, writer.rules) == (
+        "脚本家",
+        "港町の生まれ",
+        ["潮の香りを言葉で描く。"],
+    )
+    assert writer.prohibitions == Scriptwriter.default_prohibitions()
+    dialogue = next(t for t in writer.tasks if t.code == "write_dialogue")
+    assert dialogue.prohibitions == ["標準語にしない。"]
+    assert [t.code for t in writer.tasks] == [t.code for t in Scriptwriter.default_tasks()]
+    assert (actor.casting_id, actor.voice_name) == (loaded.dramaturgies[0].casts[0].id, "Charon")
+    assert loaded.dramaturgies[1].agents == []
+
 
 def test_sample_data_round_trips_through_db(db_path):
     draft = editor.create_draft(db_path, "サンプル")
@@ -340,8 +392,9 @@ def test_invalid_yaml_is_not_stored_in_draft(db_path):
             draft.id,
             "dramaturgy: {title: 題, casts: [{character: {ref: nobody}}]}",
         )
-    agents = "dramaturgy: {title: 題}\nagents: {producers: [{name: 利用者}]}\n"
-    with pytest.raises(ValueError, match="エージェント"):
+    # 職能に無いタスクを持つエージェント
+    agents = "dramaturgy: {title: 題, agents: {scriptwriters: [{name: 脚本家, tasks: [{code: nope}]}]}}\n"
+    with pytest.raises(ValueError, match="タスク 'nope'"):
         editor.import_yaml(db_path, draft.id, agents)
     assert len(editor.list_revisions(db_path, draft.id)) == 1
 

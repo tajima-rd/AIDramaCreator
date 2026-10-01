@@ -20,7 +20,7 @@
 - 生成AIは`core/genai`の`create_text_generator`/`create_speech_generator`(Gemini)を使う。APIキーは`~/.aidc/secrets.env`の
   `AIDC_GEMINI_API_KEY`(`generator_builder.saved_api_key`。無ければ未設定の旨で止まる)。
 - `main.py`が見るのは`<root_dir>/model/`(モデル定義YAML)だけ(旧来のテキストのファイルの形は2026-10-01に削除)。`apps/sample_data/`を指定すると断る。
-- モデル定義YAMLからの実行(2026-09-30): `apps/sample_data`の`drama/`・`agent/`を`<root_dir>/model/`に、`project.yaml`を`<root_dir>/`に複製して使う。仲介は
+- モデル定義YAMLからの実行(2026-09-30): `apps/sample_data/令和但馬道中膝栗毛`の`drama/`・`agent/`を`<root_dir>/model/`に、`project.yaml`を`<root_dir>/`に複製して使う。仲介は
   `core/service/process/production/_model_definition_project.py`(暫定。現行の工程が使う`Project`と同じ入口をモデルから用意する)。
   人物設定は配役のある人物(話者)の`Character`から文章にし(`core/prompt/drama_production/dialogue.py`の`character_profile`)、
   話者名はフルネーム(照合では空白を無視)。台詞は`model/scripts/`に書き戻し、原稿は`work/scene/`(旧来の形。`Dialogue`に`context`が
@@ -39,13 +39,23 @@
   `core/infra/io/model_definition_reader.py`・`model_definition_writer.py`。1ファイルでも分割した複数のファイル(シーンごとのプロット・台詞・原稿も別のファイル)でも読み書きでき、
   識別子を保って往復できる(2026-09-30。形は2026-10-01承認。[model_design.md](model_design.md))。テストは`tests/core/test_model_definition_io.py`。
   公開API・制作の流れからはまだ使っていない。
-- `apps/sample_data/`: サンプルの人物・プロット・配役を分割方式のモデル定義YAMLにしたもの(旧来のサンプル`apps/sample_project`から変換。元は2026-10-01に削除)
+- `apps/sample_data/`: 作品ごとのディレクトリに分けた(2026-10-01ユーザー)。`令和但馬道中膝栗毛/`はサンプルの人物・プロット・配役を分割方式のモデル定義YAMLにしたもの(旧来のサンプル`apps/sample_project`から変換。元は2026-10-01に削除)。`ハチ北スキー場ガイド/`は企画書(`proposal`)だけを持つ作品(2026-10-01、ユーザー提供の企画書のテキストから)
   (2026-09-30、10-01。作品は`drama/`、エージェント(演者)は`agent/`。直下の`project.yaml`はプロジェクトの見本(モデル定義ではない)。場所・台詞・原稿は空の骨組み。変換で見つかった構造上の問題は
   [model_design.md](model_design.md)「サンプルデータ」)。
 - 人物・人物関係は作品の外(持ち主はProject。今は読み込み結果`ModelDefinition`の`characters`・`relationships`に仮置き)。作品は参照で持つ(2026-10-01)。
 - モデル定義YAMLの識別子と参照(2026-10-01): すべてのエンティティが`id`と`key`を持ち、参照は`{ref: key}`。書き出しは`key`を種類と通し番号で振る。
-- エージェントのモデル定義YAML(2026-10-01): 最上位の`agents:`に職能ごと(`actors`は`cast`・`voice_name`を持つ)。読むと作品と一緒に
-  組み立てる(`read_model_definition`→`ModelDefinition`。`Actor.casting_id`が同じ`Cast`を指すため)。書き出しは`agents`を渡す(分割では`agents.yaml`)。
+- エージェント(2026-10-01改訂): 抽象クラス`BaseAgent`と`AgentTask`(役割・性格づけ・厳守事項・禁止事項・タスク。既定は職能のクラス)。
+  Producerは削除。作品が所有し(`Dramaturgy.agents`)、モデル定義YAMLは`dramaturgy.agents:`に職能ごと(`actors`は`cast`・`voice_name`も。
+  分割では`agents.yaml`)。DBは`agent`・`agent_task`のテーブル。省略した項目は職能の既定、書き出しは全文。
+- GUIの既定のエージェント(2026-10-01): `apps/AIDC-Console/default/agents/<職能>.yaml`(Actor以外の6職能。Actorは配役ごとなので置かない)。
+  職能のクラスの既定の文面から書き出したもので、作品の分割ファイルと同じ形(`dramaturgy.agents`)。食い違いは
+  `tests/core/test_default_agents.py`が検出する(既定を直すときは両方を直す)。
+
+## 企画書(`Proposal`、2026-10-01)
+
+- `core/model/drama/proposal.py`の`Proposal`(企画書)・`ProposalCharacter`(企画書の登場人物)。`Dramaturgy.proposal`(作品に1つ)。
+  モデル定義YAMLは`dramaturgy.proposal`、DBは`proposal`・`proposal_character`のテーブル、部分YAMLでは`proposal.characters`を丸ごと置き換える。
+- 企画書のYAMLは、Dramaturgy EditorのProposalタブの`Import from YAML`でフォームに読み込める(2026-10-01)。
 
 ## 作品モデルのDB(2026-10-01)
 
@@ -54,12 +64,35 @@
 - モデル定義YAMLに`dramaturgies:`(作品の一覧)を足し、プロジェクトの作品モデル全体を1つのYAMLで読み書きできる
   (`ModelDefinition.dramaturgies`・`temporal_nodes`・`locations`、`model_definition_to_yaml`)。`ModelDefinition.dramaturgy`は作品が1つのときだけ使える。
 - 原稿の台詞の空の状況(`situation: {}`)を書き出しで省かないようにした(省略=シーンの状況と区別する)。
-- `apps/sample_data/drama`を取り込んで確定し、正本から読み直した作品モデルが元と同じになることを確かめた(テスト)。
+- `apps/sample_data/令和但馬道中膝栗毛/drama`を取り込んで確定し、正本から読み直した作品モデルが元と同じになることを確かめた(テスト)。
 - 部分YAMLの重ね合わせ(2026-10-01): Apply・直接編集・取り込みは、変えたい部分だけのモデル定義YAMLを下書きに重ねる
   (`core/infra/io/model_definition_patch.py`。規則は[database_design.md](database_design.md))。取り込みは`replace`で全体を置き換えられる。
 - 公開API・HTTP(2026-10-01): `drama_model`(正本・版の一覧・版の写し。読むだけ)と`drama_draft`(下書きの作成・一覧・中身・履歴・
   取り込み(本文・サーバーの手元のパス)・Apply・直接編集・Undo・確定・破棄)。エンドポイントは[database_design.md](database_design.md)。
 - 制作の流れ(main.py)からはまだ使っていない。
+
+## Web GUI(AIDC Console、2026-10-01)
+
+- `apps/AIDC-Console/`(ビルド不要の素のHTML/CSS/JS)。APIサーバーが`/app/`で配信する(`scripts/server/start.sh`の後に
+  `http://127.0.0.1:8100/app/`)。QIDM Consoleの共通部分を複製して直したもの([qidm_reuse.md](qidm_reuse.md))。
+- 画面: 上にメニューバー(`Project`・`Edit`・`Connection`)、左にTree、右にパネルの入れ物(main-area)。QIDMにあったPropertiesの区画は置かない。
+- メニュー: Project(作成・開く・保存・別名で保存・閉じる・Preferences・Exit)、Edit(New Dramaturgy・Dramaturgy Editor)、
+  Connection(接続・接続テスト・パスの更新・切断)。
+- Tree: `Project`(Project Overviewを開く)・`Dramaturgies`(正本の作品の一覧。選ぶとDramaturgy Editor)・`Datasets`
+  (Datasetの一覧。選ぶとData Viewer)。作品の中(Act→Scene・人物等)の並びはまだ無い。
+- Dramaturgy Editor(`dramaturgy_editor_panel.js`、2026-10-01): Propertiesタブ(題・あらすじ・入力/出力の言語・作品の削除)と
+  Actsタブ(幕の一覧と題・あらすじ。追加・削除、削除すると残りのorderを詰める)。New Dramaturgyは題・幕数・言語から作品を作って確定する。
+  保存の仕組みは[architecture.md](architecture.md) 8節。
+  Proposalタブ(企画書。題・キャッチコピー・ログライン・企画意図・対象地域・あらすじ・登場人物(名前と説明の行を追加・削除))も置いた。
+  Agentsタブ: 作品のエージェントの一覧と、名前・(Actorは声)・役割・性格づけ・厳守事項・禁止事項・タスクごとの文面の編集、追加
+  (職能を選ぶ。Actorは配役も)・削除・Reset to Default。
+  Proposalタブの`Import from YAML`は、企画書のYAML(最上位の`proposal:`か、モデル定義YAMLの`dramaturgy.proposal`)をフォームに読み込む
+  (下書きにはSaveで入る。知らない項目があれば断る)。
+- パネル: Project Overview(Overview・Summary・Generative AI・Datasetのタブ。Datasetの追加はPDF・DOCX・XLSXだけ)、
+  Data Viewer(CSVは表、PDFはブラウザの表示、DOCX・XLSXはダウンロード)。
+- 2026-10-01、headless Chromeで、接続→作成→Overviewの各タブ→PDFの追加→Data Viewer→閉じる→開く(Open Recent)を確かめた。
+  Dramaturgy Editorは、作品の作成→Properties・Actsの編集→Save Versionで版が増えること、未確定の変更があるときのNew Dramaturgyの拒否、
+  作品の削除の確定、古い版を元にした編集用の下書きの作り直しを確かめた。
 
 ## 実装済みだが、まだ制作の流れ(main.py)から使っていないもの(QIDMから持ち込み、2026-09-29)
 
@@ -77,4 +110,4 @@
   - `preference`: 生成AIの設定・APIキー・接続確認・モデル一覧・接続先の候補
   - `dataset`: 一覧・PDF/DOCX/XLSXの追加・中身とファイルの取得・メタデータの参照と更新・削除。
     ドラマへの割り当ては無い(常に未割当。[future_design.md](future_design.md)「Drama」)
-- テスト(`tests/`、`.venv/bin/python -m pytest`): 140件が通り、3件がskip(2026-10-01)。skipは参考資料のサンプルが無いため([open_tasks.md](open_tasks.md))。
+- テスト(`tests/`、`.venv/bin/python -m pytest`): 153件が通り、3件がskip(2026-10-01)。skipは参考資料のサンプルが無いため([open_tasks.md](open_tasks.md))。

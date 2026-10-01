@@ -1,0 +1,16 @@
+# actor/actors.yaml(apps/sample_project)から変換した演者(声)。名前は原文に無いので label から付けた。
+# 使う生成AI(音声合成の提供元・モデル)は project.yaml の genai.tts。エージェントは作品が所有する(dramaturgy.agents)。
+# role・rules・prohibitions・tasksを省略しているので、職能(Actor)の既定になる
+dramaturgy:
+  agents:
+    actors:
+    - id: d67a0088-4c81-58d8-aa92-3da1f99dc776
+      key: actor_001
+      name: 喜一役の演者
+      cast: {ref: cast_001}
+      voice_name: Charon
+    - id: 65b2bcc9-6df1-5f6c-b4da-08d8111abf71
+      key: actor_002
+      name: 弥千代役の演者
+      cast: {ref: cast_002}
+      voice_name: Kore

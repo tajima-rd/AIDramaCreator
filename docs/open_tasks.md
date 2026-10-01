@@ -32,6 +32,18 @@
 - [x] 作品モデル(`core/model/drama`)のDB: 正本・版・下書き([database_design.md](database_design.md)、2026-10-01)
 - [x] 作品モデルのDBを公開API(`drama_model`・`drama_draft`)から使えるようにする(2026-10-01)
 - [ ] 制作の流れ(main.py)を、モデル定義YAMLのファイルではなくDBの正本から読むようにする
-- [ ] SQLiteの残り: `agent`をDBに入れるか、Datasetの台帳と作品の結び付け
-- [ ] インターフェース(保留。GUIはQIDMの`apps/QIDM`を参考にする。準備の5項目は future_design.md「GUIで扱う制作の準備」)
+- [x] エージェントの再設計(`BaseAgent`・`AgentTask`、作品が所有、DB・YAML・Agentsタブ。2026-10-01)
+- [ ] 各職能の既定の文面(役割・厳守事項・禁止事項・タスク)の見直し(暫定。ユーザー)。コード(`core/model/agent`)と
+  `apps/AIDC-Console/default/agents/`の2か所にあるので、どちらを正本にするか(GUIがdefaultのYAMLを使う形にするか)も決める
+- [ ] エージェントの情報からSystemを組み立てる`core/prompt`の共通の部品と、生成AIを呼ぶ処理(`service/process`)。制作の流れのプロンプトをそこへ移すか
+- [ ] SQLiteの残り: Datasetの台帳と作品の結び付け
+- [x] Web GUIの枠(`apps/AIDC-Console`: メニューバー・Tree・パネル、Project Overview・Data Viewer。2026-10-01)
+- [x] GUI: EditメニューとDramaturgy Editor(Properties・Acts)、Treeの作品の一覧(2026-10-01)
+- [ ] GUI: Dramaturgy Editorに人物・場所・シーン等のタブを足す。Treeに作品の中(Act→Scene等)を並べるか(ユーザーと相談)
+- [x] 企画書のモデル(`Proposal`)とモデル定義YAML、Dramaturgy EditorのProposalタブ(2026-10-01)
+- [ ] GUI: 企画書を生成AIと作るパネル(QIDMのBuild Domain from Referencesと同じ構成。左に参考資料とチャット、右にタブ)
+- [x] 企画書のYAMLの読み込み(ProposalタブのImport from YAML。フォームに入れ、Saveで下書きへ。2026-10-01)
+- [ ] GUI: 準備の5項目(future_design.md「GUIで扱う制作の準備」)
+- [ ] GUIの検証の手順(QIDMの`.claude/skills/qidm-browser-verify/`を持ち込むか)
+- [ ] CLIの要否、`main.py`の扱い(保留)
 - [ ] 対話方式の制作(保留。パッケージの移行が終わってから)

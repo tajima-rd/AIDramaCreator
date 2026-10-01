@@ -14,7 +14,13 @@ import pytest
 pytest.importorskip("sudachipy")
 pytest.importorskip("sudachidict_core")
 
-from core.genai.rag import BigramTokenizer, Chunk, ChunkIndex, LexicalRetriever, create_retriever  # noqa: E402
+from core.genai.rag import (
+    BigramTokenizer,
+    Chunk,
+    ChunkIndex,
+    LexicalRetriever,
+    create_retriever,
+)  # noqa: E402
 from core.genai.rag.sudachi_tokenizer import MORPHEME_PREFIX, SudachiTokenizer  # noqa: E402
 
 
@@ -33,8 +39,13 @@ def test_morphemes_and_bigrams(tokenizer):
     morphemes = [t.removeprefix(MORPHEME_PREFIX) for t in tokens if t.startswith(MORPHEME_PREFIX)]
     assert morphemes == ["腎臓病", "初期", "分布"]  # 長い単位、助詞・助動詞・記号は除く
     assert {"腎臓", "臓病", "病の", "初期"} <= set(tokens)  # 2文字ずつの語も入る
-    assert ["ckd", "3", "0.25"] == [t for t in tokens if t.isascii() and not t.startswith(MORPHEME_PREFIX)]
-    assert SudachiTokenizer(include_bigrams=False).tokenize("初期分布") == [MORPHEME_PREFIX + "初期", MORPHEME_PREFIX + "分布"]
+    assert ["ckd", "3", "0.25"] == [
+        t for t in tokens if t.isascii() and not t.startswith(MORPHEME_PREFIX)
+    ]
+    assert SudachiTokenizer(include_bigrams=False).tokenize("初期分布") == [
+        MORPHEME_PREFIX + "初期",
+        MORPHEME_PREFIX + "分布",
+    ]
     with pytest.raises(ValueError):
         SudachiTokenizer(split_mode="X")
 

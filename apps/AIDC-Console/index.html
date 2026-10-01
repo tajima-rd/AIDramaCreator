@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AIDC Console</title>
+<link rel="stylesheet" href="static/app.css">
+</head>
+<body>
+<div class="menubar" id="menubar">
+  <div class="menubar-left" id="menubar-left"></div>
+  <div class="menubar-right">
+    <span class="status-badge" id="server-badge">Server: not connected</span>
+    <span class="status-badge" id="project-badge">Project: none</span>
+  </div>
+</div>
+
+<div class="layout">
+  <aside class="sidebar">
+    <section class="tree-pane">
+      <h2>Tree</h2>
+      <div id="tree-root" class="tree">
+        <p class="placeholder">プロジェクトを開くと構造が表示されます。</p>
+      </div>
+    </section>
+  </aside>
+  <main class="main-area" id="main-area"></main>
+</div>
+
+<div id="modal-backdrop" class="modal-backdrop" hidden>
+  <div class="modal" id="modal-box"></div>
+</div>
+
+<div id="toast" class="toast" hidden></div>
+
+<script src="static/vendor/js-yaml.min.js"></script>
+<script src="static/app.js"></script>
+<script src="static/data_viewer_panel.js"></script>
+<script src="static/project_overview_panel.js"></script>
+<script src="static/project_genai_tab.js"></script>
+<script src="static/dramaturgy_editor_panel.js"></script>
+</body>
+</html>

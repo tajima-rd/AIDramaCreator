@@ -61,8 +61,6 @@ def _connect(db_path: str) -> Iterator[sqlite3.Connection]:
 
 
 def _snapshot(definition: ModelDefinition) -> str:
-    if definition.agents:
-        raise ValueError("エージェント(agents)は下書きに入れられません(対象はcore.model.dramaだけ)")
     return model_definition_to_yaml(definition)
 
 

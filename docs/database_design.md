@@ -15,7 +15,6 @@
 
 - 下書きの作成は、最新の版の写しを履歴の0行目(create)にする(版が無ければ空の作品モデル)。
 - 写しは、渡されたYAMLを組み立て直してから書き出したもの。idの無い要素にはここでidが付き、以後の履歴・版・正本で同じidを保つ。
-- エージェント(`agents:`)を含むYAMLは、下書きに入れられない(ValueError)。
 
 ## 部分YAMLの重ね合わせ(2026-10-01ユーザー承認。問題が出たらその時に直す)
 
@@ -28,7 +27,7 @@ Apply・直接編集・取り込みは、渡した部分YAML(モデル定義YAML
 | 2 | 一覧の要素の特定 | idがあればidで、無ければkeyで同じ要素を探して重ねる。無ければ末尾に追加 |
 | 3 | 値の上書き | 同じ場所の値は部分YAMLの値で上書きする(分割ファイルの読み込みは今までどおり食い違いをエラーにする) |
 | 4 | 値を消す | `null`を書くと、その属性を消す |
-| 5 | idもkeyも無い一覧 | 書いた一覧で丸ごと置き換える: 作品の`characters`・`relationships`(参照)・`members`・`involved_relationships`・`characteristics`・`features`・`endings`・`examples` |
+| 5 | idもkeyも無い一覧 | 書いた一覧で丸ごと置き換える: 作品の`characters`・`relationships`(参照)・企画書の`characters`・エージェントの`rules`・`prohibitions`・`tasks`(nullで消すと職能の既定に戻る)・`members`・`involved_relationships`・`characteristics`・`features`・`endings`・`examples` |
 | 6 | 要素の削除 | `{id: …, delete: true}`(keyでも可)。所有している子も消える。消した要素を参照している所が残れば、反映しない(参照切れのValueError) |
 | 7 | `dramaturgy:`(単数) | `dramaturgies`の1要素として扱う(規則2で特定) |
 | 8 | 置き換え | 取り込みは`replace`を選べば、下書きの中身を全体で置き換える(複数の文書は分割ファイルと同じ規則で重ね合わせる) |
@@ -96,6 +95,10 @@ QIDMのdraftsにあった根拠(evidence)・会話(conversation)は、対話方�
 | `character_group` | id・name・kind・description |
 | `relationship` | id・source_id・target_id→character・label・period_id・description・form_of_address・tone |
 | `dramaturgy` | id・sort_order・title・synopsis・input_language・output_language・premise_text |
+| `proposal` ⊂dramaturgy | dramaturgy_id(作品ごとに1行)・title・catchphrase・logline・intent・target_area・synopsis |
+| `proposal_character` ⊂proposal | dramaturgy_id・sort_order・name・description |
+| `agent` ⊂dramaturgy | id・dramaturgy_id・sort_order・kind(職能。YAMLの区画名の単数形)・name・role・persona・rules・prohibitions(JSONの文字列の一覧)・casting_id(Actorだけ。ID参照で制約なし)・voice_name |
+| `agent_task` ⊂agent | agent_id・sort_order・code・title・description・rules・prohibitions(JSON) |
 | `temporal_edge` ⊂dramaturgy | id・dramaturgy_id・sort_order・label・kind・source_id・target_id→temporal_node |
 | `cast` ⊂dramaturgy | id・dramaturgy_id・sort_order・character_id・performance_title・performance_description・performance_pace・voice_gender・language・accent |
 | `act` ⊂dramaturgy | id・dramaturgy_id・sort_order・title・synopsis |
@@ -141,3 +144,6 @@ QIDMのdraftsにあった根拠(evidence)・会話(conversation)は、対話方�
 
 エラー: プロジェクト・下書き・版・取り込むパスが無ければ404、元にした版が古い確定は409、YAMLの形・参照の誤り・openでない下書きの
 変更・取り消せる変更が無いUndoは400。テストは`tests/api/test_drama_draft.py`。
+
+- エージェントのタスクは`code`で職能の既定と結び付ける。職能のタスクの`code`を変える・消すと、それを持つ版・下書き・正本は
+  読めなくなる(職能に無いcodeはエラー)。変えるときは移し替えを考える。
