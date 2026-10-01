@@ -132,7 +132,7 @@ UMLからの変更(2026-09-30ユーザー承認): `Profile`をなくし、`Chara
 | --- | --- | --- | --- | --- |
 | `researcher.py` | `Researcher` | text+検索 | なし | `answer_question`・`check_consistency` |
 | `casting_director.py` | `CastingDirector` | text | なし | `cast_character`・`assign_voice` |
-| `scriptwriter.py` | `Scriptwriter` | text | なし | `draft_proposal`・`create_character`・`write_synopsis`・`write_dialogue` |
+| `scriptwriter.py` | `Scriptwriter` | text | なし | `draft_proposal`・`create_character`・`import_proposal_character`・`check_character_conflict`(2026-10-02)・`write_synopsis`・`write_dialogue` |
 | `director.py` | `Director` | text | なし | `direct_scene` |
 | `stage_manager.py` | `StageManager` | text(翻訳) | なし | `translate`(キューシートの組み立てはプログラムで、タスクにしない) |
 | `sound_engineer.py` | `SoundEngineer` | (将来) | なし | `design_sound`(結合はプログラム) |

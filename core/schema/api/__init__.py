@@ -8,6 +8,12 @@ core と api の間でやり取りされるAPIリクエスト/レスポンスの
 """
 
 from .agent_default import AgentDefaultListResult
+from .character_import import (
+    CharacterConflictCheckRequest,
+    CharacterConflictCheckResult,
+    CharacterImportRequest,
+    CharacterImportResult,
+)
 from .dataset import (
     DatasetContent,
     DatasetDeleteResult,
@@ -57,6 +63,10 @@ from .project import (
 
 __all__ = [
     "AgentDefaultListResult",
+    "CharacterConflictCheckRequest",
+    "CharacterConflictCheckResult",
+    "CharacterImportRequest",
+    "CharacterImportResult",
     "DramaDraftChangeResult",
     "DramaDraftConfirmRequest",
     "DramaDraftConfirmResult",

@@ -47,7 +47,8 @@ def read_project(root_dir: str) -> Project:
         layout=layout,
         server_base_url=server.get("base_url", DEFAULT_SERVER_BASE_URL),
         protocol_version=spec.get("protocol_version", PROTOCOL_VERSION),
-        llm=_setting_from_spec(LlmSetting, genai.get("llm")),
+        creative_llm=_setting_from_spec(LlmSetting, genai.get("creative_llm")),
+        assistive_llm=_setting_from_spec(LlmSetting, genai.get("assistive_llm")),
         tts=_setting_from_spec(TtsSetting, genai.get("tts")),
         embedding=_setting_from_spec(EmbeddingSetting, genai.get("embedding")),
     )
@@ -89,8 +90,10 @@ def write_project(project: Project) -> None:
     }
     # 生成AIの設定は、設定されている場合のみ書く(APIキー等の秘密情報は持たない)。
     genai = {}
-    if project.llm is not None:
-        genai["llm"] = _setting_to_spec(project.llm)
+    if project.creative_llm is not None:
+        genai["creative_llm"] = _setting_to_spec(project.creative_llm)
+    if project.assistive_llm is not None:
+        genai["assistive_llm"] = _setting_to_spec(project.assistive_llm)
     if project.tts is not None:
         genai["tts"] = _setting_to_spec(project.tts)
     if project.embedding is not None:

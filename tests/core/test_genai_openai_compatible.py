@@ -29,6 +29,7 @@ from core.service.process.genai.generator_builder import (
     build_embedding_generator,
     build_text_generator,
 )
+from core.service.process.genai.llm_role import LlmRole
 
 
 class _Schema(BaseModel):
@@ -150,8 +151,12 @@ def test_unsupported_options(posted):
 
 def _project(client, api_url=None):
     project = Project("id", "TEST_IMPLEMENT__genai", "", "", ProjectLayout("/tmp/TEST_PROJECT_00"))
-    project.llm = LlmSetting(client=client, model="qwen", api_url=api_url)
+    project.creative_llm = LlmSetting(client=client, model="qwen", api_url=api_url)
     return project
+
+
+def _build_creative(project):
+    return build_text_generator(project, LlmRole.CREATIVE)
 
 
 def test_api_key_name():
@@ -174,25 +179,25 @@ def test_api_key_name():
 
 def test_factory(monkeypatch):
     with pytest.raises(ValueError):
-        build_text_generator(_project("LlamaCpp"))  # api_urlが無い
+        _build_creative(_project("LlamaCpp"))  # api_urlが無い
 
     # llama.cpp: キーは任意。接続先ごとの名前で保存したキーを使う
-    gen = build_text_generator(_project("LlamaCpp", "http://localhost:8080"))
+    gen = _build_creative(_project("LlamaCpp", "http://localhost:8080"))
     assert isinstance(gen, OpenAiCompatibleTextGenerator) and "Authorization" not in gen.headers
     assert gen.url == "http://localhost:8080/v1/chat/completions"
     secret_env_store.save_secret("AIDC_LLAMACPP_LOCALHOST_8080_API_KEY", "1234")
     secret_env_store.save_secret("AIDC_LLAMACPP_LLAMA_EXAMPLE_API_KEY", "remote-key")
     assert (
-        build_text_generator(_project("LlamaCpp", "http://localhost:8080")).headers["Authorization"]
+        _build_creative(_project("LlamaCpp", "http://localhost:8080")).headers["Authorization"]
         == "Bearer 1234"
     )
-    remote = build_text_generator(_project("LlamaCpp", "https://llama.example"))
+    remote = _build_creative(_project("LlamaCpp", "https://llama.example"))
     assert (
         remote.headers["Authorization"] == "Bearer remote-key"
     )  # 同じ種類の別のサーバーは別のキー
 
     # Ollama: キーは使わない
-    gen = build_text_generator(_project("Ollama", "http://localhost:11434"))
+    gen = _build_creative(_project("Ollama", "http://localhost:11434"))
     assert (
         gen.url == "http://localhost:11434/v1/chat/completions"
         and "Authorization" not in gen.headers
@@ -201,9 +206,9 @@ def test_factory(monkeypatch):
     # Open WebUI: パスが違い、キーは必須。シェルの環境変数は読まない
     monkeypatch.setenv("OPEN_WEBUI_API_KEY", "from-shell")
     with pytest.raises(ValueError, match="AIDC_OPENWEBUI_LOCALHOST_3000_API_KEY"):
-        build_text_generator(_project("OpenWebUI", "http://localhost:3000"))
+        _build_creative(_project("OpenWebUI", "http://localhost:3000"))
     secret_env_store.save_secret("AIDC_OPENWEBUI_LOCALHOST_3000_API_KEY", "sk-test")
-    gen = build_text_generator(_project("OpenWebUI", "http://localhost:3000"))
+    gen = _build_creative(_project("OpenWebUI", "http://localhost:3000"))
     assert gen.url == "http://localhost:3000/api/chat/completions"
     assert gen.headers["Authorization"] == "Bearer sk-test"
 

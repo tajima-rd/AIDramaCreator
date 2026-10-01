@@ -10,6 +10,11 @@
 
 ## 技術的負債
 
+- **作業補助の生成AIに手元のllama.cppを使うと、企画書の登場人物の取り込み・矛盾の確認に1回約3分かかる**(2026-10-02、Ryzen AI 7 PRO 350の内蔵GPU、
+  Gemma 4 26B-A4B Q8)。原因は2つ: llama.cppがGemma 4の推論(thinking)を既定で行うこと(要求に`chat_template_kwargs: {enable_thinking: false}`を
+  付ければ止まることを確かめた)と、プロンプトの読み込みが毎秒約30トークンと遅いこと(登録済みの人物の設定は約2500トークン)。`core/genai`の
+  OpenAI互換の生成器は思考の指定(`TextConfig.thinking_level`)を受け付けずエラーにしている。対処(推論を止める指定を足すか等)はユーザーと相談する。
+- 手元のモデルが作った人物の骨組みは、読みを漢字のまま返す・特徴の定義(Definition)の欄に説明を書く等、指示に従わないことがある(2026-10-02)。
 - `core/schema/formats/_legacy_drama.py`(旧`core/model/drama.py`。新しいモデルに移ったら削除する):
   - 声の一覧`GeminiVoice`(提供元に依存するもの)がドラマのモデルに入っている。
   - `Actor`がフィールドと同名のproperty(`character_name`・`label`・`gender`)を定義している(実害は無いが不要)。

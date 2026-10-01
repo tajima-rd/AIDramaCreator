@@ -1,7 +1,7 @@
 # core/service/process/edit/preference_editor.py
 """
 プロジェクトの設定(Preferences)の更新。現状は生成AIの設定(project.yamlのgenaiセクション=
-Project.llm/Project.tts/Project.embedding)のみ。
+Project.creative_llm/Project.assistive_llm/Project.tts/Project.embedding)のみ。
 
 project.yamlにはAPIキーを書かない(docs/architecture.md「生成AI(`core/genai`)の設定はProjectに
 持たせる」)。キーはsave_api_keyで、プロジェクトの外(~/.aidc/secrets.env)に、提供元と接続先から
@@ -33,7 +33,7 @@ def validate_genai_setting(setting: Union[LlmSetting, TtsSetting, EmbeddingSetti
         raise ValueError(f"{label}: {setting.client}にはサーバーのURL(API URL)が必要です。")
 
 
-def normalize_llm_setting(setting: Optional[LlmSetting]) -> Optional[LlmSetting]:
+def normalize_llm_setting(setting: Optional[LlmSetting], label: str = "LLM") -> Optional[LlmSetting]:
     if setting is None:
         return None
     normalized = LlmSetting(
@@ -41,7 +41,7 @@ def normalize_llm_setting(setting: Optional[LlmSetting]) -> Optional[LlmSetting]
         model=setting.model.strip(),
         api_url=_blank_to_none(setting.api_url),
     )
-    validate_genai_setting(normalized, TEXT_CLIENTS, "LLM")
+    validate_genai_setting(normalized, TEXT_CLIENTS, label)
     return normalized
 
 
@@ -71,16 +71,19 @@ def normalize_embedding_setting(setting: Optional[EmbeddingSetting]) -> Optional
 
 def update_genai_settings(
     layout: ProjectLayout,
-    llm: Optional[LlmSetting],
+    creative_llm: Optional[LlmSetting],
+    assistive_llm: Optional[LlmSetting],
     tts: Optional[TtsSetting],
     embedding: Optional[EmbeddingSetting] = None,
 ) -> Project:
     """生成AIの設定を置き換える(Noneはその設定を消す)。検証してからproject.yamlに書く。"""
-    llm = normalize_llm_setting(llm)
+    creative_llm = normalize_llm_setting(creative_llm, "Creative LLM")
+    assistive_llm = normalize_llm_setting(assistive_llm, "Assistive LLM")
     tts = normalize_tts_setting(tts)
     embedding = normalize_embedding_setting(embedding)
     project = read_project(layout.root_dir)
-    project.llm = llm
+    project.creative_llm = creative_llm
+    project.assistive_llm = assistive_llm
     project.tts = tts
     project.embedding = embedding
     project.modified_at = datetime.now(UTC).astimezone().isoformat()

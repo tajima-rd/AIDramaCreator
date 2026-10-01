@@ -2,23 +2,16 @@
 /*
  * <dramaturgy-editor-panel> — Edit > Dramaturgy Editor(またはTreeの作品)が開く、作品(Dramaturgy)の
  * タブ切り替え式の編集パネル。QIDMのDomain Editorにならう。
- * apiFetch/state/showToast/showApiError/textField/fieldError/escapeHtml/escapeAttrをグローバル利用する。
+ * apiFetch/state/showToast/showApiError/textField/fieldError/escapeHtml/escapeAttr/EditorDraftをグローバル利用する。
  *
- * 正本を変えるのは下書きの確定だけ(docs/architecture.md 7節)なので、このパネルは編集用の下書き
- * (題がEDITOR_DRAFT_TITLEの、openな下書き。プロジェクトに1つ)を通して編集する:
- * - 各タブのSaveは、変えた部分だけの部分YAMLを下書きへの直接編集(POST .../edit)として送る
- * - ヘッダーのSave Versionで下書きを確定し、版を1つ作る(QIDMのSave Schemaにあたる)。確定した後は、
- *   新しい版を元に編集用の下書きを作り直す
- * - 下書きの元にした版が今の版より古ければ確定できない(409)。変更の無い古い下書きは黙って作り直し、
- *   変更があれば破棄してよいかを確かめる
+ * 正本を変えるのは下書きの確定だけ(docs/architecture.md 7節)なので、このパネルは人物パネルと共有する編集用の下書き
+ * (editor_draft.jsのEditorDraft)を通して編集する。ヘッダーのSave Versionが確定(QIDMのSave Schemaにあたる)。
  *
  * タブ: Properties(題・あらすじ・言語)・Proposal(企画書。作品の初期シードで、題・あらすじ・登場人物は作品と共有しない)・
  * Agents(作品作りに参加するエージェント。役割・性格づけ・厳守事項・禁止事項・タスクの文面を書き換える。足りない職能は
  * タブを開いたときにプロジェクトのユーザー既定から読み込む。Reset to Defaultはユーザー既定に戻し、空にした項目はシステム既定になる。
  * Save as User Default・Restore System Defaultでプロジェクトのユーザー既定を書き換える。Actorは出さない)・Acts(幕の一覧と詳細。追加・削除)。幕のorderは0から連番で、削除したら残りを詰める。
  */
-
-const EDITOR_DRAFT_TITLE = "Dramaturgy Editor";
 
 // 企画書(モデル定義YAMLのproposal。core.schema.formats.dramaturgy_definition.ProposalSpec)の項目
 const PROPOSAL_FIELDS = ["title", "catchphrase", "logline", "intent", "target_area", "synopsis", "characters"];
@@ -77,15 +70,6 @@ function proposalFromYaml(text) {
   };
 }
 
-// 編集用の下書き(無ければnull)と、その変更の数(作成の行を除いた履歴の数)
-async function findEditorDraft(projectId) {
-  const result = await apiFetch(`/projects/${projectId}/drama-drafts?status=open`);
-  const draft = (result.drafts || []).find((d) => d.title === EDITOR_DRAFT_TITLE) || null;
-  if (!draft) return { draft: null, changeCount: 0 };
-  const revisions = await apiFetch(`/projects/${projectId}/drama-drafts/${draft.draft_id}/revisions`);
-  return { draft, changeCount: Math.max(0, (revisions.revisions || []).length - 1) };
-}
-
 customElements.define(
   "dramaturgy-editor-panel",
   class extends HTMLElement {
@@ -93,9 +77,7 @@ customElements.define(
       super();
       this.projectId = null;
       this.dramaturgyId = null;
-      this.draftId = null;
-      this.currentVersion = null; // 確定した最新の版(未確定ならnull)
-      this.changeCount = 0; // 編集用の下書きにある、まだ確定していない変更の数
+      this.draft = null; // 編集用の下書き(EditorDraft)
       this.content = null; // 下書きの中身(モデル定義YAMLの対応表。人物の名前を引くため)
       this.dramaturgy = null; // 下書きの中の作品(DramaturgySpecの対応表。削除済みならnull)
       this.selectedAgentId = null;
@@ -118,8 +100,9 @@ customElements.define(
       this.selectedActId = null;
       this.selectedAgentId = null;
       this.agentDefaultsFailed = false;
+      this.draft = new EditorDraft(projectId);
       try {
-        if (!(await this.ensureDraft())) {
+        if (!(await this.draft.ensure())) {
           this.dispatchEvent(new CustomEvent("dramaturgy-editor-closed", { bubbles: true }));
           return;
         }
@@ -129,47 +112,8 @@ customElements.define(
       }
     }
 
-    draftBase() {
-      return `/projects/${this.projectId}/drama-drafts/${this.draftId}`;
-    }
-
-    // 編集用の下書きを用意する(再開・作り直し・新規)。利用者が破棄を断ればfalse。
-    async ensureDraft() {
-      const versions = await apiFetch(`/projects/${this.projectId}/drama-model/versions`);
-      this.currentVersion = versions.current_version ?? null;
-      const { draft, changeCount } = await findEditorDraft(this.projectId);
-      if (draft && (draft.base_version ?? null) === this.currentVersion) {
-        this.draftId = draft.draft_id;
-        this.changeCount = changeCount;
-        return true;
-      }
-      if (draft) {
-        if (
-          changeCount > 0 &&
-          !confirm(
-            `Dramaturgy Editorの下書きは古い版(v${draft.base_version ?? "-"})を元にしているため確定できません。` +
-              `まだ確定していない変更(${changeCount}件)を破棄して、今の版(v${this.currentVersion})から開き直しますか?`
-          )
-        ) {
-          return false;
-        }
-        await apiFetch(`/projects/${this.projectId}/drama-drafts/${draft.draft_id}/discard`, { method: "POST" });
-      }
-      await this.createDraft();
-      return true;
-    }
-
-    async createDraft() {
-      const created = await apiFetch(`/projects/${this.projectId}/drama-drafts`, {
-        method: "POST",
-        bodyObj: { title: EDITOR_DRAFT_TITLE },
-      });
-      this.draftId = created.draft_id;
-      this.changeCount = 0;
-    }
-
     async reloadContent() {
-      const content = await apiFetch(`${this.draftBase()}/content`);
+      const content = await this.draft.content();
       this.content = content;
       this.dramaturgy = (content.dramaturgies || []).find((d) => d.id === this.dramaturgyId) || null;
       if (this.dramaturgy && this.selectedActId && !this.acts().some((a) => a.id === this.selectedActId)) {
@@ -184,11 +128,7 @@ customElements.define(
 
     // 部分YAML(この作品の中の変えたい部分)を下書きに重ねて、読み直す。
     async editDramaturgy(patch) {
-      await apiFetch(`${this.draftBase()}/edit`, {
-        method: "POST",
-        bodyObj: { dramaturgies: [{ id: this.dramaturgyId, ...patch }] },
-      });
-      this.changeCount += 1;
+      await this.draft.edit({ dramaturgies: [{ id: this.dramaturgyId, ...patch }] });
       await this.reloadContent();
     }
 
@@ -217,15 +157,12 @@ customElements.define(
     renderHeader() {
       const header = this.querySelector("#de-header");
       const title = this.dramaturgy ? this.dramaturgy.title : "(削除済み)";
-      const versionLabel = this.currentVersion === null ? "未確定" : `v${this.currentVersion}`;
-      const pendingLabel = this.changeCount > 0 ? ` · 未確定の変更 ${this.changeCount}件` : "";
-      const btnClass = this.changeCount > 0 ? "btn btn-version-pending" : "btn btn-version-clean";
       header.innerHTML = `
         <div class="panel-header-row">
           <span class="panel-header-title">Dramaturgy Editor — ${escapeHtml(title)}</span>
           <div class="panel-header-actions">
-            <span class="panel-header-version">${escapeHtml(versionLabel + pendingLabel)}</span>
-            <button type="button" class="${btnClass}" id="de_save_version">Save Version</button>
+            <span class="panel-header-version">${escapeHtml(this.draft.versionLabel())}</span>
+            <button type="button" class="${this.draft.versionButtonClass()}" id="de_save_version">Save Version</button>
           </div>
         </div>
       `;
@@ -235,15 +172,13 @@ customElements.define(
     }
 
     async saveVersion() {
-      if (this.changeCount === 0) {
-        showToast(`確定する変更はありません(${this.currentVersion === null ? "未確定" : `v${this.currentVersion}`}のまま)`, "info");
-        return;
-      }
       try {
-        const result = await apiFetch(`${this.draftBase()}/confirm`, { method: "POST", bodyObj: {} });
-        this.currentVersion = result.version;
-        await this.createDraft();
-        showToast(`版 v${result.version} として確定しました`, "ok");
+        const version = await this.draft.confirm();
+        if (version === null) {
+          showToast(`確定する変更はありません(${this.draft.versionLabel()}のまま)`, "info");
+          return;
+        }
+        showToast(`版 v${version} として確定しました`, "ok");
         this.dispatchEvent(new CustomEvent("dramaturgy-editor-saved", { bubbles: true }));
         await this.reloadContent();
         // 削除を確定した作品は正本からも消えたので、パネルを閉じる

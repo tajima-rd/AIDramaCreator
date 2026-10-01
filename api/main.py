@@ -34,7 +34,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from api.routers import agent_default, dataset, drama_draft, drama_model, preference, project
+from api.routers import agent_default, character_import, dataset, drama_draft, drama_model, preference, project
 from core.project.dataset import DatasetMetadataNotFoundError, DatasetNotFoundError
 from core.project.project import ProjectNotFoundError
 from core.service.api.drama_draft import DraftNotFoundError
@@ -47,6 +47,7 @@ app.include_router(dataset.router)
 app.include_router(drama_model.router)
 app.include_router(drama_draft.router)
 app.include_router(agent_default.router)
+app.include_router(character_import.router)
 
 
 @app.exception_handler(ProjectNotFoundError)

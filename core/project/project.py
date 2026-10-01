@@ -4,7 +4,9 @@
 
 - Project: project.yamlに対応する、プロジェクトそのもの(ID・名前・日時等)
 - LlmSetting/TtsSetting/EmbeddingSetting: プロジェクトが使う生成AI(文章生成・音声合成・資料の検索の埋め込み)の接続先。
-  APIキー等の秘密情報はproject.yamlに持たない(~/.aidc/secrets.env、core.service.process.genai.generator_builder)
+  文章生成は、作品作り用(creative_llm)と作業補助用(assistive_llm)の2つを持つ(タスクごとの使い分けは
+  core.service.process.genai.llm_role)。APIキー等の秘密情報はproject.yamlに持たない(~/.aidc/secrets.env、
+  core.service.process.genai.generator_builder)
 - ProjectLayout: プロジェクトのディレクトリ内の、構成要素の所在の定義。ファイル配置は
   アプリ内部の固定値で、project.yamlのpathsセクションはそのミラーにすぎない
 
@@ -115,6 +117,7 @@ class Project:
     layout: ProjectLayout
     server_base_url: str = DEFAULT_SERVER_BASE_URL
     protocol_version: str = PROTOCOL_VERSION
-    llm: Optional[LlmSetting] = None
+    creative_llm: Optional[LlmSetting] = None  # 作品作り(品質が要るタスク)の文章生成
+    assistive_llm: Optional[LlmSetting] = None  # 作業補助(課金の無い生成AIで足りるタスク)の文章生成
     tts: Optional[TtsSetting] = None
     embedding: Optional[EmbeddingSetting] = None

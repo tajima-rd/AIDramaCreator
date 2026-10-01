@@ -1,7 +1,7 @@
 # core/service/api/preference.py
 """
 プロジェクトの設定(Project > Preferences)の公開API。現状は生成AIの設定(project.yamlのgenai
-セクション=文章生成・音声合成・埋め込み)と、その入力補助(モデル名の一覧・接続先URLの候補・APIキーの状態と保存)。
+セクション=文章生成(作品作り・作業補助)・音声合成・埋め込み)と、その入力補助(モデル名の一覧・接続先URLの候補・APIキーの状態と保存)。
 
 APIキーの値は返さない(名前と伏せ字だけ)。キーはプロジェクトの外(~/.aidc/secrets.env)に、
 提供元と接続先から決まる名前で保存し、全プロジェクトで共有するため、モデル名の一覧・URLの
@@ -57,7 +57,8 @@ def _setting_info(setting: Optional[Union[LlmSetting, TtsSetting, EmbeddingSetti
 
 def _to_info(project: Project) -> PreferenceInfo:
     return PreferenceInfo(
-        llm=_setting_info(project.llm),
+        creative_llm=_setting_info(project.creative_llm),
+        assistive_llm=_setting_info(project.assistive_llm),
         tts=_setting_info(project.tts),
         embedding=_setting_info(project.embedding),
         llm_clients=[_client_info(c) for c in TEXT_CLIENTS],
@@ -73,10 +74,11 @@ def get_preferences(project_id: str) -> PreferenceInfo:
 
 def update_preferences(project_id: str, request: PreferenceUpdateRequest) -> PreferenceInfo:
     layout = project_registry_store.resolve_layout(project_id)
-    llm = LlmSetting(**request.llm.model_dump()) if request.llm else None
+    creative_llm = LlmSetting(**request.creative_llm.model_dump()) if request.creative_llm else None
+    assistive_llm = LlmSetting(**request.assistive_llm.model_dump()) if request.assistive_llm else None
     tts = TtsSetting(**request.tts.model_dump()) if request.tts else None
     embedding = EmbeddingSetting(**request.embedding.model_dump()) if request.embedding else None
-    return _to_info(preference_editor.update_genai_settings(layout, llm, tts, embedding))
+    return _to_info(preference_editor.update_genai_settings(layout, creative_llm, assistive_llm, tts, embedding))
 
 
 def test_llm_connection(project_id: str, request: LlmConnectionTestRequest) -> LlmConnectionTestResult:

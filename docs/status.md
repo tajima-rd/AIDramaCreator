@@ -92,6 +92,18 @@
   (下書きにはSaveで入る。知らない項目があれば断る)。
 - パネル: Project Overview(Overview・Summary・Generative AI・Datasetのタブ。Datasetの追加はPDF・DOCX・XLSXだけ)、
   Data Viewer(CSVは表、PDFはブラウザの表示、DOCX・XLSXはダウンロード)。
+- 人物パネル(`character_editor_panel.js`、Edit > Character Editor、2026-10-02): プロジェクトの人物・まとまり・人物関係を編集する
+  (Characters・Groups・Relationshipsのタブ。作品を選ばなくても開ける。名前だけで登録できる。使われている人物・人物関係は削除せず、使われている所を示す。
+  経歴・人物関係の時期は、下書きにある時期から選ぶだけ)。Dramaturgy Editorと同じ編集用の下書き(`editor_draft.js`に共通化)を通し、Save Versionで確定する。
+  CharactersタブのImport from Proposalで、作品を選んで企画書の登場人物を取り込む(名前が同じなら同じ人物。未登録はImport=骨組みから登録、
+  登録済みはCheck=矛盾の確認→Cancel・Merge・Replace、矛盾が無ければAdd to Dramaturgy。取り込んだ人物は作品の登場人物の参照にも加わる)。
+  生成AIはScriptwriterのタスク`import_proposal_character`・`check_character_conflict`(作業補助)。処理は`core/service/process/genai/character_importer.py`、
+  プロンプトは`core/prompt/character_import.py`、APIは`POST /projects/{id}/drama-drafts/{draft_id}/character-import`(と`/check`)。矛盾の理由は今は保存しない。
+  headless Chromeで、手元のllama.cpp(Gemma 4 26B-A4B)による取り込み・矛盾の確認・キャンセル、名前だけの人物の追加、同名の拒否、まとまり・人物関係の表示、
+  使われている人物関係の削除の拒否、Save Versionを確かめた(手元の生成AIでは1回に約3分かかった。[known_issues.md](known_issues.md))。
+- 文章生成の設定の分離(2026-10-02): Generative AIタブで、作品作り(Creative LLM)と作業補助(Assistive LLM)を別々に設定する
+  (`project.yaml`の`genai.creative_llm`・`assistive_llm`。タスクとの対応は`core/service/process/genai/llm_role.py`。[architecture.md](architecture.md) 2.1節)。
+  headless Chromeで、Assistive LLMに手元のllama.cpp(`localhost:8080`)を選ぶ→URLの自動検出→モデル一覧→接続テスト→保存を確かめた。
 - 2026-10-01、headless Chromeで、接続→作成→Overviewの各タブ→PDFの追加→Data Viewer→閉じる→開く(Open Recent)を確かめた。
   Dramaturgy Editorは、作品の作成→Properties・Actsの編集→Save Versionで版が増えること、未確定の変更があるときのNew Dramaturgyの拒否、
   作品の削除の確定、古い版を元にした編集用の下書きの作り直しを確かめた。

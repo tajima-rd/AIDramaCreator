@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 
 class GenaiSettingInfo(BaseModel):
-    """生成AIの接続先(project.yamlのgenai.llm/tts/embedding)。APIキーは持たない。"""
+    """生成AIの接続先(project.yamlのgenai.creative_llm/assistive_llm/tts/embedding)。APIキーは持たない。"""
 
     client: str
     model: str
@@ -23,7 +23,8 @@ class GenaiClientInfo(BaseModel):
 
 
 class PreferenceInfo(BaseModel):
-    llm: Optional[GenaiSettingInfo] = None
+    creative_llm: Optional[GenaiSettingInfo] = None  # 作品作りの文章生成
+    assistive_llm: Optional[GenaiSettingInfo] = None  # 作業補助の文章生成
     tts: Optional[GenaiSettingInfo] = None
     embedding: Optional[GenaiSettingInfo] = None  # 資料の検索の埋め込み(未設定なら語による検索だけ)
     llm_clients: list[GenaiClientInfo]
@@ -34,13 +35,14 @@ class PreferenceInfo(BaseModel):
 class PreferenceUpdateRequest(BaseModel):
     """設定を置き換える。Noneはその設定を消す。"""
 
-    llm: Optional[GenaiSettingInfo] = None
+    creative_llm: Optional[GenaiSettingInfo] = None
+    assistive_llm: Optional[GenaiSettingInfo] = None
     tts: Optional[GenaiSettingInfo] = None
     embedding: Optional[GenaiSettingInfo] = None
 
 
 class LlmConnectionTestRequest(BaseModel):
-    """保存前の設定で試せるよう、試す設定そのものを渡す。"""
+    """保存前の設定で試せるよう、試す設定そのものを渡す。作品作り・作業補助のどちらの設定も同じ形で試す。"""
 
     llm: GenaiSettingInfo
 

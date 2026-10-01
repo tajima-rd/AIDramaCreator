@@ -1,7 +1,9 @@
 # core/service/process/genai/generator_builder.py
 """
-プロジェクトの生成AIの設定(project.yamlのgenaiセクション=Project.llm/tts/embedding)と保存済みの
-APIキーから、生成器を作る。core.genaiは他のプロジェクトでも使えるようAIDCを知らないため、
+プロジェクトの生成AIの設定(project.yamlのgenaiセクション=Project.creative_llm/assistive_llm/tts/embedding)と保存済みの
+APIキーから、生成器を作る。文章生成は役割(作品作り・作業補助)で設定を選ぶ。タスクから作るときは
+build_task_text_generator(役割はcore.service.process.genai.llm_roleの対応表で決まる)。
+core.genaiは他のプロジェクトでも使えるようAIDCを知らないため、
 AIDCの設定・キーの置き場所との橋渡しはここで行う。
 
 - APIキーはproject.yamlにもシェルの環境変数にも持たず、Project > Preferencesで入力して
@@ -31,6 +33,8 @@ from core.genai.factory import (
 )
 from core.infra.store import secret_env_store
 from core.project.project import EmbeddingSetting, LlmSetting, Project, TtsSetting
+
+from .llm_role import LlmRole, llm_role_for_task
 
 GenaiSetting = LlmSetting | TtsSetting | EmbeddingSetting
 
@@ -67,14 +71,35 @@ def saved_api_key(setting: GenaiSetting) -> Optional[str]:
     return api_key
 
 
-def build_text_generator(project: Project, config: Optional[TextConfig] = None) -> TextGenerator:
-    """プロジェクトの設定(Project.llm)から文章生成器を作る。"""
-    setting = project.llm
+# 役割 → (Projectの属性, 利用者に見せる名前。Generative AIタブの見出しと揃える)
+LLM_ROLE_SETTINGS: dict[LlmRole, tuple[str, str]] = {
+    LlmRole.CREATIVE: ("creative_llm", "作品作り(Creative LLM)"),
+    LlmRole.ASSISTIVE: ("assistive_llm", "作業補助(Assistive LLM)"),
+}
+
+
+def llm_setting(project: Project, role: LlmRole) -> Optional[LlmSetting]:
+    """役割に対応する文章生成の設定(未設定ならNone)。"""
+    return getattr(project, LLM_ROLE_SETTINGS[role][0])
+
+
+def build_text_generator(project: Project, role: LlmRole, config: Optional[TextConfig] = None) -> TextGenerator:
+    """プロジェクトの設定(役割に対応するProject.creative_llm/assistive_llm)から文章生成器を作る。
+    未設定なら、もう一方の役割で代わりに動かさずValueError(黙って課金のある生成AIを使わないため)。"""
+    setting = llm_setting(project, role)
     if setting is None:
-        raise ValueError("このプロジェクトには文章生成(LLM)の設定がありません。")
+        raise ValueError(
+            f"このプロジェクトには{LLM_ROLE_SETTINGS[role][1]}の文章生成の設定がありません。"
+            "Project > Preferences(Generative AIタブ)で設定してください。"
+        )
     return create_text_generator(
         setting.client, setting.model, api_url=setting.api_url, api_key=saved_api_key(setting), config=config
     )
+
+
+def build_task_text_generator(project: Project, task_code: str, config: Optional[TextConfig] = None) -> TextGenerator:
+    """タスク(AgentTask.code)に使う文章生成器を作る。役割はllm_roleの対応表で決まる。"""
+    return build_text_generator(project, llm_role_for_task(task_code), config)
 
 
 def build_speech_generator(project: Project, config: Optional[SpeechConfig] = None) -> SpeechGenerator:

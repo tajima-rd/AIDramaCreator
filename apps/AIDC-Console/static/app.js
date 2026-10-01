@@ -744,6 +744,20 @@ async function mountOrUpdateDramaturgyEditor(projectId, dramaturgyId) {
   await panel.load(projectId, dramaturgyId);
 }
 
+// 人物パネル(プロジェクト全体。作品を選ばなくても開ける)。既に開いていればそのまま(入力中のタブ等を保つ)。
+async function mountCharacterEditor(projectId) {
+  const mainArea = document.getElementById("main-area");
+  let panel = mainArea.querySelector("character-editor-panel");
+  if (panel && panel.projectId === projectId) return;
+  mainArea.innerHTML = "";
+  panel = document.createElement("character-editor-panel");
+  panel.addEventListener("character-editor-closed", () => {
+    mainArea.innerHTML = "";
+  });
+  mainArea.appendChild(panel);
+  await panel.load(projectId);
+}
+
 // ---------------------------------------------------------------------------
 // Edit
 // ---------------------------------------------------------------------------
@@ -785,7 +799,7 @@ function actionNewDramaturgy() {
           try {
             const editor = await findEditorDraft(projectId);
             if (editor.changeCount > 0) {
-              showToast("Dramaturgy Editorに確定していない変更があります。先にSave Versionで確定してください", "error");
+              showToast("Dramaturgy Editor・Character Editorに確定していない変更があります。先にSave Versionで確定してください", "error");
               return;
             }
             const draft = await apiFetch(`/projects/${projectId}/drama-drafts`, {
@@ -817,9 +831,12 @@ function actionNewDramaturgy() {
             closeModal();
             showToast(`作品「${title}」を作成しました`, "ok");
             await reloadGroupNode("dramaturgies");
-            // 開いているDramaturgy Editorは古い版の下書きを持っているので、新しい版から開き直す
-            const panel = document.getElementById("main-area").querySelector("dramaturgy-editor-panel");
+            // 開いているDramaturgy Editor・人物パネルは古い版の下書きを持っているので、新しい版から開き直す
+            const mainArea = document.getElementById("main-area");
+            const panel = mainArea.querySelector("dramaturgy-editor-panel");
             if (panel) await panel.load(projectId, panel.dramaturgyId);
+            const characterPanel = mainArea.querySelector("character-editor-panel");
+            if (characterPanel) await characterPanel.load(projectId);
           } catch (e) {
             showApiError(e);
           }
@@ -827,6 +844,15 @@ function actionNewDramaturgy() {
       },
     ],
   });
+}
+
+// Edit > Character Editor: プロジェクトの人物・まとまり・人物関係を編集する(作品の選択は要らない)。
+function actionOpenCharacterEditor() {
+  if (!state.project) {
+    showToast("先にプロジェクトを開いてください", "error");
+    return;
+  }
+  mountCharacterEditor(state.project.project_id);
 }
 
 // Edit > Dramaturgy Editor: Treeで選んだ作品を開く。
@@ -874,6 +900,7 @@ function buildMenus() {
       items: [
         { label: "New Dramaturgy...", action: actionNewDramaturgy },
         { label: "Dramaturgy Editor", action: actionOpenDramaturgyEditor },
+        { label: "Character Editor", action: actionOpenCharacterEditor },
       ],
     },
     {

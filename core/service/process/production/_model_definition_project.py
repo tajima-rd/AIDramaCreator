@@ -7,7 +7,7 @@
 
 ディレクトリの構成:
     <root_dir>/model/        モデル定義YAML(分割方式。apps/sample_dataの複製)。台詞はここのscripts/に書き戻す
-    <root_dir>/project.yaml  生成AIの設定(genai.llm・genai.tts。無ければmain.pyの既定。core.infra.store.project_file_store)
+    <root_dir>/project.yaml  生成AIの設定(genai.creative_llm・genai.tts。無ければmain.pyの既定。core.infra.store.project_file_store)
     <root_dir>/work/script/  台詞の生成の出力(生成AIの応答そのまま。script_nnn.txt)
     <root_dir>/work/scene/   演出付きの原稿(旧来の形。scene_nnn.yaml)。Dialogueにcontextの置き場所が無いので、YAMLには書き戻さない
     <root_dir>/sound/        音声(scene_nnn.mp3)

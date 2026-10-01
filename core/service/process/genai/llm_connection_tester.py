@@ -12,6 +12,7 @@ from typing import Optional
 from core.project.project import LlmSetting, Project
 
 from .generator_builder import build_text_generator
+from .llm_role import LlmRole
 
 TEST_PROMPT = "Reply with the single word: OK"
 
@@ -25,10 +26,11 @@ class LlmConnectionTestOutcome:
 
 
 def check_llm_connection(project: Project, setting: LlmSetting) -> LlmConnectionTestOutcome:
-    """settingで生成器を作って短い文章を生成させる。失敗しても例外にせず、理由を返す。"""
+    """settingで生成器を作って短い文章を生成させる。失敗しても例外にせず、理由を返す。
+    作品作り・作業補助のどちらの設定も同じ方法で試す(役割は生成器の作り方に関わらない)。"""
     start = time.perf_counter()
     try:
-        generator = build_text_generator(dataclasses.replace(project, llm=setting))
+        generator = build_text_generator(dataclasses.replace(project, creative_llm=setting), LlmRole.CREATIVE)
         text = generator.generate(TEST_PROMPT)
     except Exception as exc:  # 接続・認証・モデル名の誤り等、原因を問わず利用者に見せる
         return LlmConnectionTestOutcome(

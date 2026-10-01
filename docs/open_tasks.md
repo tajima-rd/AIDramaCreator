@@ -41,6 +41,11 @@
 - [x] Web GUIの枠(`apps/AIDC-Console`: メニューバー・Tree・パネル、Project Overview・Data Viewer。2026-10-01)
 - [x] GUI: EditメニューとDramaturgy Editor(Properties・Acts)、Treeの作品の一覧(2026-10-01)
 - [ ] GUI: Dramaturgy Editorに人物・場所・シーン等のタブを足す。Treeに作品の中(Act→Scene等)を並べるか(ユーザーと相談)
+- [x] 文章生成の設定を作品作り用(`creative_llm`)と作業補助用(`assistive_llm`)に分ける(2026-10-02)
+- [x] GUI: 人物パネル(Characters・Groups・Relationships。プロジェクト全体)と企画書の登場人物の取り込み(2026-10-02)。[architecture.md](architecture.md) 9節
+- [ ] 企画書の取り込みの矛盾の理由の保存・再確認(仕組みは保留)
+- [ ] GUI: Dramaturgy EditorのCastingタブ(主役・脇役・配役の条件・Audition・Actor)。`Cast`・`Actor`のモデルの変更、`core/genai`の話者の一覧。
+  [architecture.md](architecture.md) 9節
 - [x] 企画書のモデル(`Proposal`)とモデル定義YAML、Dramaturgy EditorのProposalタブ(2026-10-01)
 - [ ] GUI: 企画書を生成AIと作るパネル(QIDMのBuild Domain from Referencesと同じ構成。左に参考資料とチャット、右にタブ)
 - [x] 企画書のYAMLの読み込み(ProposalタブのImport from YAML。フォームに入れ、Saveで下書きへ。2026-10-01)

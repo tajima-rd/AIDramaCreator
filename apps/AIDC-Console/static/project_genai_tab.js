@@ -6,8 +6,9 @@
  * textField/selectHtml/fieldError/apiFetch/showApiError/showToast/escapeHtml/escapeAttr/ApiError
  * をグローバル利用する。
  *
- * - 文章生成(LLM)・音声合成(TTS)・資料の検索の埋め込み(Embedding)に使う生成AIの接続先
- *   (project.yamlのgenaiセクション)。手入力を減らすため、
+ * - 文章生成(LLM。作品作り用のCreativeと作業補助用のAssistiveの2つ)・音声合成(TTS)・資料の検索の埋め込み
+ *   (Embedding)に使う生成AIの接続先(project.yamlのgenaiセクション)。タスクごとにどちらの文章生成を使うかは
+ *   サーバー側(core/service/process/genai/llm_role.py)が決める。手入力を減らすため、
  *   - API URL: Providerを選ぶと接続先の候補(環境変数・手元の既定のURL)を問い合わせ、応答した
  *     ものを自動で入れる(候補は入力欄の候補一覧にも出す)
  *   - Model: 提供元に問い合わせたモデル名の一覧から選ぶ(一覧に無い名前は「手入力」で入れる)
@@ -18,9 +19,16 @@
 
 const PREFERENCE_NO_CLIENT = "";
 const PREFERENCE_MANUAL_MODEL = "__manual__";
-// 設定の種類(project.yamlのgenai.llm/tts/embedding)と、接続テストのある種類
-const PREFERENCE_KINDS = ["llm", "tts", "embedding"];
-const PREFERENCE_TESTABLE_KINDS = ["llm", "embedding"];
+// 設定の欄(project.yamlのgenai.creative_llm/assistive_llm/tts/embedding。以下ではkindと呼ぶ)ごとの、
+// モデルの種類(提供元の一覧・モデル名の一覧の問い合わせに使う)と接続テストの種類(無ければnull)
+const PREFERENCE_KIND_SPECS = {
+  creative_llm: { modelKind: "llm", testKind: "llm" },
+  assistive_llm: { modelKind: "llm", testKind: "llm" },
+  tts: { modelKind: "tts", testKind: null },
+  embedding: { modelKind: "embedding", testKind: "embedding" },
+};
+const PREFERENCE_KINDS = Object.keys(PREFERENCE_KIND_SPECS);
+const PREFERENCE_TESTABLE_KINDS = PREFERENCE_KINDS.filter((kind) => PREFERENCE_KIND_SPECS[kind].testKind);
 
 class ProjectGenaiTab {
     constructor(projectId) {
@@ -28,12 +36,16 @@ class ProjectGenaiTab {
       this.container = null; // 描画先(OverviewのタブのDOM)
       this.loading = false;
       this.info = null; // PreferenceInfo
-      this.form = null; // {llm: {client, model, api_url}, tts: {...}, embedding: {...}}(未保存の入力)
+      this.form = null; // {creative_llm: {client, model, api_url}, assistive_llm: {...}, tts: {...}, embedding: {...}}(未保存の入力)
       this.loadFailed = false;
-      this.assist = {}; // {llm: 入力補助の状態, ...}(newAssist参照)
+      this.assist = {}; // {creative_llm: 入力補助の状態, ...}(newAssist参照)
       for (const kind of PREFERENCE_KINDS) this.assist[kind] = this.newAssist();
-      this.testResults = { llm: null, embedding: null }; // LlmConnectionTestResult/EmbeddingConnectionTestResult
-      this.testing = { llm: false, embedding: false };
+      this.testResults = {}; // {creative_llm: LlmConnectionTestResult, embedding: EmbeddingConnectionTestResult, ...}
+      this.testing = {};
+      for (const kind of PREFERENCE_TESTABLE_KINDS) {
+        this.testResults[kind] = null;
+        this.testing[kind] = false;
+      }
     }
 
     // Overviewがタブを描画するたびに呼ぶ。初回は設定を読み込む(以後は入力中の内容を保つ)。
@@ -110,10 +122,17 @@ class ProjectGenaiTab {
 
     renderGenaiTab(body) {
       body.innerHTML = `
-        <div class="panel-section-title">Text Generation (LLM)</div>
+        <div class="panel-section-title">Text Generation for Creation (Creative LLM)</div>
         <div class="panel-form">
-          ${this.settingFieldsHtml("llm")}
-          ${this.connectionTestHtml("llm")}
+          <div class="field-hint">台詞・演出など、作品の品質に関わる生成に使います。</div>
+          ${this.settingFieldsHtml("creative_llm")}
+          ${this.connectionTestHtml("creative_llm")}
+        </div>
+        <div class="panel-section-title">Text Generation for Assistance (Assistive LLM)</div>
+        <div class="panel-form">
+          <div class="field-hint">骨組みの作成などの作業補助に使います。課金の無い生成AI(Google AI StudioのGemma・手元のllama.cpp等)を想定しています。未設定の場合、作業補助の機能は使えません(Creative LLMで代わりに動かすことはしません)。</div>
+          ${this.settingFieldsHtml("assistive_llm")}
+          ${this.connectionTestHtml("assistive_llm")}
         </div>
         <div class="panel-section-title">Speech Synthesis (TTS)</div>
         <div class="panel-form">
@@ -138,12 +157,17 @@ class ProjectGenaiTab {
     }
 
     clientInfo(kind, name) {
-      return this.info[`${kind}_clients`].find((c) => c.name === name) || null;
+      return this.clients(kind).find((c) => c.name === name) || null;
+    }
+
+    // その欄で選べる提供元(PreferenceInfoのllm_clients/tts_clients/embedding_clients)
+    clients(kind) {
+      return this.info[`${PREFERENCE_KIND_SPECS[kind].modelKind}_clients`];
     }
 
     settingFieldsHtml(kind) {
       const f = this.form[kind];
-      const clients = this.info[`${kind}_clients`];
+      const clients = this.clients(kind);
       const names = [PREFERENCE_NO_CLIENT, ...clients.map((c) => c.name)];
       const clientSelect = `
         <div class="field">
@@ -405,7 +429,7 @@ class ProjectGenaiTab {
       try {
         const result = await apiFetch("/preferences/models", {
           method: "POST",
-          bodyObj: { kind, setting: { ...this.settingBody(kind), model: "" } },
+          bodyObj: { kind: PREFERENCE_KIND_SPECS[kind].modelKind, setting: { ...this.settingBody(kind), model: "" } },
         });
         if (this.form[kind].client !== client.name) return;
         a.models = result.models;
@@ -501,7 +525,7 @@ class ProjectGenaiTab {
       if (!r) return "";
       const seconds = `${Number(r.elapsed_seconds).toFixed(1)} 秒`;
       if (r.ok) {
-        const detail = kind === "embedding" ? `ベクトルの次元: ${r.dimensions}` : `応答: ${escapeHtml(r.response_text || "")}`;
+        const detail = PREFERENCE_KIND_SPECS[kind].testKind === "embedding" ? `ベクトルの次元: ${r.dimensions}` : `応答: ${escapeHtml(r.response_text || "")}`;
         return `<p class="field-hint" id="pf_${kind}_test_result">接続できました(${seconds})。${detail}</p>`;
       }
       return `<p class="field-error" id="pf_${kind}_test_result">接続できませんでした(${seconds})。${escapeHtml(r.message)}</p>`;
@@ -520,9 +544,10 @@ class ProjectGenaiTab {
       this.testResults[kind] = null;
       this.render();
       try {
-        this.testResults[kind] = await apiFetch(`/projects/${this.projectId}/preferences/${kind}-test`, {
+        const testKind = PREFERENCE_KIND_SPECS[kind].testKind;
+        this.testResults[kind] = await apiFetch(`/projects/${this.projectId}/preferences/${testKind}-test`, {
           method: "POST",
-          bodyObj: { [kind]: setting },
+          bodyObj: { [testKind]: setting },
         });
       } catch (e) {
         showApiError(e);

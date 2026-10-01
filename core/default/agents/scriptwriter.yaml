@@ -25,6 +25,16 @@ dramaturgy:
         description: 企画書とあらすじから、人物(人物像・経歴・人物関係)を作る。
         rules: []
         prohibitions: []
+      - code: import_proposal_character
+        title: 企画書の登場人物を取り込む
+        description: 企画書の登場人物の説明と企画書全体から、人物の骨組み(読み・性別・年齢・話し方・人物像の特徴)を作る。登録済みの人物と統合するときは、登録済みの設定と企画書の説明を合わせた設定を作る。
+        rules: []
+        prohibitions: []
+      - code: check_character_conflict
+        title: 人物の設定の矛盾を確かめる
+        description: 登録済みの人物の設定と、新しい企画書の登場人物の説明が矛盾しないかを確かめ、矛盾があればその理由を挙げる。
+        rules: []
+        prohibitions: []
       - code: write_synopsis
         title: あらすじを書く
         description: 作品・幕・シーンのあらすじを書く。

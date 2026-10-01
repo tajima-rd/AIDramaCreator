@@ -3,7 +3,7 @@
 プロジェクトの設定(Project > Preferences、routers/preference.py)の結合テスト。
 
 - 未設定のプロジェクトは設定が空で、選べる提供元の一覧(URL・APIキーの要否)を返すこと
-- 設定を保存すると project.yaml の genai セクションに書かれ、APIキーそのものは書かれないこと
+- 設定(文章生成は作品作り・作業補助の2つ)を保存すると project.yaml の genai セクションに書かれ、APIキーそのものは書かれないこと
 - 不正な設定(未対応の提供元・モデルが空・必須のURLが無い)は400で、保存されないこと
 - null を送るとその設定が消えること
 - 接続テスト(文章生成・埋め込み)は、失敗しても例外ではなく ok=false と理由を返すこと
@@ -36,7 +36,7 @@ def test_get_default_preferences(client, project):
     resp = client.get(_url(project))
     assert resp.status_code == 200
     info = parse_yaml(resp)
-    assert info["llm"] is None and info["tts"] is None
+    assert info["creative_llm"] is None and info["assistive_llm"] is None and info["tts"] is None
     clients = {c["name"]: c for c in info["llm_clients"]}
     assert set(clients) == {"Gemini", "LlamaCpp", "Ollama", "OpenWebUI"}
     assert clients["OpenWebUI"] == {"name": "OpenWebUI", "requires_api_url": True, "api_key_required": True}
@@ -48,28 +48,31 @@ def test_get_default_preferences(client, project):
 
 def test_update_and_clear_preferences(client, project):
     body = {
-        "llm": {"client": "LlamaCpp", "model": " qwen ", "api_url": "http://localhost:8080"},
+        "creative_llm": {"client": "Gemini", "model": "gemini-3.5-flash"},
+        "assistive_llm": {"client": "LlamaCpp", "model": " qwen ", "api_url": "http://localhost:8080"},
         "tts": {"client": "Gemini", "model": "gemini-3.8-flash-lite-tts", "api_url": ""},
     }
     resp = client.put(_url(project), json=body)
     assert resp.status_code == 200, resp.text
     info = parse_yaml(resp)
-    assert info["llm"]["model"] == "qwen"  # 前後の空白は除く
+    assert info["assistive_llm"]["model"] == "qwen"  # 前後の空白は除く
     assert info["tts"]["api_url"] is None  # 空欄は未設定として扱う
 
     assert _genai_section(project) == {
-        "llm": {"client": "LlamaCpp", "model": "qwen", "api_url": "http://localhost:8080"},
+        "creative_llm": {"client": "Gemini", "model": "gemini-3.5-flash"},
+        "assistive_llm": {"client": "LlamaCpp", "model": "qwen", "api_url": "http://localhost:8080"},
         "tts": {"client": "Gemini", "model": "gemini-3.8-flash-lite-tts"},
     }
-    assert parse_yaml(client.get(_url(project)))["llm"]["client"] == "LlamaCpp"
+    info = parse_yaml(client.get(_url(project)))
+    assert info["creative_llm"]["client"] == "Gemini" and info["assistive_llm"]["client"] == "LlamaCpp"
 
-    resp = client.put(_url(project), json={"llm": None, "tts": None})
+    resp = client.put(_url(project), json={"creative_llm": None, "assistive_llm": None, "tts": None})
     assert resp.status_code == 200
     assert _genai_section(project) is None
 
 
 def test_update_rejects_invalid_settings(client, project):
-    client.put(_url(project), json={"llm": {"client": "Ollama", "model": "llama3.1:8b", "api_url": "http://localhost:11434"}})
+    client.put(_url(project), json={"creative_llm": {"client": "Ollama", "model": "llama3.1:8b", "api_url": "http://localhost:11434"}})
     before = _genai_section(project)
 
     for llm in (
@@ -77,8 +80,9 @@ def test_update_rejects_invalid_settings(client, project):
         {"client": "Gemini", "model": "  "},
         {"client": "OpenWebUI", "model": "m"},  # URLが無い
     ):
-        resp = client.put(_url(project), json={"llm": llm})
-        assert resp.status_code == 400, llm
+        for key in ("creative_llm", "assistive_llm"):
+            resp = client.put(_url(project), json={key: llm})
+            assert resp.status_code == 400, (key, llm)
     resp = client.put(_url(project), json={"tts": {"client": "Ollama", "model": "m", "api_url": "http://x"}})
     assert resp.status_code == 400  # 音声合成に使えない提供元
     assert _genai_section(project) == before
@@ -97,7 +101,7 @@ def test_llm_connection_test(client, project, monkeypatch):
         def generate(self, prompt):
             return "OK"
 
-    monkeypatch.setattr(llm_connection_tester, "build_text_generator", lambda project: _FakeGenerator())
+    monkeypatch.setattr(llm_connection_tester, "build_text_generator", lambda project, role: _FakeGenerator())
     resp = client.post(f"{_url(project)}/llm-test", json={"llm": {"client": "Gemini", "model": "m"}})
     result = parse_yaml(resp)
     assert result["ok"] is True and result["response_text"] == "OK"
@@ -109,7 +113,7 @@ def test_llm_connection_test(client, project, monkeypatch):
 
 def test_embedding_setting(client, project):
     body = {
-        "llm": {"client": "Gemini", "model": "gemma-4-31b-it"},
+        "creative_llm": {"client": "Gemini", "model": "gemma-4-31b-it"},
         "embedding": {"client": "Ollama", "model": " nomic-embed-text ", "api_url": "http://localhost:11434"},
     }
     resp = client.put(_url(project), json=body)
@@ -131,7 +135,7 @@ def test_embedding_setting(client, project):
     assert _genai_section(project) == before
 
     # 送らなかった設定は消える(置き換え)
-    client.put(_url(project), json={"llm": body["llm"]})
+    client.put(_url(project), json={"creative_llm": body["creative_llm"]})
     assert "embedding" not in _genai_section(project)
 
 

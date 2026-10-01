@@ -11,7 +11,7 @@ paths:
   datasets_dir: datasets/
   drafts_dir: drafts/
 genai:
-  llm:
+  creative_llm:
     client: Gemini
     model: gemini-3.5-flash
   tts:

@@ -67,7 +67,7 @@ def open_project(root_dir: str, with_generators: bool):
     from core.project.project import LlmSetting, TtsSetting
     from core.service.process.genai.generator_builder import saved_api_key
 
-    # 生成AIの接続先。<root_dir>/project.yamlのgenai(llm・tts)があればそれを、無ければ既定を使う(仮置き。
+    # 生成AIの接続先。<root_dir>/project.yamlのgenai(creative_llm・tts)があればそれを、無ければ既定を使う(仮置き。
     # docs/model_design.md)。APIキーは~/.aidc/secrets.envに保存したもの(AIDC_GEMINI_API_KEY)を使う
     llm_setting = LlmSetting(client="Gemini", model="gemini-3.5-flash")
     tts_setting = TtsSetting(client="Gemini", model="gemini-3.1-flash-tts-preview")
@@ -75,7 +75,7 @@ def open_project(root_dir: str, with_generators: bool):
         from core.infra.store.project_file_store import read_project
 
         settings = read_project(root_dir)
-        llm_setting = settings.llm or llm_setting
+        llm_setting = settings.creative_llm or llm_setting
         tts_setting = settings.tts or tts_setting
     print(f"生成AI: 文章 {llm_setting.client}/{llm_setting.model}、音声 {tts_setting.client}/{tts_setting.model}")
     try:
