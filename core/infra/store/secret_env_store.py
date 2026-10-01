@@ -16,6 +16,7 @@
 
 import os
 import re
+from typing import Optional
 
 from dotenv import dotenv_values, set_key
 
@@ -40,7 +41,7 @@ def load_saved() -> dict[str, str]:
     return {k: v for k, v in dotenv_values(SECRETS_PATH).items() if v}
 
 
-def get_secret(name: str) -> str | None:
+def get_secret(name: str) -> Optional[str]:
     return load_saved().get(name)
 
 

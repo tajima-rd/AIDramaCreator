@@ -10,6 +10,7 @@ sudachi_tokenizer.SudachiTokenizer)。索引の断片と問いに同じ切り出
 
 import math
 from collections import Counter
+from typing import Optional
 
 from .chunk_index import ChunkIndex
 from .retriever import Retriever, SearchHit
@@ -20,7 +21,7 @@ class LexicalRetriever(Retriever):
     name = "lexical"
 
     def __init__(
-        self, indexes: list[ChunkIndex], tokenizer: Tokenizer | None = None, k1: float = 1.5, b: float = 0.75
+        self, indexes: list[ChunkIndex], tokenizer: Optional[Tokenizer] = None, k1: float = 1.5, b: float = 0.75
     ):
         self.tokenizer = tokenizer if tokenizer is not None else BigramTokenizer()
         self.chunks = [c for index in indexes for c in index.chunks]

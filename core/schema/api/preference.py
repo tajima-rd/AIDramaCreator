@@ -1,7 +1,7 @@
 # core/schema/api/preference.py
 """プロジェクトの設定(Project > Preferences)。現状は生成AIの設定のみ。"""
 
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic import BaseModel
 
@@ -11,7 +11,7 @@ class GenaiSettingInfo(BaseModel):
 
     client: str
     model: str
-    api_url: str | None = None
+    api_url: Optional[str] = None
 
 
 class GenaiClientInfo(BaseModel):
@@ -23,9 +23,9 @@ class GenaiClientInfo(BaseModel):
 
 
 class PreferenceInfo(BaseModel):
-    llm: GenaiSettingInfo | None = None
-    tts: GenaiSettingInfo | None = None
-    embedding: GenaiSettingInfo | None = None  # 資料の検索の埋め込み(未設定なら語による検索だけ)
+    llm: Optional[GenaiSettingInfo] = None
+    tts: Optional[GenaiSettingInfo] = None
+    embedding: Optional[GenaiSettingInfo] = None  # 資料の検索の埋め込み(未設定なら語による検索だけ)
     llm_clients: list[GenaiClientInfo]
     tts_clients: list[GenaiClientInfo]
     embedding_clients: list[GenaiClientInfo]
@@ -34,9 +34,9 @@ class PreferenceInfo(BaseModel):
 class PreferenceUpdateRequest(BaseModel):
     """設定を置き換える。Noneはその設定を消す。"""
 
-    llm: GenaiSettingInfo | None = None
-    tts: GenaiSettingInfo | None = None
-    embedding: GenaiSettingInfo | None = None
+    llm: Optional[GenaiSettingInfo] = None
+    tts: Optional[GenaiSettingInfo] = None
+    embedding: Optional[GenaiSettingInfo] = None
 
 
 class LlmConnectionTestRequest(BaseModel):
@@ -48,7 +48,7 @@ class LlmConnectionTestRequest(BaseModel):
 class LlmConnectionTestResult(BaseModel):
     ok: bool
     message: str
-    response_text: str | None = None
+    response_text: Optional[str] = None
     elapsed_seconds: float
 
 
@@ -61,7 +61,7 @@ class EmbeddingConnectionTestRequest(BaseModel):
 class EmbeddingConnectionTestResult(BaseModel):
     ok: bool
     message: str
-    dimensions: int | None = None  # 返ったベクトルの長さ
+    dimensions: Optional[int] = None  # 返ったベクトルの長さ
     elapsed_seconds: float
 
 
@@ -92,12 +92,12 @@ class ApiKeyInfo(BaseModel):
     name: str  # 例: AIDC_GEMINI_API_KEY、AIDC_LLAMACPP_LOCALHOST_8080_API_KEY
     required: bool
     available: bool
-    masked: str | None = None  # 先頭と末尾の4文字だけ
+    masked: Optional[str] = None  # 先頭と末尾の4文字だけ
 
 
 class ApiKeyUpdateRequest(BaseModel):
     """APIキーを保存する(~/.aidc/secrets.env)。名前は提供元と接続先からサーバーが決める。"""
 
     client: str
-    api_url: str | None = None
+    api_url: Optional[str] = None
     value: str

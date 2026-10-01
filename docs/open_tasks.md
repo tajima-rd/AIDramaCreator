@@ -22,7 +22,11 @@
 
 ## 設計(future_design.mdの項目)
 
-- [ ] `core/model/`のドラマの構成要素の再定義
+- [x] `core/model/`の作品・エージェントのクラスと属性([model_design.md](model_design.md)、2026-09-30)
+- [ ] 各クラスの機能(メソッド)の定義
+- [x] モデル定義YAML(`apps/sample_data`)から制作の流れを実行する(仲介`_model_definition_project.py`、`plot_001`で完走、2026-09-30)
+- [ ] `Project/TEST_PROJECT_02`で残りの4シーン(`plot_002`〜`plot_005`)の完走チェック(生成AIの課金を伴うので、実行前にユーザーに確認)
+- [ ] 制作の流れを新しいモデルへ移し、`core/schema/formats/_legacy_drama.py`・`core/service/process/production/_legacy_project.py`を削除する
 - [ ] Projectの作り直し(Dataset・drafts/を含む)
 - [ ] SQLiteの用途と構造
 - [ ] インターフェース(保留。GUIはQIDMの`apps/QIDM`を参考にする。準備の5項目は future_design.md「GUIで扱う制作の準備」)

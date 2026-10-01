@@ -8,6 +8,7 @@ llama.cppは埋め込みを有効にして(--embeddings)起動したサーバー
 import dataclasses
 import time
 from dataclasses import dataclass
+from typing import Optional
 
 from core.project.project import EmbeddingSetting, Project
 
@@ -20,7 +21,7 @@ TEST_TEXT = "embedding connection test"
 class EmbeddingConnectionTestOutcome:
     ok: bool
     message: str
-    dimensions: int | None  # 返ったベクトルの長さ
+    dimensions: Optional[int]  # 返ったベクトルの長さ
     elapsed_seconds: float
 
 

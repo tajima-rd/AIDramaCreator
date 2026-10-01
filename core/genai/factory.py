@@ -14,6 +14,7 @@
 
 import os
 from dataclasses import dataclass
+from typing import Optional
 from urllib.parse import urlsplit
 
 from .generator import (
@@ -42,8 +43,8 @@ class OpenAiCompatibleServer:
     models_path: str  # モデル一覧
     health_path: str  # 応答の確認(URLの自動検出)
     default_url: str  # 手元で動かす場合の既定のURL
-    url_env: str | None = None  # 接続先のURLを持つ環境変数(あれば候補にする)
-    embeddings_path: str | None = None  # 埋め込み(embeddings)。Noneなら埋め込みには使わない
+    url_env: Optional[str] = None  # 接続先のURLを持つ環境変数(あれば候補にする)
+    embeddings_path: Optional[str] = None  # 埋め込み(embeddings)。Noneなら埋め込みには使わない
 
 
 OPENAI_COMPATIBLE_SERVERS = {
@@ -76,13 +77,13 @@ def api_key_required(client: str) -> bool:
     return API_KEY_REQUIRED.get(client, False)
 
 
-def _checked_api_key(client: str, api_key: str | None) -> str | None:
+def _checked_api_key(client: str, api_key: Optional[str]) -> Optional[str]:
     if not api_key and api_key_required(client):
         raise ValueError(f"{client}にはAPIキーが必要です。")
     return api_key or None
 
 
-def _checked_api_url(client: str, api_url: str | None) -> str:
+def _checked_api_url(client: str, api_url: Optional[str]) -> str:
     if not api_url:
         raise ValueError(f"{client}にはサーバーのURL(api_url)が必要です。")
     return api_url
@@ -92,9 +93,9 @@ def create_text_generator(
     client: str,
     model: str,
     *,
-    api_url: str | None = None,
-    api_key: str | None = None,
-    config: TextConfig | None = None,
+    api_url: Optional[str] = None,
+    api_key: Optional[str] = None,
+    config: Optional[TextConfig] = None,
 ) -> TextGenerator:
     """提供元(client)・モデル・接続先・APIキーから文章生成器を作る。"""
     if client == "Gemini":
@@ -119,8 +120,8 @@ def create_speech_generator(
     client: str,
     model: str,
     *,
-    api_key: str | None = None,
-    config: SpeechConfig | None = None,
+    api_key: Optional[str] = None,
+    config: Optional[SpeechConfig] = None,
 ) -> SpeechGenerator:
     """提供元(client)・モデル・APIキーから音声合成器を作る。"""
     if client == "Gemini":
@@ -135,9 +136,9 @@ def create_embedding_generator(
     client: str,
     model: str,
     *,
-    api_url: str | None = None,
-    api_key: str | None = None,
-    config: EmbeddingConfig | None = None,
+    api_url: Optional[str] = None,
+    api_key: Optional[str] = None,
+    config: Optional[EmbeddingConfig] = None,
 ) -> EmbeddingGenerator:
     """提供元(client)・モデル・接続先・APIキーから埋め込みの生成器を作る。"""
     if client == "Gemini":
@@ -165,7 +166,7 @@ def create_embedding_generator(
 # ---------------------------------------------------------------------------
 
 
-def list_models(kind: str, client: str, *, api_url: str | None = None, api_key: str | None = None) -> list[str]:
+def list_models(kind: str, client: str, *, api_url: Optional[str] = None, api_key: Optional[str] = None) -> list[str]:
     """その提供元・接続先・APIキーで使えるモデル名の一覧。kindは"llm"・"tts"・"embedding"。
 
     接続できない・キーが無い等はそのまま例外(呼び出し側が理由を利用者に見せる)。

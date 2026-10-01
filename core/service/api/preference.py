@@ -8,7 +8,15 @@ APIキーの値は返さない(名前と伏せ字だけ)。キーはプロジェ
 候補・キーの状態と保存はプロジェクトを指定しない。
 """
 
-from core.genai.factory import EMBEDDING_CLIENTS, SPEECH_CLIENTS, TEXT_CLIENTS, api_key_required, requires_api_url
+from typing import Optional, Union
+
+from core.genai.factory import (
+    EMBEDDING_CLIENTS,
+    SPEECH_CLIENTS,
+    TEXT_CLIENTS,
+    api_key_required,
+    requires_api_url,
+)
 from core.infra.store import project_registry_store
 from core.infra.store.project_file_store import read_project
 from core.project.project import EmbeddingSetting, LlmSetting, Project, TtsSetting
@@ -41,7 +49,7 @@ def _client_info(name: str) -> GenaiClientInfo:
     return GenaiClientInfo(name=name, requires_api_url=requires_api_url(name), api_key_required=api_key_required(name))
 
 
-def _setting_info(setting: LlmSetting | TtsSetting | EmbeddingSetting | None) -> GenaiSettingInfo | None:
+def _setting_info(setting: Optional[Union[LlmSetting, TtsSetting, EmbeddingSetting]]) -> Optional[GenaiSettingInfo]:
     if setting is None:
         return None
     return GenaiSettingInfo(client=setting.client, model=setting.model, api_url=setting.api_url)
@@ -117,12 +125,12 @@ def list_api_url_candidates(client: str) -> ApiUrlCandidateListResult:
     )
 
 
-def _key_info(client: str, api_url: str | None) -> ApiKeyInfo:
+def _key_info(client: str, api_url: Optional[str]) -> ApiKeyInfo:
     state = genai_setting_inspector.api_key_state(client, (api_url or "").strip() or None)
     return ApiKeyInfo(name=state.name, required=state.required, available=state.available, masked=state.masked)
 
 
-def get_api_key(client: str, api_url: str | None = None) -> ApiKeyInfo:
+def get_api_key(client: str, api_url: Optional[str] = None) -> ApiKeyInfo:
     """提供元と接続先で決まるAPIキーの名前と状態。"""
     return _key_info(client, api_url)
 

@@ -1,3 +1,9 @@
+# core/schema/formats/_legacy_drama.py
+"""
+現行の制作の流れ(main.py)が使うドラマの構成要素と原稿YAMLの形(旧core/model/drama.py)。新しいモデル(core/model/drama/・core/model/agent/、
+docs/model_design.md)に移ったら削除する。
+"""
+
 import os
 import re
 

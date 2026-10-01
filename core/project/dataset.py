@@ -13,6 +13,7 @@ Datasetはfile_id(filenameに依存しない不変の識別子、project.dbのda
 
 import os
 from dataclasses import dataclass
+from typing import Optional
 
 from core.project.project import ProjectLayout
 
@@ -54,8 +55,8 @@ class Dataset:
 
     filename: str
     layout: ProjectLayout
-    file_id: str | None = None
-    drama_id: str | None = None
+    file_id: Optional[str] = None
+    drama_id: Optional[str] = None
 
     @property
     def file_format(self) -> str:

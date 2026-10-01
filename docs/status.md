@@ -19,8 +19,27 @@
 - 各工程はワンショット(生成AIへの1回の依頼)。プロンプトは`core/prompt/drama_production/`(`dialogue`・`scene`・`sound`)。
 - 生成AIは`core/genai`の`create_text_generator`/`create_speech_generator`(Gemini)を使う。APIキーは`~/.aidc/secrets.env`の
   `AIDC_GEMINI_API_KEY`(`generator_builder.saved_api_key`。無ければ未設定の旨で止まる)。
-- `main.py`が見るのは`<root_dir>/project/`([known_issues.md](known_issues.md))。`apps/sample_project/`を指定すると断る。
+- `main.py`が見るのは`<root_dir>/project/`([known_issues.md](known_issues.md))か、`<root_dir>/model/`(モデル定義YAML)。
+  `apps/sample_project/`・`apps/sample_data/`を指定すると断る。
   2026-09-29、`plot_001.txt`で音声まで通すための実験用のプロジェクトは`Project/TEST_PROJECT_01`。
+- モデル定義YAMLからの実行(2026-09-30): `<root_dir>/model/`に`apps/sample_data`を複製して使う。仲介は
+  `core/service/process/production/_model_definition_project.py`(暫定。現行の工程が使う`Project`と同じ入口をモデルから用意する)。
+  人物設定は配役のある人物(話者)の`Character`から文章にし(`core/prompt/drama_production/dialogue.py`の`character_profile`)、
+  話者名はフルネーム(照合では空白を無視)。台詞は`model/scripts/`に書き戻し、原稿は`work/scene/`(旧来の形。`Dialogue`に`context`が
+  無いため)、音声は`sound/`。2026-09-30、`Project/TEST_PROJECT_02`で`plot_001`を音声まで完走した(台詞12行、音声103.6秒)。
+
+## 作品とエージェントのモデル(クラスと属性のみ、2026-09-30)
+
+- `core/model/drama/`(作品)と`core/model/agent/`(参加者)に、[model_design.md](model_design.md)のクラスと属性を定義した。
+  構成はユーザーの承認前(レビュー中)。機能(メソッド)はまだ無い。制作の流れ(main.py)からはまだ使っていない。
+- `core/model/`は純粋なモデルだけにした。現行の制作の流れが使うものは外へ移した: 旧`core/model/drama.py`→`core/schema/formats/_legacy_drama.py`、
+  旧`core/model/project.py`→`core/service/process/production/_legacy_project.py`。空の`core/model/factory.py`は削除した。
+- モデル定義YAML(作品の側): `core/model/drama/factory.py`(`build_*`)・`core/schema/formats/dramaturgy_definition.py`・
+  `core/infra/io/model_definition_reader.py`・`model_definition_writer.py`。1ファイルでも分割した複数のファイル(シーンごとのプロット・台詞・原稿も別のファイル)でも読み書きでき、
+  識別子を保って往復できる(2026-09-30。形はレビュー前。[model_design.md](model_design.md))。テストは`tests/core/test_model_definition_io.py`。
+  公開API・制作の流れからはまだ使っていない。
+- `apps/sample_data/`: `apps/sample_project/`の人物・プロット・配役(`actor/actors.yaml`)を分割方式のモデル定義YAMLに変換したもの
+  (2026-09-30。場所・台詞・原稿は空の骨組み。変換で見つかった構造上の問題は[model_design.md](model_design.md)「サンプルデータ」)。
 
 ## 実装済みだが、まだ制作の流れ(main.py)から使っていないもの(QIDMから持ち込み、2026-09-29)
 
@@ -38,5 +57,4 @@
   - `preference`: 生成AIの設定・APIキー・接続確認・モデル一覧・接続先の候補
   - `dataset`: 一覧・PDF/DOCX/XLSXの追加・中身とファイルの取得・メタデータの参照と更新・削除。
     ドラマへの割り当ては無い(常に未割当。[future_design.md](future_design.md)「Drama」)
-- テスト(`tests/`、`.venv/bin/python -m pytest`): 76件が通り、4件がskip(2026-09-29)。skipのうち3件は参考資料のサンプルが無いため
-  ([open_tasks.md](open_tasks.md))、1件は任意の依存SudachiPyが無いため。
+- テスト(`tests/`、`.venv/bin/python -m pytest`): 102件が通り、3件がskip(2026-09-30)。skipは参考資料のサンプルが無いため([open_tasks.md](open_tasks.md))。

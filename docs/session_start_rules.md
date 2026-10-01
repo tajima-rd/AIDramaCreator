@@ -8,7 +8,8 @@
 4. [open_tasks.md](open_tasks.md) — 残タスク
 5. [known_issues.md](known_issues.md) — 既知のバグ・技術的負債
 6. [future_design.md](future_design.md) — 未決定の構想(該当する作業では、実装前にユーザーに確認する)
-7. [qidm_reuse.md](qidm_reuse.md) — QIDMから再利用できるもの(新しく作る前に、ここに無いか確かめる)
+7. [model_design.md](model_design.md) — `core/model/`(作品・エージェント)の設計
+8. [qidm_reuse.md](qidm_reuse.md) — QIDMから再利用できるもの(新しく作る前に、ここに無いか確かめる)
 
 ## 2. 心構え
 

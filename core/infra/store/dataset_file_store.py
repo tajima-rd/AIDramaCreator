@@ -14,6 +14,7 @@ Datasetの本体と一緒に行う。Datasetの一覧はファイルだけを数
 """
 
 import os
+from typing import Optional
 
 import yaml
 
@@ -91,7 +92,7 @@ def language_path(datasets_dir: str, filename: str) -> str:
     return os.path.join(datasets_dir, INDEX_DIRNAME, f"{filename}.language.yaml")
 
 
-def read_reference_language(datasets_dir: str, filename: str) -> ReferenceLanguage | None:
+def read_reference_language(datasets_dir: str, filename: str) -> Optional[ReferenceLanguage]:
     path = language_path(datasets_dir, filename)
     if not os.path.isfile(path):
         return None
@@ -106,7 +107,7 @@ def write_reference_language(datasets_dir: str, filename: str, language: Referen
         yaml.safe_dump(language.model_dump(), f, allow_unicode=True, sort_keys=False)
 
 
-def read_metadata(datasets_dir: str, csv_filename: str) -> DatasetMetadata | None:
+def read_metadata(datasets_dir: str, csv_filename: str) -> Optional[DatasetMetadata]:
     """サイドカーYAMLを読む。存在しなければNone(メタデータ無し、として扱う)。"""
     path = sidecar_path(datasets_dir, csv_filename)
     if not os.path.isfile(path):

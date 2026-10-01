@@ -5,6 +5,7 @@
 特定のHTTPエンドポイントに紐づかず、ファイル形式そのものを宣言する点でAPIリクエスト/レスポンス
 の型(core.schema.api)とは異なる。
 
+- dramaturgy_definition: 1つのDramaturgyを宣言する「モデル定義YAML」
 - dataset_metadata: Datasetに併置する「データメタデータYAML」
 - reference_language: 参考資料の言語と、資料の検索で使う決まった問いの訳
 """

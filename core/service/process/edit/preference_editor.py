@@ -9,6 +9,7 @@ project.yamlにはAPIキーを書かない(docs/architecture.md「生成AI(`core
 """
 
 from datetime import UTC, datetime
+from typing import Optional, Union
 
 from core.genai.factory import EMBEDDING_CLIENTS, SPEECH_CLIENTS, TEXT_CLIENTS, requires_api_url
 from core.infra.store import secret_env_store
@@ -17,12 +18,12 @@ from core.project.project import EmbeddingSetting, LlmSetting, Project, ProjectL
 from core.service.process.genai.generator_builder import api_key_name
 
 
-def _blank_to_none(value: str | None) -> str | None:
+def _blank_to_none(value: Optional[str]) -> Optional[str]:
     value = value.strip() if value else ""
     return value or None
 
 
-def validate_genai_setting(setting: LlmSetting | TtsSetting | EmbeddingSetting, clients: tuple[str, ...], label: str) -> None:
+def validate_genai_setting(setting: Union[LlmSetting, TtsSetting, EmbeddingSetting], clients: tuple[str, ...], label: str) -> None:
     """提供元・モデル・接続先URLの整合を確かめる。合わなければValueError。"""
     if setting.client not in clients:
         raise ValueError(f"{label}: 未対応の提供元です: {setting.client}(選べるもの: {', '.join(clients)})")
@@ -32,7 +33,7 @@ def validate_genai_setting(setting: LlmSetting | TtsSetting | EmbeddingSetting, 
         raise ValueError(f"{label}: {setting.client}にはサーバーのURL(API URL)が必要です。")
 
 
-def normalize_llm_setting(setting: LlmSetting | None) -> LlmSetting | None:
+def normalize_llm_setting(setting: Optional[LlmSetting]) -> Optional[LlmSetting]:
     if setting is None:
         return None
     normalized = LlmSetting(
@@ -44,7 +45,7 @@ def normalize_llm_setting(setting: LlmSetting | None) -> LlmSetting | None:
     return normalized
 
 
-def normalize_tts_setting(setting: TtsSetting | None) -> TtsSetting | None:
+def normalize_tts_setting(setting: Optional[TtsSetting]) -> Optional[TtsSetting]:
     if setting is None:
         return None
     normalized = TtsSetting(
@@ -56,7 +57,7 @@ def normalize_tts_setting(setting: TtsSetting | None) -> TtsSetting | None:
     return normalized
 
 
-def normalize_embedding_setting(setting: EmbeddingSetting | None) -> EmbeddingSetting | None:
+def normalize_embedding_setting(setting: Optional[EmbeddingSetting]) -> Optional[EmbeddingSetting]:
     if setting is None:
         return None
     normalized = EmbeddingSetting(
@@ -70,9 +71,9 @@ def normalize_embedding_setting(setting: EmbeddingSetting | None) -> EmbeddingSe
 
 def update_genai_settings(
     layout: ProjectLayout,
-    llm: LlmSetting | None,
-    tts: TtsSetting | None,
-    embedding: EmbeddingSetting | None = None,
+    llm: Optional[LlmSetting],
+    tts: Optional[TtsSetting],
+    embedding: Optional[EmbeddingSetting] = None,
 ) -> Project:
     """生成AIの設定を置き換える(Noneはその設定を消す)。検証してからproject.yamlに書く。"""
     llm = normalize_llm_setting(llm)
@@ -87,7 +88,7 @@ def update_genai_settings(
     return project
 
 
-def save_api_key(client: str, api_url: str | None, value: str) -> str:
+def save_api_key(client: str, api_url: Optional[str], value: str) -> str:
     """APIキーを保存する(~/.aidc/secrets.env)。名前は提供元と接続先から決まる。保存した名前を返す。"""
     client = client.strip()
     if client not in (*TEXT_CLIENTS, *SPEECH_CLIENTS, *EMBEDDING_CLIENTS):

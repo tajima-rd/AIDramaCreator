@@ -7,6 +7,7 @@
 import dataclasses
 import time
 from dataclasses import dataclass
+from typing import Optional
 
 from core.project.project import LlmSetting, Project
 
@@ -19,7 +20,7 @@ TEST_PROMPT = "Reply with the single word: OK"
 class LlmConnectionTestOutcome:
     ok: bool
     message: str
-    response_text: str | None
+    response_text: Optional[str]
     elapsed_seconds: float
 
 

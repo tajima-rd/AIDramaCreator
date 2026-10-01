@@ -2,15 +2,19 @@
 制作の流れ(あらすじ → 台詞 → 原稿 → 音声)をローカルで実行する。
 各工程の直後に、出力が次の工程に引き継げるかを検査し、合格すれば次の工程に進み、不合格ならそこで止める。
 
-使い方(リポジトリ直下で。ROOT_DIRは<ROOT_DIR>/project/を持つディレクトリ):
+使い方(リポジトリ直下で。ROOT_DIRは<ROOT_DIR>/project/(旧来のテキストのファイル)か、
+<ROOT_DIR>/model/(モデル定義YAML。apps/sample_dataの複製)を持つディレクトリ):
     .venv/bin/python main.py Project/TEST_PROJECT_01                     # 全あらすじを台詞から音声まで通す
     .venv/bin/python main.py Project/TEST_PROJECT_01 scene               # 既存の台詞を使い、原稿から音声まで通す
     .venv/bin/python main.py Project/TEST_PROJECT_01 --plot plot_001.txt # 1つのあらすじだけ
     .venv/bin/python main.py Project/TEST_PROJECT_01 check-scene         # 生成せず検査だけ
+    .venv/bin/python main.py Project/TEST_PROJECT_02 --plot plot_001     # モデル定義YAMLのシーン(key)を1つだけ
 開始する工程: dialogue(既定) / scene / sound。検査のみ: check-dialogue / check-scene / check-sound
 
 plot/のあらすじを名前順に並べ、n番目(0から)を script/script_nnn.txt・scene/scene_nnn.yaml・
 sound/scene_nnn.mp3 に対応させる。APIキーは ~/.aidc/secrets.env の AIDC_GEMINI_API_KEY を使う。
+モデル定義YAMLのときは、シーン(幕・シーンの順)を同じ番号で対応させ、台詞をmodel/scripts/に書き戻す
+(core/service/process/production/_model_definition_project.py)。
 """
 
 import argparse
@@ -19,14 +23,25 @@ import os
 import re
 import sys
 from dataclasses import dataclass
+from typing import Optional
 
 import yaml
 
-from core.model.drama import AudioTag
-from core.model.project import Project
+from core.schema.formats._legacy_drama import AudioTag
+from core.service.process.production._legacy_project import Project
+from core.service.process.production._model_definition_project import (
+    ModelDefinitionProject,
+    SceneUnit,
+    is_model_definition_project,
+)
 from core.prompt.drama_production import generate_sound_drama_prompt
 
 LINE_RE = re.compile(r"^(?P<speaker>[^：:]{1,20})[：:](?P<text>.+)$")
+
+
+def bare(name) -> str:
+    """名前の照合用に空白を除く(生成AIは「加藤 喜一」を「加藤喜一」と書くことがある)。"""
+    return re.sub(r"\s", "", str(name))
 
 
 class HandoffError(Exception):
@@ -40,10 +55,14 @@ class Unit:
     plot_file: str
     script_file: str
     scene_id: str
+    source: Optional[SceneUnit] = None  # モデル定義YAMLのシーン(旧来のテキストのファイルのときはNone)
 
 
-def open_project(root_dir: str, with_generators: bool) -> Project:
-    project = Project(root_dir=root_dir)
+def open_project(root_dir: str, with_generators: bool):
+    if is_model_definition_project(root_dir):
+        project = ModelDefinitionProject(root_dir=root_dir)
+    else:
+        project = Project(root_dir=root_dir)
     if not with_generators:
         return project
     from core.genai import (
@@ -73,7 +92,9 @@ def open_project(root_dir: str, with_generators: bool) -> Project:
     return project
 
 
-def list_units(project: Project) -> list[Unit]:
+def list_units(project) -> list[Unit]:
+    if isinstance(project, ModelDefinitionProject):
+        return [Unit(u.scene_key, f"script_{u.number:03}.txt", f"scene_{u.number:03}", u) for u in project.units()]
     plot_dir = project.get_working_path("plot_path")
     plots = sorted(f for f in os.listdir(plot_dir) if f.endswith(".txt"))
     return [Unit(plot, f"script_{i:03}.txt", f"scene_{i:03}") for i, plot in enumerate(plots)]
@@ -101,13 +122,17 @@ def report(title: str, errors: list[str], warnings: list[str], info: list[str]):
 def step_dialogue(project: Project, unit: Unit):
     from core.service.process.production import generate_dialogue
 
-    profiles = []
-    char_dir = project.get_working_path("character_path")
-    for name in sorted(os.listdir(char_dir)):
-        with open(os.path.join(char_dir, name), encoding="utf-8") as f:
-            profiles.append([os.path.splitext(name)[0], f.read()])
-    with open(path(project, "plot_path", unit.plot_file), encoding="utf-8") as f:
-        synopsis = f.read()
+    if unit.source is not None:  # モデル定義YAML: 話者の人物設定をCharacterから組み立てる
+        profiles = project.dialogue_profiles()
+        synopsis = unit.source.scene.synopsis
+    else:
+        profiles = []
+        char_dir = project.get_working_path("character_path")
+        for name in sorted(os.listdir(char_dir)):
+            with open(os.path.join(char_dir, name), encoding="utf-8") as f:
+                profiles.append([os.path.splitext(name)[0], f.read()])
+        with open(path(project, "plot_path", unit.plot_file), encoding="utf-8") as f:
+            synopsis = f.read()
     generate_dialogue(project=project, synopsis=synopsis, profiles=profiles,
                       output_file=path(project, "script_path", unit.script_file), num_char=len(synopsis) * 2)
 
@@ -127,8 +152,8 @@ def check_dialogue(project: Project, unit: Unit):
         report(title, [f"{p} がありません"], [], [])
     lines, text = parse_dialogue(project, unit)
     nonblank = [ln.strip() for ln in text.splitlines() if ln.strip()]
-    labels = {a.label for a in project.actors.values()}
-    names = {a.character_name for a in project.actors.values()}
+    labels = {bare(a.label) for a in project.actors.values()}
+    names = {bare(a.character_name) for a in project.actors.values()}
 
     info.append(f"台詞 {len(lines)} 行 / 空行以外 {len(nonblank)} 行、本文 {sum(len(t) for _, t in lines)} 文字")
     if not lines:
@@ -136,7 +161,7 @@ def check_dialogue(project: Project, unit: Unit):
     bad = [ln for ln in nonblank if not LINE_RE.match(ln)]
     if bad:
         errors.append(f"形式に合わない行 {len(bad)} 件(冒頭の解説など): {bad[:3]}")
-    speakers = {s for s, _ in lines}
+    speakers = {bare(s) for s, _ in lines}
     info.append(f"話者: {sorted(speakers)}(原稿の工程の対応表のラベル: {sorted(labels)})")
     # 原稿の工程は「ラベル(喜一)→ actor_name(Kiichi)」の対応表を渡す。対応表に無い名前は対応付けを生成AI任せにすることになる
     unknown = speakers - labels
@@ -147,6 +172,14 @@ def check_dialogue(project: Project, unit: Unit):
     stage = [t for _, t in lines if re.search(r"[（(].+?[)）]", t)]
     if stage:
         warnings.append(f"カッコ書き(ト書きの疑い) {len(stage)} 件: {stage[:2]}")
+    # モデル定義YAMLのときは、台詞をmodel/scripts/に書き戻し、読み直せるか(形・話者の配役の参照)を確かめる
+    if unit.source is not None and not errors:
+        try:
+            written = project.record_script(unit.source, lines)
+            scene = next(u.scene for u in project.units() if u.scene_key == unit.source.scene_key)
+            info.append(f"台詞 {len(scene.script.lines)} 行を {written} に書き戻し、読み直せた")
+        except Exception as e:  # noqa: BLE001
+            errors.append(f"台詞のモデル定義YAMLへの書き戻しに失敗: {type(e).__name__}: {e}")
     report(title, errors, warnings, info)
 
 
@@ -196,7 +229,7 @@ def check_scene(project: Project, unit: Unit):
         dn = t.get("directors_note") or {}
         if not isinstance(dn, dict) or not {"style", "pace"} <= set(dn):
             errors.append(f"{i}件目: directors_note に style/pace が無い")
-        if t.get("actor_name") not in project.actors:
+        if bare(t.get("actor_name")) not in {bare(name) for name in project.actors}:
             errors.append(f"{i}件目: actor_name {t.get('actor_name')!r} が actors.yaml に無い")
     # 出力例の記入欄(<…>)が埋まらずに残っていないか
     for i, t in enumerate(items, 1):
@@ -212,9 +245,9 @@ def check_scene(project: Project, unit: Unit):
     # 台詞の工程の出力との対応(行数・話者の並び)
     if os.path.exists(path(project, "script_path", unit.script_file)):
         lines, _ = parse_dialogue(project, unit)
-        label_to_name = {a.label: a.character_name for a in project.actors.values()}
-        expected = [label_to_name.get(s, s) for s, _ in lines]
-        actual = [t.get("actor_name") for t in items]
+        label_to_name = {bare(a.label): bare(a.character_name) for a in project.actors.values()}
+        expected = [label_to_name.get(bare(s), bare(s)) for s, _ in lines]
+        actual = [bare(t.get("actor_name")) for t in items]
         if len(expected) != len(actual):
             warnings.append(f"台詞の行数 {len(expected)} と原稿の件数 {len(actual)} が違う")
         elif expected != actual:
@@ -285,23 +318,28 @@ CHECKS = {f"check-{name}": check for name, _, check in PIPELINE}
 def main():
     names = [name for name, _, _ in PIPELINE]
     parser = argparse.ArgumentParser(description="制作の流れ(あらすじ → 台詞 → 原稿 → 音声)を実行する")
-    parser.add_argument("root_dir", help="<root_dir>/project/ を持つディレクトリ(例: Project/TEST_PROJECT_01)")
+    parser.add_argument(
+        "root_dir", help="<root_dir>/project/ か <root_dir>/model/ を持つディレクトリ(例: Project/TEST_PROJECT_01)"
+    )
     parser.add_argument("start", nargs="?", default="dialogue", choices=names + list(CHECKS),
                         help="開始する工程(既定: dialogue)、または検査のみ")
-    parser.add_argument("--plot", help="このあらすじ(plot/のファイル名)だけを処理する")
+    parser.add_argument(
+        "--plot", help="このあらすじ(plot/のファイル名。モデル定義YAMLのときはシーンのkey)だけを処理する"
+    )
     args = parser.parse_args()
 
-    if os.path.realpath(args.root_dir).startswith(os.path.realpath("apps/sample_project")):
-        raise SystemExit("apps/sample_project/ は読み取り専用です。Project/TEST_PROJECT_## に複製して使ってください。")
-    if not os.path.isdir(os.path.join(args.root_dir, "project")):
-        raise SystemExit(f"{args.root_dir}/project/ がありません")
+    for sample in ("apps/sample_project", "apps/sample_data"):
+        if os.path.realpath(args.root_dir).startswith(os.path.realpath(sample)):
+            raise SystemExit(f"{sample}/ は読み取り専用です。Project/TEST_PROJECT_## に複製して使ってください。")
+    if not (os.path.isdir(os.path.join(args.root_dir, "project")) or is_model_definition_project(args.root_dir)):
+        raise SystemExit(f"{args.root_dir}/project/ も {args.root_dir}/model/ もありません")
 
     project = open_project(args.root_dir, with_generators=args.start not in CHECKS)
     units = list_units(project)
     if args.plot:
         units = [u for u in units if u.plot_file == args.plot]
         if not units:
-            raise SystemExit(f"plot/{args.plot} がありません")
+            raise SystemExit(f"あらすじ {args.plot} がありません")
 
     try:
         for unit in units:

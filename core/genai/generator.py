@@ -18,7 +18,7 @@ import mimetypes
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Literal, TypeVar
+from typing import Literal, Optional, TypeVar, Union
 
 from pydantic import BaseModel
 
@@ -51,7 +51,7 @@ class Attachment:
     mime_type: str
 
     @classmethod
-    def from_file(cls, path: str | Path, mime_type: str | None = None) -> "Attachment":
+    def from_file(cls, path: Union[str, Path], mime_type: Optional[str] = None) -> "Attachment":
         path = Path(path)
         mime_type = mime_type or mimetypes.guess_type(path.name)[0]
         if mime_type is None:
@@ -72,11 +72,11 @@ class Message:
 class TextConfig:
     """文章生成の設定。Noneの項目は提供元の既定に任せる。"""
 
-    temperature: float | None = 0.7
-    top_p: float | None = 0.95
-    top_k: int | None = None
-    max_output_tokens: int | None = None
-    thinking_level: ThinkingLevel | None = None
+    temperature: Optional[float] = 0.7
+    top_p: Optional[float] = 0.95
+    top_k: Optional[int] = None
+    max_output_tokens: Optional[int] = None
+    thinking_level: Optional[ThinkingLevel] = None
     # 本文中のURLの中身を生成AIに読ませる(提供元が対応している場合)
     use_url_context: bool = False
 
@@ -85,7 +85,7 @@ class TextConfig:
 class SpeechConfig:
     """音声合成の設定。"""
 
-    temperature: float | None = 1.0
+    temperature: Optional[float] = 1.0
 
 
 # 埋め込む文章の役割。検索される側(資料の断片)か、検索する側(問い)か
@@ -102,7 +102,7 @@ class EmbeddingConfig:
     (GeminiのtaskType)では空のままでよい。
     """
 
-    dimensions: int | None = None
+    dimensions: Optional[int] = None
     document_prefix: str = ""
     query_prefix: str = ""
 
@@ -110,7 +110,7 @@ class EmbeddingConfig:
 PromptInput = str | Prompt | list[Message]
 
 
-def to_messages(prompt: PromptInput, attachments: list[Attachment] | None = None) -> list[Message]:
+def to_messages(prompt: PromptInput, attachments: Optional[list[Attachment]] = None) -> list[Message]:
     """文字列/Prompt/メッセージ列を、メッセージ列にそろえる。
 
     attachmentsは、文字列/Promptの場合はそのメッセージに、メッセージ列の場合は最後の
@@ -135,7 +135,7 @@ def to_messages(prompt: PromptInput, attachments: list[Attachment] | None = None
 class TextGenerator(abc.ABC):
     """文章生成の抽象。"""
 
-    def __init__(self, model_name: str, config: TextConfig | None = None):
+    def __init__(self, model_name: str, config: Optional[TextConfig] = None):
         self.model_name = model_name
         self.config = config if config is not None else TextConfig()
 
@@ -149,8 +149,8 @@ class TextGenerator(abc.ABC):
         self,
         prompt: PromptInput,
         *,
-        system_instruction: str | Prompt | None = None,
-        attachments: list[Attachment] | None = None,
+        system_instruction: Optional[Union[str, Prompt]] = None,
+        attachments: Optional[list[Attachment]] = None,
     ) -> str:
         """文章を生成して返す。"""
 
@@ -160,8 +160,8 @@ class TextGenerator(abc.ABC):
         prompt: PromptInput,
         schema: type[StructuredT],
         *,
-        system_instruction: str | Prompt | None = None,
-        attachments: list[Attachment] | None = None,
+        system_instruction: Optional[Union[str, Prompt]] = None,
+        attachments: Optional[list[Attachment]] = None,
     ) -> StructuredT:
         """schema(pydanticのモデル)の形で生成させ、検証した値を返す。
 
@@ -172,19 +172,19 @@ class TextGenerator(abc.ABC):
 class SpeechGenerator(abc.ABC):
     """音声合成の抽象。"""
 
-    def __init__(self, model_name: str, config: SpeechConfig | None = None):
+    def __init__(self, model_name: str, config: Optional[SpeechConfig] = None):
         self.model_name = model_name
         self.config = config if config is not None else SpeechConfig()
 
     @abc.abstractmethod
-    def synthesize(self, text: str | Prompt, voice: str) -> bytes:
+    def synthesize(self, text: Union[str, Prompt], voice: str) -> bytes:
         """textをvoice(提供元の声の名前)で読み上げ、WAVのバイト列を返す。"""
 
 
 class EmbeddingGenerator(abc.ABC):
     """埋め込みの抽象。"""
 
-    def __init__(self, model_name: str, config: EmbeddingConfig | None = None):
+    def __init__(self, model_name: str, config: Optional[EmbeddingConfig] = None):
         self.model_name = model_name
         self.config = config if config is not None else EmbeddingConfig()
 
@@ -203,7 +203,7 @@ class EmbeddingGenerator(abc.ABC):
         """提供元ごとの埋め込み(texts・戻り値は同じ順)。"""
 
 
-def instruction_text(system_instruction: str | Prompt | None) -> str | None:
+def instruction_text(system_instruction: Optional[Union[str, Prompt]]) -> Optional[str]:
     """system_instructionを文字列にそろえる(空ならNone)。"""
     if isinstance(system_instruction, Prompt):
         system_instruction = system_instruction.to_text()

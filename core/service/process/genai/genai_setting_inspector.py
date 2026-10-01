@@ -5,6 +5,7 @@ APIキーの状態(値そのものは返さず、名前と伏せ字だけ)。
 """
 
 from dataclasses import dataclass
+from typing import Optional
 
 from core.genai.factory import (
     ApiUrlCandidate,
@@ -22,7 +23,7 @@ class ApiKeyState:
     name: str  # ~/.aidc/secrets.envでの名前(提供元と接続先から決まる)
     required: bool
     available: bool
-    masked: str | None  # 先頭と末尾の4文字だけ(短いキーは全て伏せる)
+    masked: Optional[str]  # 先頭と末尾の4文字だけ(短いキーは全て伏せる)
 
 
 def mask_secret(value: str) -> str:
@@ -31,7 +32,7 @@ def mask_secret(value: str) -> str:
     return f"{value[:4]}…{value[-4:]}"
 
 
-def api_key_state(client: str, api_url: str | None) -> ApiKeyState:
+def api_key_state(client: str, api_url: Optional[str]) -> ApiKeyState:
     name = api_key_name(client, api_url)
     value = secret_env_store.get_secret(name)
     return ApiKeyState(

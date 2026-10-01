@@ -25,7 +25,7 @@
 | `project/` | A | プロジェクトの定義のみ(操作は`infra/store`・`service/process`) |
 | `prompt/` | A | 用途ごとのプロンプトと、生成AIに返させる構造。生成AIは呼ばない。`drama_production/`=制作の流れの各工程 |
 | `genai/` | (独立) | 生成AIの汎用ライブラリ(2節) |
-| `infra/io/`・`infra/store/` | B | 外部とやり取りする形式との変換(現状は空)・内部状態の永続化(`*_store`) |
+| `infra/io/`・`infra/store/` | B | 外部とやり取りする形式との変換(モデル定義YAML)・内部状態の永続化(`*_store`) |
 | `service/process/` | B | 内部の処理。`production/`=制作の流れの各工程(`dialogue_generator`・`scene_generator`・`sound_generator`)、`edit/`=プロジェクト・設定・Datasetの手順、`genai/`=生成AIを使う処理 |
 | `service/api/` | C | 公開API(`project`・`preference`・`dataset`) |
 | `schema/` | C | 契約(pydantic)。`api/`=公開APIのDTO、`formats/`=ディスクに残るファイル形式 |
@@ -47,7 +47,9 @@
   フォルダ名は役割ではなく処理の分野。
 - **C. 外部との境界**(`schema`・`service/api`・`api`): `schema/api`・`service/api`・`api/routers`は同じリソース単位の
   単数形の名詞で1対1に対応させる。
-- **共通**: 英小文字のsnake_case。内部専用のモジュールは先頭に`_`。パッケージは現在の規模ではなく、長期的な責務の境界で切る
+- **共通**: 英小文字のsnake_case。内部専用のモジュールは先頭に`_`。
+- **型注釈**(2026-09-30ユーザー決定): `Optional[X]`・`Union[A, B]`(`typing`)で書く。`X | None`・`A | B`(`|`で並べる書き方)は使わない
+  (読み込むツールが対応していないことがあるため)。ruffのpyupgradeの`UP007`・`UP045`は無効にしている(`pyproject.toml`)。パッケージは現在の規模ではなく、長期的な責務の境界で切る
   (1ファイルだけのパッケージでもよい)。
 
 ## 2. 生成AIライブラリ(`core/genai/`)は独立させる
@@ -66,14 +68,22 @@
   環境変数(`GEMINI_API_KEY`等)からは読まない。制作の流れ(`main.py`)もこの方式に移した(2026-09-29ユーザー決定)。
   キーの名前は提供元と接続先から決まる(`generator_builder.api_key_name`。例: `AIDC_GEMINI_API_KEY`)。
 
-## 4. ドラマを構成するオブジェクトは`core/model/`に置く
+## 4. 作品とエージェントのモデル(`core/model/`)
 
-- 人物・声・場面・台詞・演出等のドラマの構成要素は`core/model/`に定義する(現状の定義は再定義する予定)。
+- 作られる作品は`core/model/drama/`、作品作りに参加するエージェントは`core/model/agent/`に定義する(2026-09-30ユーザー決定)。
+  中のクラスの構成は**ユーザーの承認前**([model_design.md](model_design.md)。レビュー中)。
+- **モデルの設計などは素のクラスで書くことを優先する**(2026-09-30ユーザー。QIDMの`core/model`と同じ)。`dataclass`は禁止では
+  ないが、ユーザーが基本的に好まないため、必要なときだけ許可を得て使う。モデルに`dataclass`が合わない理由は、`__eq__`が値の比較に
+  なって識別子で同一性が決まるエンティティと食い違うことと、属性が外から書き換えられて不変条件をメソッドで守らせにくいこと。pydanticにも
+  しない(pydanticは`core/schema/`の契約・ファイル形式の役割)。各エンティティは`__init__`で`self.id = new_id()`を振る。
+- **`core/model/`には純粋なモデルだけを置く**(2026-09-30ユーザー決定)。API・生成AI・ファイル・DBに関わるもの(ファイルのパス・
+  Datasetのfile_id・生成AIへの指示・生成器・pydantic・読み書き)を置かない。`core.model`は`core.model`の外をimportしない。
+- エージェントのモデルには、エージェントどうしのやり取り(発注・提案・相談)と、動かす手段(生成AIの種類等)を置かない。
 
 ## 5. `apps/sample_project/`はゴールデン(2026-09-29ユーザー決定)
 
 - リポジトリに含める。中身はゴールデン(正解の見本)で、**読み取り専用**。例外は、ユーザーが特別に指示した場合だけ。
-- 現行の`Project`(`core/model/project.py`)は、存在しないディレクトリを作り、生成の結果を書き込む。そのため、
+- 現行の`Project`(`core/service/process/production/_legacy_project.py`)は、存在しないディレクトリを作り、生成の結果を書き込む。そのため、
   `apps/sample_project/`を直接`root_dir`にしないこと。使うときは複製してから。
 - 実験用のプロジェクトは`Project/TEST_PROJECT_##`(リポジトリ直下、`##`は01からの連番)に、`apps/sample_project/`を
   複製して作る。`Project/`はgitの管理外(`.gitignore`)。

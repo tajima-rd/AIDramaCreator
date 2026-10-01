@@ -22,25 +22,81 @@
 
 未決定(ユーザーに確認すること):
 
-- 「YAMLのモデル定義ファイル」の形式: 全項目を1ファイルにまとめるか、項目ごとか。書き出し(往復)の要否。
+- 「YAMLのモデル定義ファイル」の形式は、1ファイルでも分割でも読み書きできる形にした(2026-09-30。形はレビュー前。[model_design.md](model_design.md))。
+  既存のDramaturgyへ一部の区画(例: 人物だけ)を追加で取り込む方法は未決定。
 - 1と2の使い分け: 生成AIへの渡し方(前提は常に渡す指示・制約、物語の知識は検索して渡す、等)と、Datasetの
   分類(`DatasetCategory`は現状`reference`だけ)。手入力のテキストの保存の形。
 - チャットで相談する方式(3〜5)は、QIDMのdrafts(Build Domain from References。[qidm_reuse.md](qidm_reuse.md) C群)を
   下敷きにするか。「対話方式の制作」と同じ枠組みにするか。
 - 3と4は、下の「ドラマの構成要素の再定義」の人物(character)と声・演者(actor)の区別に対応する。
 
+## 特徴(`AdditionalFeature`)の未決定の点
+
+2026-09-30に`Characteristic`/`AdditionalFeature`の2階層で実装した(`Profile`は`Character`に統合)([model_design.md](model_design.md))。未決定:
+
+- `value`と`description`の使い分け(`apps/sample_data`では、「**項目**: 値」の値は長い文章でも`value`、名前の無い人物の説明は`description`にした)。
+- 名前の無い人物を人物(`Character`)で表すか(今は特徴「人物関係」の項目で、原文での時期が残らない)。
+
+## モデルは「作品」と「エージェント」の2本立て(2026-09-30ユーザー)
+
+- `core/model/`には、作られるべき作品のモデルと、作品作りに参加するエージェントのモデルの両方が要る。参考は
+  ユーザー提供の資料「音声ドラマにおけるオブジェクト指向モデルの体系化」(物語・構造/音響・記号論/実行・DSPの3層と、
+  Producer・Scriptwriter・Director・Stage Manager・Voice Actor・Sound Engineerの職能、音声キューシート)。取捨選択して設計する。
+- 置き場所(2026-09-30ユーザー決定): 作品は`core/model/drama`、エージェントは`core/model/agent`(現行の
+  `core/model/drama.py`は作品のモデルの再定義で置き換わる)。
+- 職能(2026-09-30ユーザー決定): Producer・**Researcher**・**CastingDirector**・Scriptwriter・Director・
+  StageManager・**Actor**・SoundEngineer。
+  - **Producerは利用者(人)が担当する。** 生成AIのエージェントではない。前提(項目1)を与え、エージェントの提案を
+    反映・却下する。そのため、エージェントのモデルは人の参加者も表せる形にする。
+  - 準備の項目3(キャラクターの作成)の相談相手は**Scriptwriter**(2026-09-30ユーザー決定)。項目5(プロット)と同じ相手。
+- エージェントの定義(2026-09-30ユーザー決定): 職能の一覧と責務はコードに固定し、プロジェクトごとに調整できる部分
+  (性格づけ・追加の指示等)だけをデータで持つ。生成AIの設定は、当面プロジェクトの設定(文章生成・音声合成)を全員で共有する。
+  職能ごとの上書きは、必要になったら拡張する。
+  - Researcher: 準備の項目1・2の資料を索引にし、他のエージェントの問いに根拠を出典付きで返す。考証(プロット・台詞と資料の
+    食い違いの確認)も担う。作品は書き換えない。
+  - CastingDirector: 準備の項目4(人物と声の対応付け)。提供元ごとの声の一覧の知識はここに閉じ込める。
+  - Actor: 資料のVoice Actor。Castingごとに1つで、台詞と演出を受け取り音声合成で音声を作る(人物を演じる生成AIではない)。
+- 作品のモデル(2026-09-30ユーザー決定):
+  - **Drama=Project**(2026-09-30ユーザー決定)。QIDMに準じて集約の根はProjectとし、QIDMのDomainに相当する階層を
+    **Dramaturgy**とする(下の「Dramaturgy」)。
+  - **階層は「作品全体を包括するドラマツルギー(Dramaturgy) → 幕(Act) → シーン」。** この階層を上下しながら情報を得たり、
+    双方向に書き換えたりすることがある。そのため、各階層があらすじ(シーンのあらすじ・幕のメタストーリー・作品全体の
+    メタメタストーリー)を保持できるようにする。双方向の書き換えの仕組みは、かなり将来の構想なので保留。
+  - Actは`input_language`・`output_language`を設定できる。
+  - Characterの**経歴と人物関係はクラスとして定義する**(自由記述にしない)。
+    - **経歴はハルシネーション対策として極めて重要**(ユーザーの経験から)。
+    - 経歴の時期は3種類すべて持つ: 言葉としての時期(例: 中学校時代)・日付や年代・順番。**必須は順番だけ**。
+    - **時間の順序は1次元ではなく、位相(Temporal Topology)として扱う。** 叩き台: Period(点。言葉としての時期・
+      日付や年代はどちらも任意)と、Periodどうしの関係(前後・接する・重なる・含む・同時等。Allenの区間代数に相当)。
+      「順番は必須」は「**どのPeriodも、ほかのPeriodとの関係を少なくとも1つ持つ**」と読み替える(2026-09-30ユーザー決定)。
+    - Sceneは、描く時期として別にPeriodを参照する(暫定。回想等で語りの順と描く時期が違うため。実際に生じる問題はまだ見えない)。
+    - 時間の分岐(並行世界・もしもの筋)は、可能性としてはありえるが保留。
+    - 人物関係(Relationship)はPeriodを持てる(同じ2人の関係が時期によって変わる)。
+    - 経歴は自由記述のエピソードだけでなく、人間関係も持つ。
+    - **物語に直接出てこない人物もCharacterとして設定し**、人物関係を定義するクラスでつなぐ(声の割り当てが無い人物になる)。
+  - **台詞とSceneは絶対に分離する。** 生成AIには、聴衆が満足する品質のSceneを直接作る能力が無いため、台詞の段階を
+    独立させる(台詞の段階を「演出が空のDialogue」で表す案は却下)。
+  - 効果音・環境音・BGMはそれぞれクラスとして設計する。当面は空のクラスでよい。
+  - **翻訳はSceneの段階と音声の生成の間に置く**(Actの`input_language`→`output_language`)。
+    翻訳の職能(Translator)は置かない(ユーザー)。
+- 組み立てた設計: [model_design.md](model_design.md)(2026-09-30。細部は暫定で置き、基本の部分を動かしてから見直す)。
+- 2026-09-30、ユーザーがUMLクラス図で再整理した(正本。[model_design.md](model_design.md))。上の経緯の名前との対応: Period→TemporalNode、
+  TemporalRelation→TemporalEdge(Historyが束ねる)、Casting→Cast。`input_language`・`output_language`はActからDramaturgyへ移った。
+
 ## Projectの作り直し
 
-- `core/model/project.py`(現行のドラマ用)と`core/project/project.py`(QIDM由来)を、1つの設計に作り直す。
+- `core/service/process/production/_legacy_project.py`(現行のドラマ用)と`core/project/project.py`(QIDM由来)を、1つの設計に作り直す。
 - ディレクトリ構成(`actor/`・`character/`・`plot/`・`script/`・`scene/`・`sound/`・`dialog/`・`icons/`・`tmp/`)の要否と、
   project.yaml・プロジェクトのレジストリの要否。
 - 生成AIの設定(提供元・モデル・system_instruction・TextConfig等)とAPIキーの保存場所。
 
-## Drama(QIDMのDomainに相当する概念、検討中)
+## Dramaturgy(QIDMのDomainに相当する階層)
 
-- QIDMのDomainは、Drama(ドラマ)に置き換える方向で検討する(2026-09-29ユーザー)。名前ではなく題を持つ(`drama_title`)。
-- Datasetのメタデータと台帳は、仮に`drama_id`・`drama_title`を持つ(現状は常に未割当)。Dramaの定義ができたら、QIDMにあった
-  次の機能を戻すか決める: Datasetをドラマに割り当てる、ドラマごとのDatasetの一覧と保存(CSV)。
+- QIDMのDomainに相当する階層はDramaturgy(2026-09-30ユーザー決定。2026-09-29の「Dramaに置き換える」案を改めた。
+  Drama=Project)。名前ではなく題を持つ想定(現状のコードは`drama_title`)。
+- Datasetのメタデータと台帳は、仮に`drama_id`・`drama_title`を持つ(現状は常に未割当。名前はDramaturgyの定義に合わせて
+  直す)。Dramaturgyの定義ができたら、QIDMにあった次の機能を戻すか決める: DatasetをDramaturgyに割り当てる、
+  DramaturgyごとのDatasetの一覧と保存(CSV)。
   QIDMの`domain_version`(Domainの版の管理)は持ち込んでいない。
 - `DatasetCategory`は`unspecified`・`reference`だけにした(QIDMの`raw_data`・`correlation_comparison`は、Domainと分析の概念のため削除)。
 
@@ -50,6 +106,9 @@
   何を置くか(参考資料・生成の途中結果等)は未決定。
 
 ## 対話方式の制作(保留。パッケージの移行が終わってから)
+
+- エージェントどうしのやり取り(発注・提案と反映・利用者との相談)は、エージェントのモデル(`core/model/agent/`)ではなく、
+  公開API・処理の側で設計する(2026-09-30ユーザーの指摘。当初`core/model/agent/`に置いた`Task`・`Proposal`・`Conversation`は削除した)。
 
 - 現状は各工程を生成AIへの1回の依頼(ワンショット)で行っている。次の段階で対話方式にする予定。
 - QIDMのdrafts(`drafts/<id>/`に作成途中の成果物・会話・版の履歴を置き、ステップごとに提案をApply/Undoする。

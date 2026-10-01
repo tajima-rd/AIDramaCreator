@@ -9,6 +9,8 @@
   (tokenizer)は既定で2文字ずつ(BigramTokenizer)。日本語の資料にはSudachiTokenizerを渡せる
 """
 
+from typing import Optional
+
 from ..generator import EmbeddingGenerator
 from .chunk_index import ChunkIndex, content_hash
 from .document_chunker import DEFAULT_MAX_CHARS, DEFAULT_OVERLAP_CHARS, chunk_blocks
@@ -25,7 +27,7 @@ def index_document(
     data: bytes,
     file_format: str,
     *,
-    embedder: EmbeddingGenerator | None = None,
+    embedder: Optional[EmbeddingGenerator] = None,
     max_chars: int = DEFAULT_MAX_CHARS,
     overlap: int = DEFAULT_OVERLAP_CHARS,
 ) -> ChunkIndex:
@@ -36,8 +38,8 @@ def index_document(
 
 def create_retriever(
     indexes: list[ChunkIndex],
-    embedder: EmbeddingGenerator | None = None,
-    tokenizer: Tokenizer | None = None,
+    embedder: Optional[EmbeddingGenerator] = None,
+    tokenizer: Optional[Tokenizer] = None,
 ) -> Retriever:
     lexical = LexicalRetriever(indexes, tokenizer)
     if embedder is None:

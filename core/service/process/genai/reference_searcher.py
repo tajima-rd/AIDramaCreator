@@ -25,6 +25,7 @@
 
 import os
 from dataclasses import dataclass
+from typing import Optional, Union
 
 from core.genai import EmbeddingGenerator, TextGenerator
 from core.genai.rag import (
@@ -71,7 +72,7 @@ class ReferenceContext:
     queries: list[str]  # 検索に使った問い(資料の言語に訳したものを含む)
 
 
-def default_tokenizer() -> Tokenizer | None:
+def default_tokenizer() -> Optional[Tokenizer]:
     """SudachiPyが入っていればSudachiTokenizer、無ければNone(既定の2文字ずつ)。"""
     try:
         from core.genai.rag.sudachi_tokenizer import SudachiTokenizer
@@ -81,18 +82,18 @@ def default_tokenizer() -> Tokenizer | None:
         return None
 
 
-def default_embedder(project: Project) -> EmbeddingGenerator | None:
+def default_embedder(project: Project) -> Optional[EmbeddingGenerator]:
     return build_embedding_generator(project) if project.embedding is not None else None
 
 
-def _is_usable(index: ChunkIndex, data: bytes, filename: str, embedder: EmbeddingGenerator | None) -> bool:
+def _is_usable(index: ChunkIndex, data: bytes, filename: str, embedder: Optional[EmbeddingGenerator]) -> bool:
     if not index.is_current(data) or index.source != filename:
         return False
     return embedder is None or index.embedding_model == embedder.model_name
 
 
 def load_or_build_index(
-    datasets_dir: str, filename: str, data: bytes, embedder: EmbeddingGenerator | None
+    datasets_dir: str, filename: str, data: bytes, embedder: Optional[EmbeddingGenerator]
 ) -> ChunkIndex:
     """保存済みの索引が使えればそれを、使えなければ作って保存したものを返す。"""
     path = index_path(datasets_dir, filename)
@@ -165,7 +166,7 @@ def message_search_terms(
     languages: dict[str, str],
     lexical: LexicalRetriever,
     generator: TextGenerator,
-    looking_for: list[str] | tuple[str, ...] = (),
+    looking_for: Union[list[str], tuple[str, ...]] = (),
 ) -> list[str]:
     """発言と違う言語の資料があれば、生成AIにその言語で検索語を作らせる(無ければ呼ばずに空)。"""
     targets = list(dict.fromkeys(
@@ -180,7 +181,7 @@ def message_search_terms(
     return [q.query for q in response.queries if q.query.strip()]
 
 
-def _retriever(lexical: LexicalRetriever, indexes: list[ChunkIndex], embedder: EmbeddingGenerator | None) -> Retriever:
+def _retriever(lexical: LexicalRetriever, indexes: list[ChunkIndex], embedder: Optional[EmbeddingGenerator]) -> Retriever:
     return lexical if embedder is None else HybridRetriever([lexical, EmbeddingRetriever(indexes, embedder)])
 
 
@@ -188,13 +189,13 @@ def search_references(
     project: Project,
     file_ids: list[str],
     *,
-    fixed_queries: list[str] | tuple[str, ...] = (),
+    fixed_queries: Union[list[str], tuple[str, ...]] = (),
     message: str = "",
-    extra_queries: list[str] | tuple[str, ...] = (),
-    generator: TextGenerator | None = None,
-    translate_ahead: list[str] | tuple[str, ...] = (),
-    embedder: EmbeddingGenerator | None = None,
-    tokenizer: Tokenizer | None = None,
+    extra_queries: Union[list[str], tuple[str, ...]] = (),
+    generator: Optional[TextGenerator] = None,
+    translate_ahead: Union[list[str], tuple[str, ...]] = (),
+    embedder: Optional[EmbeddingGenerator] = None,
+    tokenizer: Optional[Tokenizer] = None,
 ) -> ReferenceContext:
     """資料を問いで探し、近い断片から文脈を作る。
 

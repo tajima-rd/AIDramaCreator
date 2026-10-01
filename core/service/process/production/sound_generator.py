@@ -9,8 +9,9 @@ import os
 
 from pydub import AudioSegment
 
-from core.model import Project, Scene
 from core.prompt.drama_production import generate_sound_drama_prompt
+from core.schema.formats._legacy_drama import Scene
+from core.service.process.production._legacy_project import Project
 
 
 def generate_sound_drama(project: Project, scene: Scene):

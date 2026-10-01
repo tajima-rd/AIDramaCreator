@@ -1,0 +1,8 @@
+# plot_004.txtのシーンの台詞(まだ無い)
+dramaturgy:
+  acts:
+  - key: act1
+    scenes:
+    - key: plot_004
+      script:
+        lines: []

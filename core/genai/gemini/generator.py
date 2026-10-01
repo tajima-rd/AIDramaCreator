@@ -3,6 +3,8 @@
 Google Geminiによる文章生成・音声合成・埋め込み(genai.generatorの抽象の具象)。
 """
 
+from typing import Optional, Union
+
 from google import genai
 from google.genai import types
 
@@ -48,7 +50,7 @@ def build_contents(messages: list[Message]) -> list[types.Content]:
 
 
 class GeminiTextGenerator(TextGenerator):
-    def __init__(self, api_key: str, model_name: str = DEFAULT_TEXT_MODEL, config: TextConfig | None = None):
+    def __init__(self, api_key: str, model_name: str = DEFAULT_TEXT_MODEL, config: Optional[TextConfig] = None):
         super().__init__(model_name, config)
         self.client = genai.Client(api_key=api_key)
 
@@ -58,8 +60,8 @@ class GeminiTextGenerator(TextGenerator):
 
     def build_config(
         self,
-        system_instruction: str | Prompt | None,
-        schema: type[StructuredT] | None = None,
+        system_instruction: Optional[Union[str, Prompt]],
+        schema: Optional[type[StructuredT]] = None,
     ) -> types.GenerateContentConfig:
         c = self.config
         return types.GenerateContentConfig(
@@ -83,8 +85,8 @@ class GeminiTextGenerator(TextGenerator):
         self,
         prompt: PromptInput,
         *,
-        system_instruction: str | Prompt | None = None,
-        attachments: list[Attachment] | None = None,
+        system_instruction: Optional[Union[str, Prompt]] = None,
+        attachments: Optional[list[Attachment]] = None,
     ) -> str:
         chunks = self.client.models.generate_content_stream(
             model=self.model_name,
@@ -98,8 +100,8 @@ class GeminiTextGenerator(TextGenerator):
         prompt: PromptInput,
         schema: type[StructuredT],
         *,
-        system_instruction: str | Prompt | None = None,
-        attachments: list[Attachment] | None = None,
+        system_instruction: Optional[Union[str, Prompt]] = None,
+        attachments: Optional[list[Attachment]] = None,
     ) -> StructuredT:
         response = self.client.models.generate_content(
             model=self.model_name,
@@ -115,7 +117,7 @@ class GeminiTextGenerator(TextGenerator):
 
 
 class GeminiSpeechGenerator(SpeechGenerator):
-    def __init__(self, api_key: str, model_name: str = DEFAULT_SPEECH_MODEL, config: SpeechConfig | None = None):
+    def __init__(self, api_key: str, model_name: str = DEFAULT_SPEECH_MODEL, config: Optional[SpeechConfig] = None):
         super().__init__(model_name, config)
         self.client = genai.Client(api_key=api_key)
 
@@ -131,7 +133,7 @@ class GeminiSpeechGenerator(SpeechGenerator):
             automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
         )
 
-    def synthesize(self, text: str | Prompt, voice: str) -> bytes:
+    def synthesize(self, text: Union[str, Prompt], voice: str) -> bytes:
         # 音声はストリームで分割されて届くため、PCMをつないでから1つのWAVにする。
         data = bytearray()
         mime_type = None
@@ -154,7 +156,7 @@ class GeminiSpeechGenerator(SpeechGenerator):
 class GeminiEmbeddingGenerator(EmbeddingGenerator):
     batch_size = 100  # batchEmbedContentsの1回あたりの上限
 
-    def __init__(self, api_key: str, model_name: str = DEFAULT_EMBEDDING_MODEL, config: EmbeddingConfig | None = None):
+    def __init__(self, api_key: str, model_name: str = DEFAULT_EMBEDDING_MODEL, config: Optional[EmbeddingConfig] = None):
         super().__init__(model_name, config)
         self.client = genai.Client(api_key=api_key)
 

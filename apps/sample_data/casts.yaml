@@ -1,0 +1,25 @@
+# actor/actors.yaml(apps/sample_project)から変換した配役
+dramaturgy:
+  casts:
+  - key: 加藤喜一の配役
+    character: 加藤喜一
+    provider: Gemini
+    voice_name: Charon
+    accent: Japanese
+  - key: 水野弥千代の配役
+    character: 水野弥千代
+    provider: Gemini
+    voice_name: Kore
+    accent: Japanese
+
+# ===== モデルに置き場所が無いため、取り込んでいない情報(原文のまま) =====
+# [Kiichi]
+#   label: 喜一
+#   gender: Male
+#   personality_title: Strict Guy
+#   personality_description: A strictly serious, perfectionist, and emotionally detached young person.
+# [Yachiyo]
+#   label: 弥千代
+#   gender: Female
+#   personality_title: Cheerful Woman
+#   personality_description: Cheerful and approachable young woman.

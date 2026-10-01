@@ -8,6 +8,7 @@ Open WebUI等)による文章生成と、embeddings APIによる埋め込み(gen
 """
 
 import base64
+from typing import Optional, Union
 
 import requests
 
@@ -47,14 +48,14 @@ def embeddings_url(api_url: str, path: str = DEFAULT_EMBEDDINGS_PATH) -> str:
     return _endpoint_url(api_url, path, "/embeddings")
 
 
-def _auth_headers(api_key: str | None) -> dict[str, str]:
+def _auth_headers(api_key: Optional[str]) -> dict[str, str]:
     headers = {"Content-Type": "application/json"}
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
     return headers
 
 
-def _content(message: Message) -> str | list[dict]:
+def _content(message: Message) -> Union[str, list[dict]]:
     """添付の無いメッセージは文字列、添付があればOpenAI形式の部品の列にする。
 
     画像はdata URIで渡す(サーバーが画像に対応している場合のみ働く)。テキストのファイルは
@@ -75,7 +76,7 @@ def _content(message: Message) -> str | list[dict]:
     return parts
 
 
-def build_messages(messages: list[Message], system_instruction: str | None) -> list[dict]:
+def build_messages(messages: list[Message], system_instruction: Optional[str]) -> list[dict]:
     result = [{"role": "system", "content": system_instruction}] if system_instruction else []
     result += [{"role": m.role, "content": _content(m)} for m in messages]
     return result
@@ -89,8 +90,8 @@ class OpenAiCompatibleTextGenerator(TextGenerator):
         self,
         api_url: str,
         model_name: str,
-        api_key: str | None = None,
-        config: TextConfig | None = None,
+        api_key: Optional[str] = None,
+        config: Optional[TextConfig] = None,
         path: str = DEFAULT_CHAT_COMPLETIONS_PATH,
     ):
         super().__init__(model_name, config)
@@ -104,8 +105,8 @@ class OpenAiCompatibleTextGenerator(TextGenerator):
     def build_payload(
         self,
         messages: list[Message],
-        system_instruction: str | Prompt | None,
-        schema: type[StructuredT] | None = None,
+        system_instruction: Optional[Union[str, Prompt]],
+        schema: Optional[type[StructuredT]] = None,
     ) -> dict:
         c = self.config
         # 他の提供元の機能は黙って無視せず、指定されたらエラーにする(Gemma等と同じ扱い)
@@ -145,8 +146,8 @@ class OpenAiCompatibleTextGenerator(TextGenerator):
         self,
         prompt: PromptInput,
         *,
-        system_instruction: str | Prompt | None = None,
-        attachments: list[Attachment] | None = None,
+        system_instruction: Optional[Union[str, Prompt]] = None,
+        attachments: Optional[list[Attachment]] = None,
     ) -> str:
         payload = self.build_payload(to_messages(prompt, attachments), system_instruction)
         return self._complete(payload).strip()
@@ -156,8 +157,8 @@ class OpenAiCompatibleTextGenerator(TextGenerator):
         prompt: PromptInput,
         schema: type[StructuredT],
         *,
-        system_instruction: str | Prompt | None = None,
-        attachments: list[Attachment] | None = None,
+        system_instruction: Optional[Union[str, Prompt]] = None,
+        attachments: Optional[list[Attachment]] = None,
     ) -> StructuredT:
         payload = self.build_payload(to_messages(prompt, attachments), system_instruction, schema)
         body = self._post(payload)
@@ -191,8 +192,8 @@ class OpenAiCompatibleEmbeddingGenerator(EmbeddingGenerator):
         self,
         api_url: str,
         model_name: str,
-        api_key: str | None = None,
-        config: EmbeddingConfig | None = None,
+        api_key: Optional[str] = None,
+        config: Optional[EmbeddingConfig] = None,
         path: str = DEFAULT_EMBEDDINGS_PATH,
     ):
         super().__init__(model_name, config)

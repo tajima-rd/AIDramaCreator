@@ -18,7 +18,7 @@ history[-1].updated_atから分かるため、別途「最終更新日時」フ�
 """
 
 from enum import Enum
-from typing import Any
+from typing import Any, Optional
 
 from pydantic import BaseModel
 
@@ -67,8 +67,8 @@ class DatasetHistoryEntry(BaseModel):
 
 class DatasetColumnInfo(BaseModel):
     name: str
-    type: str | None = None
-    description: str | None = None
+    type: Optional[str] = None
+    description: Optional[str] = None
 
 
 class DatasetInfo(BaseModel):
@@ -79,22 +79,22 @@ class DatasetInfo(BaseModel):
     # Noneになりうるが、API層がアクセスの都度自動採番して登録し直す
     # (core.infra.store.dataset_registry_store.get_or_create_file_id)ため、実質的には
     # 一度でもAPI経由でアクセスされたDatasetは必ず持つ。
-    file_id: str | None = None
-    description: str | None = None
-    source: str | None = None
-    collected_at: str | None = None
+    file_id: Optional[str] = None
+    description: Optional[str] = None
+    source: Optional[str] = None
+    collected_at: Optional[str] = None
     tags: list[str] = []
-    notes: str | None = None
-    project_id: str | None = None
-    project_name: str | None = None
+    notes: Optional[str] = None
+    project_id: Optional[str] = None
+    project_name: Optional[str] = None
     # Datasetが属するドラマ(QIDMのDomainに相当する概念として検討中。docs/future_design.md)。
     # 作成時点のスナップショットで、ドラマの題が後から変わっても更新しない
-    drama_id: str | None = None
-    drama_title: str | None = None
+    drama_id: Optional[str] = None
+    drama_title: Optional[str] = None
     # このDatasetがどんな種類のデータか(DatasetCategory参照)。
     # provenance.process(機構: manually_registered/system_derived)とは別軸の分類。
     dataset_category: DatasetCategory = DatasetCategory.UNSPECIFIED
-    created_at: str | None = None
+    created_at: Optional[str] = None
     history: list[DatasetHistoryEntry] = []
 
 

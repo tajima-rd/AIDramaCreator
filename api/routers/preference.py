@@ -6,6 +6,8 @@
 他のリクエストを止めないようスレッドで実行する。
 """
 
+from typing import Optional
+
 from fastapi import APIRouter, HTTPException, Request
 from starlette.concurrency import run_in_threadpool
 
@@ -69,7 +71,7 @@ async def list_api_url_candidates(client: str):
 
 
 @router.get("/preferences/api-key")
-async def get_api_key(client: str, api_url: str | None = None):
+async def get_api_key(client: str, api_url: Optional[str] = None):
     return yaml_response(preference_api.get_api_key(client, api_url))
 
 

@@ -17,6 +17,7 @@ import binascii
 import io
 import os
 import zipfile
+from typing import Optional
 
 from core.infra.store.dataset_file_store import read_metadata as read_dataset_metadata
 from core.infra.store.dataset_registry_store import (
@@ -54,7 +55,7 @@ from core.service.process.edit.dataset_editor import (
 )
 
 
-def _dataset_drama_map(project_id: str) -> dict[str, str | None]:
+def _dataset_drama_map(project_id: str) -> dict[str, Optional[str]]:
     """dataset_registry(project.db)から、filename -> drama_idの対応を作る。"""
     project_db = resolve_layout(project_id).project_db_path
     return {

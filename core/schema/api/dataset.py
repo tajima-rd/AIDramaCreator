@@ -1,4 +1,6 @@
 # core/schema/api/dataset.py
+from typing import Optional
+
 from pydantic import BaseModel
 
 from core.schema.formats.dataset_metadata import (
@@ -11,8 +13,8 @@ class DatasetSummary(BaseModel):
     file_id: str  # filenameに依存しない不変の識別子(core.infra.store.dataset_registry_store)
     filename: str
     size_bytes: int
-    drama_id: str | None = None
-    dataset_category: DatasetCategory | None = None  # データメタデータYAMLのdataset.dataset_category(あれば)
+    drama_id: Optional[str] = None
+    dataset_category: Optional[DatasetCategory] = None  # データメタデータYAMLのdataset.dataset_category(あれば)
     file_format: str = "csv"  # データ本体の形式(拡張子から決まる。"csv"・"pdf"・"docx"・"xlsx"・"other")
 
 class DatasetListResult(BaseModel):
@@ -21,7 +23,7 @@ class DatasetListResult(BaseModel):
 class DatasetContent(BaseModel):
     file_id: str
     filename: str
-    drama_id: str | None
+    drama_id: Optional[str]
     csv: str
 
 class DatasetFileUploadRequest(BaseModel):
@@ -30,7 +32,7 @@ class DatasetFileUploadRequest(BaseModel):
 
     filename: str
     content_base64: str
-    dataset_category: DatasetCategory | None = None
+    dataset_category: Optional[DatasetCategory] = None
 
 
 class DatasetFileLocation(BaseModel):
@@ -47,10 +49,10 @@ class DatasetDeleteResult(BaseModel):
     filename: str
 
 class DatasetMetadataUpdateRequest(BaseModel):
-    description: str | None = None
-    source: str | None = None
-    collected_at: str | None = None
+    description: Optional[str] = None
+    source: Optional[str] = None
+    collected_at: Optional[str] = None
     tags: list[str] = []
-    notes: str | None = None
+    notes: Optional[str] = None
     columns: list[DatasetColumnInfo] = []
     message: str = ""

@@ -13,6 +13,7 @@ import csv
 import io
 import os
 from datetime import UTC, datetime
+from typing import Optional
 
 from core.infra.store.dataset_file_store import (
     read_metadata,
@@ -68,11 +69,11 @@ def save_dataset(
     filename: str,
     csv_text: str,
     *,
-    drama_id: str | None,
-    drama_title: str | None = None,
-    project_id: str | None = None,
-    project_name: str | None = None,
-    provenance: DatasetProvenance | None = None,
+    drama_id: Optional[str],
+    drama_title: Optional[str] = None,
+    project_id: Optional[str] = None,
+    project_name: Optional[str] = None,
+    provenance: Optional[DatasetProvenance] = None,
     dataset_category: DatasetCategory = DatasetCategory.UNSPECIFIED,
 ) -> tuple[str, str]:
     """
@@ -113,11 +114,11 @@ def save_file_dataset(
     filename: str,
     data: bytes,
     *,
-    drama_id: str | None,
-    drama_title: str | None = None,
-    project_id: str | None = None,
-    project_name: str | None = None,
-    provenance: DatasetProvenance | None = None,
+    drama_id: Optional[str],
+    drama_title: Optional[str] = None,
+    project_id: Optional[str] = None,
+    project_name: Optional[str] = None,
+    provenance: Optional[DatasetProvenance] = None,
     dataset_category: DatasetCategory = DatasetCategory.UNSPECIFIED,
 ) -> tuple[str, str]:
     """PDF等のバイナリのデータ本体を保存する(登録・サイドカーYAMLの扱いはsave_datasetと同じ。
@@ -144,11 +145,11 @@ def _register_with_metadata(
     datasets_dir: str,
     saved_filename: str,
     *,
-    drama_id: str | None,
-    drama_title: str | None,
-    project_id: str | None,
-    project_name: str | None,
-    provenance: DatasetProvenance | None,
+    drama_id: Optional[str],
+    drama_title: Optional[str],
+    project_id: Optional[str],
+    project_name: Optional[str],
+    provenance: Optional[DatasetProvenance],
     dataset_category: DatasetCategory,
     columns: list[DatasetColumnInfo],
 ) -> str:
@@ -196,9 +197,9 @@ def save_project_dataset(
     project_id: str,
     csv_text: str,
     label: str,
-    drama_id: str | None,
-    drama_title: str | None = None,
-    provenance: DatasetProvenance | None = None,
+    drama_id: Optional[str],
+    drama_title: Optional[str] = None,
+    provenance: Optional[DatasetProvenance] = None,
     dataset_category: DatasetCategory = DatasetCategory.UNSPECIFIED,
 ) -> tuple[str, str]:
     """
@@ -228,9 +229,9 @@ def save_project_file_dataset(
     project_id: str,
     data: bytes,
     label: str,
-    drama_id: str | None,
-    drama_title: str | None = None,
-    provenance: DatasetProvenance | None = None,
+    drama_id: Optional[str],
+    drama_title: Optional[str] = None,
+    provenance: Optional[DatasetProvenance] = None,
     dataset_category: DatasetCategory = DatasetCategory.UNSPECIFIED,
 ) -> tuple[str, str]:
     """save_file_dataset()の薄いラッパー(save_project_datasetのバイナリ版)。戻り値は(保存したファイル名, file_id)。"""
@@ -256,13 +257,13 @@ def update_editable_fields(
     file_id: str,
     project_id: str,
     project_name: str,
-    drama_id: str | None,
-    drama_title: str | None,
-    description: str | None,
-    source: str | None,
-    collected_at: str | None,
+    drama_id: Optional[str],
+    drama_title: Optional[str],
+    description: Optional[str],
+    source: Optional[str],
+    collected_at: Optional[str],
     tags: list[str],
-    notes: str | None,
+    notes: Optional[str],
     columns: list[DatasetColumnInfo],
     history_message: str = "",
 ) -> DatasetMetadata:

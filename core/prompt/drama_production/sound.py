@@ -4,7 +4,7 @@
 """
 
 from core.genai.prompt import BulletInstruction, Prompt, Section, TextBlock
-from core.model.drama import Transcript
+from core.schema.formats._legacy_drama import Transcript
 
 
 def generate_sound_drama_prompt(transcript: Transcript) -> str:
@@ -32,12 +32,12 @@ def generate_sound_drama_prompt(transcript: Transcript) -> str:
     # -----------------------------------------------------------------
     prompt_instance = Prompt(components=[
         
-        # ## "パーソナリティタイトル" と説明
+        # ## "パーソナリティタイトル" と説明(モデル定義YAMLの配役には無いので、無ければ名前だけ)
         Section(title=f"AUDIO PROFILE: {transcript.actor.character_name}", children=[
             Section(title=f'"{transcript.actor.personality_title}"', children=[
                 TextBlock(pers_desc)
             ]) if pers_desc else TextBlock(f'"{transcript.actor.personality_title}"')
-        ]),
+        ] if transcript.actor.personality_title else []),
 
         # 場面設定
         Section(title=f"THE SCENE: {transcript.context}", children=[

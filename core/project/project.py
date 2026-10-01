@@ -12,11 +12,12 @@
 ProjectLayoutをProjectから分けて定義する。
 
 QIDMから持ち込んだ暫定の形(docs/future_design.md「Projectの作り直し」)。現行の制作の流れ(main.py)は
-まだcore/model/project.pyのProjectを使う。
+まだcore/service/process/production/_legacy_project.pyのProjectを使う。
 """
 
 import os
 from dataclasses import dataclass
+from typing import Optional
 
 PROJECT_YAML_FILENAME = "project.yaml"
 # プロジェクトのSQLite(暫定。現状はDatasetの台帳だけを持つ。docs/future_design.md「SQLite」)
@@ -68,7 +69,7 @@ class LlmSetting:
 
     client: str
     model: str
-    api_url: str | None = None
+    api_url: Optional[str] = None
 
 
 @dataclass
@@ -80,7 +81,7 @@ class TtsSetting:
 
     client: str
     model: str
-    api_url: str | None = None
+    api_url: Optional[str] = None
 
 
 @dataclass
@@ -93,7 +94,7 @@ class EmbeddingSetting:
 
     client: str
     model: str
-    api_url: str | None = None
+    api_url: Optional[str] = None
 
 
 @dataclass
@@ -107,6 +108,6 @@ class Project:
     layout: ProjectLayout
     server_base_url: str = DEFAULT_SERVER_BASE_URL
     protocol_version: str = PROTOCOL_VERSION
-    llm: LlmSetting | None = None
-    tts: TtsSetting | None = None
-    embedding: EmbeddingSetting | None = None
+    llm: Optional[LlmSetting] = None
+    tts: Optional[TtsSetting] = None
+    embedding: Optional[EmbeddingSetting] = None

@@ -16,6 +16,7 @@
 
 import unicodedata
 from dataclasses import dataclass
+from typing import Optional, Union
 
 REPLACEMENT_CHARACTER = "�"
 ALLOWED_CONTROLS = frozenset("\t\n\r")
@@ -49,7 +50,7 @@ class CharacterIssue:
         return unicodedata.name(self.char, "")
 
 
-def script(char: str) -> str | None:
+def script(char: str) -> Optional[str]:
     """文字の種類(Unicodeの文字名の最初の語。ひらがな・カタカナはKANA)。文字でなければNone。"""
     if not unicodedata.category(char).startswith("L"):
         return None
@@ -65,7 +66,7 @@ def _is_common_punctuation(char: str) -> bool:
     return any(low <= code <= high for low, high in COMMON_PUNCTUATION_RANGES)
 
 
-def _blocking_reason(char: str) -> str | None:
+def _blocking_reason(char: str) -> Optional[str]:
     if char == REPLACEMENT_CHARACTER:
         return "unreadable"
     if char in ALLOWED_CONTROLS:
@@ -93,7 +94,7 @@ class Sources:
 
 
 def find_character_issues(
-    text: str, sources: Sources | None = None, accepted: frozenset[str] | set[str] = frozenset()
+    text: str, sources: Optional[Sources] = None, accepted: Union[frozenset[str], set[str]] = frozenset()
 ) -> list[CharacterIssue]:
     """textの疑わしい文字(同じ文字は1回、現れた順)。sourcesが無ければ文字の種類だけで判定する。
     acceptedの文字は出典との照合では疑わない(利用者が認めた記号。文字の種類の判定は外さない)。"""

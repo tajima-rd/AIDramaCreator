@@ -11,6 +11,8 @@
 どちらも資料の中身を答えさせるのではなく、検索の問いを作らせるだけ。分野の言葉は使わない。
 """
 
+from typing import Union
+
 from pydantic import BaseModel, Field
 
 from core.genai.prompt import BulletInstruction, Prompt, Section
@@ -79,7 +81,7 @@ def search_terms_prompt() -> Prompt:
     return Prompt(components=[Section(title="Task", children=[BulletInstruction(items=SEARCH_TERMS_INSTRUCTIONS)])])
 
 
-def search_terms_request(message: str, languages: list[str], looking_for: list[str] | tuple[str, ...] = ()) -> str:
+def search_terms_request(message: str, languages: list[str], looking_for: Union[list[str], tuple[str, ...]] = ()) -> str:
     looking = "\n".join(f"- {q}" for q in looking_for) or "(not specified)"
     return (
         f"## User's message\n{message}\n\n## Looked for in the current step\n{looking}\n\n"

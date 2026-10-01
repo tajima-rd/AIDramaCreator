@@ -5,6 +5,8 @@ OpenAI互換のサーバーへの問い合わせ(設定の入力補助): 使え�
 (genai.factory)が渡す。
 """
 
+from typing import Optional
+
 import requests
 
 # 埋め込み(embedding)専用のモデルは文章生成に使えないため、選択肢から除く(名前の一部)
@@ -21,7 +23,7 @@ def server_base_url(api_url: str, chat_path: str) -> str:
     return api_url
 
 
-def list_models(base_url: str, models_path: str, api_key: str | None = None, kind: str = "llm") -> list[str]:
+def list_models(base_url: str, models_path: str, api_key: Optional[str] = None, kind: str = "llm") -> list[str]:
     """サーバーのモデル一覧(OpenAI形式の{"data": [{"id": ...}]})からモデル名を名前順に返す。
 
     kindが"embedding"なら全てを返す(埋め込みのモデルは名前で見分けられるとは限らないため)。

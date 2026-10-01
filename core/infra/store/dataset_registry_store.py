@@ -17,6 +17,7 @@ QIDMではdomain.dbのテーブルだったものを、暫定的にproject.dbへ
 import os
 import sqlite3
 from datetime import UTC, datetime
+from typing import Optional
 
 from core.model.identifier import new_id
 
@@ -47,7 +48,7 @@ def ensure_schema(db_path: str) -> None:
         conn.close()
 
 
-def register_dataset(db_path: str, filename: str, drama_id: str | None) -> str:
+def register_dataset(db_path: str, filename: str, drama_id: Optional[str]) -> str:
     """
     dataset_registryへ(file_id, filename, drama_id)を記録し、そのfile_idを
     返す。同名ファイルが既に登録されていれば、そのfile_idを引き継いだ上で
@@ -93,7 +94,7 @@ def get_or_create_file_id(db_path: str, filename: str) -> str:
     return register_dataset(db_path, filename, None)
 
 
-def resolve_filename(db_path: str, file_id: str) -> str | None:
+def resolve_filename(db_path: str, file_id: str) -> Optional[str]:
     """file_idからfilenameを引く。見つからなければNone。"""
     ensure_schema(db_path)
     conn = sqlite3.connect(db_path)

@@ -11,6 +11,7 @@ AIDCの設定・キーの置き場所との橋渡しはここで行う。
 """
 
 import re
+from typing import Optional
 from urllib.parse import urlsplit
 
 from core.genai import (
@@ -37,7 +38,7 @@ GenaiSetting = LlmSetting | TtsSetting | EmbeddingSetting
 LOCAL_HOSTS = ("localhost", "127.0.0.1", "::1", "0.0.0.0")
 
 
-def api_key_name(client: str, api_url: str | None = None) -> str:
+def api_key_name(client: str, api_url: Optional[str] = None) -> str:
     """提供元と接続先から決まるAPIキーの名前(~/.aidc/secrets.envでの名前)。
 
     接続先のURLを持つ提供元はホスト(手元はLOCALHOST)と、URLに明記されたポートを含める
@@ -55,7 +56,7 @@ def api_key_name(client: str, api_url: str | None = None) -> str:
     return re.sub(r"[^A-Z0-9]+", "_", "_".join(parts).upper()).strip("_")
 
 
-def saved_api_key(setting: GenaiSetting) -> str | None:
+def saved_api_key(setting: GenaiSetting) -> Optional[str]:
     """保存済みのAPIキー(~/.aidc/secrets.env)を得る。必須の提供元で無ければValueError。"""
     name = api_key_name(setting.client, setting.api_url)
     api_key = secret_env_store.get_secret(name)
@@ -66,7 +67,7 @@ def saved_api_key(setting: GenaiSetting) -> str | None:
     return api_key
 
 
-def build_text_generator(project: Project, config: TextConfig | None = None) -> TextGenerator:
+def build_text_generator(project: Project, config: Optional[TextConfig] = None) -> TextGenerator:
     """プロジェクトの設定(Project.llm)から文章生成器を作る。"""
     setting = project.llm
     if setting is None:
@@ -76,7 +77,7 @@ def build_text_generator(project: Project, config: TextConfig | None = None) -> 
     )
 
 
-def build_speech_generator(project: Project, config: SpeechConfig | None = None) -> SpeechGenerator:
+def build_speech_generator(project: Project, config: Optional[SpeechConfig] = None) -> SpeechGenerator:
     """プロジェクトの設定(Project.tts)から音声合成器を作る。"""
     setting = project.tts
     if setting is None:
@@ -84,7 +85,7 @@ def build_speech_generator(project: Project, config: SpeechConfig | None = None)
     return create_speech_generator(setting.client, setting.model, api_key=saved_api_key(setting), config=config)
 
 
-def build_embedding_generator(project: Project, config: EmbeddingConfig | None = None) -> EmbeddingGenerator:
+def build_embedding_generator(project: Project, config: Optional[EmbeddingConfig] = None) -> EmbeddingGenerator:
     """プロジェクトの設定(Project.embedding)から埋め込みの生成器を作る。"""
     setting = project.embedding
     if setting is None:

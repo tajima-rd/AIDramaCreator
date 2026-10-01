@@ -9,6 +9,7 @@ ProjectLayoutが定義する。
 
 import os
 from dataclasses import asdict, fields
+from typing import Optional
 
 import yaml
 
@@ -52,7 +53,7 @@ def read_project(root_dir: str) -> Project:
     )
 
 
-def _setting_from_spec(cls, spec: dict | None):
+def _setting_from_spec(cls, spec: Optional[dict]):
     # 知らない項目は無視する(以前のapi_key_env等。APIキーの名前は今は提供元と接続先から決まる)。
     if not spec:
         return None

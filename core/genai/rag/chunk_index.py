@@ -16,6 +16,7 @@ import hashlib
 import json
 from dataclasses import dataclass, field, replace
 from pathlib import Path
+from typing import Optional, Union
 
 import numpy as np
 
@@ -29,7 +30,7 @@ def content_hash(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def normalized(vectors: list[list[float]] | np.ndarray) -> np.ndarray:
+def normalized(vectors: Union[list[list[float]], np.ndarray]) -> np.ndarray:
     """各行を長さ1にする(長さ0の行はそのまま)。"""
     array = np.asarray(vectors, dtype=np.float32)
     if array.ndim != 2:
@@ -43,8 +44,8 @@ class ChunkIndex:
     source: str
     chunks: list[Chunk]
     source_hash: str = ""
-    embedding_model: str | None = None
-    vectors: np.ndarray | None = field(default=None, repr=False)  # (断片の数, 次元)、各行の長さは1
+    embedding_model: Optional[str] = None
+    vectors: Optional[np.ndarray] = field(default=None, repr=False)  # (断片の数, 次元)、各行の長さは1
 
     def __post_init__(self) -> None:
         if (self.vectors is None) != (self.embedding_model is None):
@@ -66,7 +67,7 @@ class ChunkIndex:
         array = normalized(vectors) if self.chunks else np.zeros((0, 0), dtype=np.float32)
         return replace(self, embedding_model=embedder.model_name, vectors=array)
 
-    def save(self, path: str | Path) -> None:
+    def save(self, path: Union[str, Path]) -> None:
         meta = {
             "format_version": FORMAT_VERSION,
             "source": self.source,
@@ -83,7 +84,7 @@ class ChunkIndex:
             np.savez_compressed(f, meta=np.array(json.dumps(meta, ensure_ascii=False)), vectors=vectors)
 
     @classmethod
-    def load(cls, path: str | Path) -> "ChunkIndex":
+    def load(cls, path: Union[str, Path]) -> "ChunkIndex":
         with np.load(path, allow_pickle=False) as archive:
             meta = json.loads(str(archive["meta"]))
             vectors = archive["vectors"]

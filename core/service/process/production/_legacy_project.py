@@ -1,9 +1,15 @@
+# core/service/process/production/_legacy_project.py
+"""
+現行の制作の流れ(main.py)が使うProject(旧core/model/project.py)。ディレクトリの読み込みと生成器の保持を行う。
+Projectの作り直し(docs/future_design.md)で削除する。
+"""
+
 import os
 import yaml
 
 from typing import Optional, List, Dict, Any
 
-from core.model.drama import Actor, Scene, Transcript, GeminiVoice
+from core.schema.formats._legacy_drama import Actor, Scene, Transcript, GeminiVoice
 from core.genai import SpeechGenerator, TextGenerator
 
 class Project:

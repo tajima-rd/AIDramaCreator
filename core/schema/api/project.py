@@ -1,4 +1,6 @@
 # core/schema/api/project.py
+from typing import Optional
+
 from pydantic import BaseModel
 
 
@@ -18,7 +20,7 @@ class ProjectPropertiesUpdateRequest(BaseModel):
 
 class ProjectSaveAsRequest(BaseModel):
     path: str
-    name: str | None = None
+    name: Optional[str] = None
 
 class ProjectInfo(BaseModel):
     protocol_version: str
