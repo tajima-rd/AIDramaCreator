@@ -18,6 +18,13 @@ core/service/api は処理ロジック、ここは処理の結果として何が
 
 from core.schema.api import (
     AgentDefaultListResult,
+    AiBuildClearResult,
+    AiBuildMessageInfo,
+    AiBuildMessageListResult,
+    AiBuildProposalActionRequest,
+    AiBuildSendRequest,
+    AiBuildStepInfo,
+    AiBuildStepListResult,
     CharacterConflictCheckRequest,
     CharacterConflictCheckResult,
     CharacterImportRequest,
@@ -76,6 +83,13 @@ from core.schema.formats import (
 
 __all__ = [
     "AgentDefaultListResult",
+    "AiBuildClearResult",
+    "AiBuildMessageInfo",
+    "AiBuildMessageListResult",
+    "AiBuildProposalActionRequest",
+    "AiBuildSendRequest",
+    "AiBuildStepInfo",
+    "AiBuildStepListResult",
     "CharacterConflictCheckRequest",
     "CharacterConflictCheckResult",
     "CharacterImportRequest",

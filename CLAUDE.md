@@ -28,12 +28,12 @@
 | `core/model/` | `drama/`=作られる作品、`agent/`=作品作りに参加する者(クラスと属性のみ。[docs/model_design.md](docs/model_design.md))。純粋なモデルだけを置き、`core.model`の外をimportしない。`identifier.py`はUUIDの識別子(現行の制作の流れが使う旧来の原稿の型は`schema/formats/_legacy_drama.py`。制作の流れを新しいモデルへ移したら消す) |
 | `core/default/` | システム既定(`agents/`=エージェントの職能ごとの既定。正本。プロジェクトの作成時に`<プロジェクト>/user_default/`へ複製する) |
 | `core/project/` | プロジェクトの定義のみ: `Project`(project.yamlに対応する集約の根)・`ProjectLayout`(構成要素の所在)・`Dataset`。操作は`infra/store`・`service/process`にある(QIDM由来の暫定の形) |
-| `core/prompt/` | 用途ごとのプロンプトと、生成AIに返させる構造。生成AIは呼ばない。`drama_production/`=制作の流れの各工程、`reference_search.py`=資料の検索の問い、`character_import.py`=企画書の登場人物の取り込み、`agent_instruction.py`=エージェントの情報から指示の節を組み立てる共通の部品 |
+| `core/prompt/` | 用途ごとのプロンプトと、生成AIに返させる構造。生成AIは呼ばない。`drama_production/`=制作の流れの各工程、`reference_search.py`=資料の検索の問い、`character_import.py`=企画書の登場人物の取り込み、`agent_instruction.py`=エージェントの情報から指示の節を組み立てる共通の部品、`ai_build/`=Build with AIの工程(タブ)の対応表と工程ごとのプロンプト |
 | `core/genai/` | 生成AIの汎用ライブラリ(文章生成・構造化出力・音声合成・埋め込み・プロンプトの部品・`rag/`=資料の検索)。**他のプロジェクトでも使う独立したライブラリの候補なので、パッケージの外(`core.*`等)をimportしない**(Projectの設定・キーとの橋渡しは`core/service/process/genai/generator_builder.py`) |
 | `core/infra/io/` | 外部とやり取りするファイル形式との変換(`model_definition_*`=モデル定義YAML) |
 | `core/infra/store/` | 内部状態の永続化(`*_store`): project.yaml・プロジェクトのレジストリ(`~/.aidc/projects.yaml`)・APIキー(`~/.aidc/secrets.env`)・Datasetのファイルと台帳(`project.db`)・作品モデルの正本・版・下書き(`project.db`。[docs/database_design.md](docs/database_design.md)) |
 | `core/service/process/` | 内部の処理(フォルダは分野、ファイル名は「対象_役割」): `production/`=制作の流れの各工程、`edit/`=プロジェクト・設定・Datasetの手順、`genai/`=生成AIを使う処理 |
-| `core/service/api/` | システムの公開API。識別子(project_id・file_id)とschemaの型でやり取りし、`schema/api`・`api/routers`と同名のリソース単位(`project`・`preference`・`dataset`・`drama_model`・`drama_draft`)で構成する |
+| `core/service/api/` | システムの公開API。識別子(project_id・file_id)とschemaの型でやり取りし、`schema/api`・`api/routers`と同名のリソース単位(`project`・`preference`・`dataset`・`drama_model`・`drama_draft`・`agent_default`・`character_import`・`ai_build`)で構成する |
 | `core/schema/` | 契約(pydantic)。`api/`=公開APIのDTO、`formats/`=ディスクに残るファイル形式 |
 | `api/` | インターフェース: HTTP(FastAPI、要`requirements/api.txt`)。`main.py`はinclude_routerと共通の例外ハンドラ(Project/Datasetの不在→404)のみ、`routers/`はHTTPとschemaを橋渡しするだけ |
 | `apps/AIDC-Console/` | インターフェース: Web GUI(素のHTML/CSS/JS。APIサーバーが`/app/`で配信。[docs/architecture.md](docs/architecture.md) 8節) |

@@ -60,6 +60,14 @@
   具象は`gemini/`・`openai_compatible/`(llama.cpp・Ollama・Open WebUI)。提供元の違いは`factory.py`に集める。
 - 提供元の具象は任意の依存(google-genai等)を必要とするため、使うときに初めてimportする。
 - 音声合成は現状Geminiのみ(`SPEECH_CLIENTS`)。
+- **構造化出力の落とし穴**(2026-10-02、Gemini APIの`gemma-4-31b-it`で確認):
+  - Gemmaは、出力の形を`response_schema`で縛ると、文の途中から同じ語を繰り返して出力の上限まで止まらないことがある
+    (上限を決めていないと10分以上返らなかった)。Gemini用の生成器は、モデル名が`gemma`で始まるときは`response_schema`を渡さず、
+    JSONで返すことだけを指定し、形(JSON Schema)を指示の文に足す(`gemini/generator.py`の`schema_in_prompt`)。この形で約1分で正しく返った。
+  - JSONモードでもコードの囲み(```json … ```)を付けて返すモデルがあるので、構造化出力は最初の`{`から最後の`}`までを読み直す
+    (`generator.py`の`parse_structured`。Gemini・OpenAI互換の両方)。
+  - 生成AIを呼ぶ処理は、応答の長さに上限(`TextConfig.max_output_tokens`)を設け、繰り返しに陥っても上限で止めて
+    「途中で切れた」(`OutputTruncatedError`)と知らせる(Build with AIは8192)。
 
 ### 2.1 文章生成は作品作り用と作業補助用の2つ(2026-10-02ユーザー決定)
 
@@ -215,3 +223,37 @@
   - 取り込みの細部(2026-10-02ユーザー承認): 同じ人物の判断は名前の完全一致(前後の空白は無視)。取り込んだ人物は作品の登場人物の参照にも加える。
     結果は確認の画面を挟まずに下書きへ入れる(Undo・編集で直す)。生成AIはScriptwriterのタスク`import_proposal_character`(骨組み・統合)と
     `check_character_conflict`(矛盾の確認)で、どちらも作業補助。置き換えは識別子を保ち、経歴・人物関係は残す。
+
+## 10. Build with AI(生成AIと相談しながら作る。2026-10-02ユーザー決定)
+
+- **パネル**: Edit > Build with AI...(Treeで選んだ作品が対象)。QIDMのBuild Domain from Referencesと同じく、1つのパネルで
+  右側のタブ(工程)を切り替えながら進める(工程ごとに別のボタンやパネルを作らない)。左側に参照する資料とチャット、右側に工程のタブと
+  その内容のフォーム(直接直してSaveできる)。最初の工程はProposal(企画書)。
+- **今開いているタブ(工程)に、相談相手のエージェントとタスクが結び付く**。対応表はサーバーの1か所(`core/prompt/ai_build/step.py`の
+  `BUILD_STEPS`。QIDMの`STEP_PROMPTS`にあたる)。Proposal=Scriptwriterの`draft_proposal`。プロンプトの無い工程(Characters・Casting)は
+  タブを並べるが選べない。エージェントは作品のもの(Agentsタブの文面)を使い、いなければプロジェクトのユーザー既定から作る。
+  Systemはエージェントの節(`core/prompt/agent_instruction.py`)+工程の指示。生成AIはタスクの役割(`llm_role`)で選ぶ。
+- **2つのモード**: 対話(相談しながら、必要なときだけ変える項目を提案。生成AIが空で返した項目は変えない)と、
+  ワンショット下書き(要望・資料・今の内容から工程の内容を丸ごと提案。Applyすると丸ごと置き換わり、空の項目は消える)。
+- **応答の形**(QIDMと同じ): 返事・提案(工程の内容の全体を返させ、変わる部分をプログラムが部分YAMLにする)・根拠・質問・注意。
+  提案は必ず提案の欄に入れさせる(返事の文に書くだけにさせない)。構造化出力の項目はすべて必須にし、無い値は空文字で返させる。
+- **提案はApplyするまで作品に入らない**。Applyは編集用の下書き(Dramaturgy Editor・人物パネルと共通)に重ね、Undoは下書きの最後の変更が
+  その提案の反映であるときだけ戻す。確定はSave Version。
+- **会話は作品ごとに1本**で、各発言はどの工程での発言かを持つ。画面に出す会話と生成AIに渡す履歴は、今の工程の発言だけ。Clearは今の工程の
+  会話だけを消す。会話は`project.db`の`ai_build_message`(作品の正本は確定のたびに書き直すので、外部キーで結び付けない)。
+  生成AIの呼び出しに失敗したら何も記録しない(送り直せる)。読めない資料は400で、生成AIの失敗(502)と区別する。
+- **資料**: 生成AIがその種類をそのまま読めれば添付し、読めなければテキストにして本文に入れる(QIDMと同じ)。
+- 右側のフォームは、チャットの更新では描き直さない(Saveしていない入力を消さない)。Apply・Undo・Save・工程の切り替えで描き直す。
+- 企画書のフォームは、Dramaturgy EditorのProposalタブと共通の部品(`proposal_form.js`の`ProposalForm`)。
+- **人物の工程は3つのタブに分ける**(2026-10-02ユーザー決定): Characters(Scriptwriterの`create_character`。人物の一覧を作り、
+  まとまりと人物関係も大まかに作る)・Groups(`create_character_group`。まとまりの詳細を固める)・Relationships(`create_relationship`。
+  人物関係の詳細を固める)。詳細はタブを切り替えて固める。
+  - 人物・まとまり・関係はプロジェクト(世界観)のもの。生成AIには登録済みの人物・まとまり・関係と、作品の企画書・登場人物を渡す。
+  - 生成AIは識別子を決めず、要素を名前で指す(人物=名前、まとまり=名前、関係=起点・相手の人物と関係の名前)。同じ名前なら更新、無ければ追加。
+  - **生成AIには削除させない**(追加と更新だけ。ワンショットでも既存の要素は残す。削除は人物パネルで行う)。空の値では既存の値を消さない。
+  - Charactersの工程で出てきた人物は作品の登場人物に加え、新しい人物関係は作品の参照に加える。Charactersの工程のまとまりは
+    既存のメンバーを残して足し、Groupsの工程は返したメンバーで置き換える。いない人物を指すメンバー・関係は外して注意を返す。
+  - 経歴と人物関係の時期は扱わない(時期の設定が要る。企画書の取り込みと同じ)。
+  - 右側は人物パネル(Character Editor)の該当タブを埋め込む(`loadEmbedded`。ヘッダー・タブを隠し、編集用の下書きを共有する)。
+  - 提案の部分YAMLは`core/service/process/genai/ai_build_patch.py`、プロンプトは`core/prompt/ai_build/characters.py`。
+

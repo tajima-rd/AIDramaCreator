@@ -126,6 +126,22 @@ def test_generate_structured():
     assert call["contents"][0].parts[0].inline_data.mime_type == "application/pdf"
 
 
+def test_gemma_gets_schema_in_instruction_not_response_schema():
+    """Gemmaはresponse_schemaで縛らず(同じ語の繰り返しに陥るため)、JSONで返すことだけを指定し、形を指示の文で伝える。"""
+    gen = _text_generator(text='{"name": "x", "value": 1}')
+    gen.model_name = "gemma-4-31b-it"
+    assert gen.generate_structured("extract", _Schema, system_instruction="be brief") == _Schema(name="x", value=1)
+    config = gen.client.models.calls[0]["config"]
+    assert config.response_mime_type == "application/json" and config.response_schema is None
+    assert config.system_instruction.startswith("be brief") and '"value"' in config.system_instruction
+
+
+def test_structured_output_wrapped_in_code_fence_is_read():
+    """JSONモードでもコードの囲みや前置きを付けて返すモデルがあるので、最初の{から最後の}までを読む。"""
+    gen = _text_generator(text='```json\n{"name": "x", "value": 2}\n```')
+    assert gen.generate_structured("extract", _Schema) == _Schema(name="x", value=2)
+
+
 def test_generate_structured_truncated():
     """出力の上限で切れた(finish_reason=MAX_TOKENS)ら、不正なJSONの誤りではなくOutputTruncatedError。"""
     from google.genai import types

@@ -47,7 +47,12 @@
 - [ ] GUI: Dramaturgy EditorのCastingタブ(主役・脇役・配役の条件・Audition・Actor)。`Cast`・`Actor`のモデルの変更、`core/genai`の話者の一覧。
   [architecture.md](architecture.md) 9節
 - [x] 企画書のモデル(`Proposal`)とモデル定義YAML、Dramaturgy EditorのProposalタブ(2026-10-01)
-- [ ] GUI: 企画書を生成AIと作るパネル(QIDMのBuild Domain from Referencesと同じ構成。左に参考資料とチャット、右にタブ)
+- [x] GUI: Build with AI(生成AIと相談しながら作るパネル。Proposalの工程、対話とワンショット下書き。2026-10-02)
+- [x] Build with AIを本物の生成AIで確かめる(Gemma`gemma-4-31b-it`で、ワンショット・対話・質問。1回に約50秒。2026-10-02)
+- [ ] Build with AI: 利用者が「提案だけ聞かせて」と言っても、生成AIが企画書の変更を提案(proposal)してしまう(Applyしなければ入らないので実害は無い)。
+  指示を直すか(ユーザーと相談)
+- [x] Build with AIの人物の工程(Characters・Groups・Relationships。2026-10-02)
+- [ ] Build with AIの工程を足す(Casting=CastingDirectorの`assign_voice`等)
 - [x] 企画書のYAMLの読み込み(ProposalタブのImport from YAML。フォームに入れ、Saveで下書きへ。2026-10-01)
 - [ ] GUI: 準備の5項目(future_design.md「GUIで扱う制作の準備」)
 - [ ] GUIの検証の手順(QIDMの`.claude/skills/qidm-browser-verify/`を持ち込むか)

@@ -3,6 +3,7 @@
 Google Geminiによる文章生成・音声合成・埋め込み(genai.generatorの抽象の具象)。
 """
 
+import json
 from typing import Optional, Union
 
 from google import genai
@@ -23,6 +24,7 @@ from ..generator import (
     TextConfig,
     TextGenerator,
     instruction_text,
+    parse_structured,
     to_messages,
 )
 from ..prompt import Prompt
@@ -49,6 +51,23 @@ def build_contents(messages: list[Message]) -> list[types.Content]:
     ]
 
 
+def schema_in_prompt(model_name: str) -> bool:
+    """構造化出力で、形(JSON Schema)をresponse_schemaで縛らずに指示の文で伝えるモデルか。
+
+    Gemini APIのGemmaは、response_schemaで出力を縛ると、文の途中から同じ語を繰り返して出力の上限まで止まらないことがある
+    (2026-10-02、gemma-4-31b-itで企画書の応答の型を渡して確認。JSONで返すことだけを指定し、形を指示の文に書くと約1分で正しく返った)。
+    """
+    return model_name.lower().startswith("gemma")
+
+
+def schema_instruction(schema: type[StructuredT]) -> str:
+    """応答の形を指示の文で伝えるときの節。"""
+    return (
+        "# 出力の形\n次のJSON Schemaに合うJSONだけを返す(前後に説明やコードの囲みを付けない)。\n"
+        + json.dumps(schema.model_json_schema(), ensure_ascii=False)
+    )
+
+
 class GeminiTextGenerator(TextGenerator):
     def __init__(self, api_key: str, model_name: str = DEFAULT_TEXT_MODEL, config: Optional[TextConfig] = None):
         super().__init__(model_name, config)
@@ -64,6 +83,10 @@ class GeminiTextGenerator(TextGenerator):
         schema: Optional[type[StructuredT]] = None,
     ) -> types.GenerateContentConfig:
         c = self.config
+        instruction = instruction_text(system_instruction)
+        in_prompt = schema is not None and schema_in_prompt(self.model_name)
+        if in_prompt:
+            instruction = "\n\n".join(part for part in (instruction, schema_instruction(schema)) if part)
         return types.GenerateContentConfig(
             temperature=c.temperature,
             top_p=c.top_p,
@@ -74,9 +97,9 @@ class GeminiTextGenerator(TextGenerator):
                 if c.thinking_level is not None else None
             ),
             tools=[types.Tool(url_context=types.UrlContext())] if c.use_url_context else None,
-            system_instruction=instruction_text(system_instruction),
+            system_instruction=instruction,
             response_mime_type="application/json" if schema is not None else None,
-            response_schema=schema,
+            response_schema=None if in_prompt else schema,
             # Pythonの関数をツールとして渡さないため、自動の関数呼び出しは使わない
             automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
         )
@@ -113,7 +136,7 @@ class GeminiTextGenerator(TextGenerator):
             raise OutputTruncatedError(
                 "生成AIの出力が長さの上限に達して途中で切れました。送り直すと通ることがあります。"
             )
-        return schema.model_validate_json(response.text)
+        return parse_structured(response.text or "", schema)
 
 
 class GeminiSpeechGenerator(SpeechGenerator):

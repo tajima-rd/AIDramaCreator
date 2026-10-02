@@ -855,6 +855,27 @@ function actionOpenCharacterEditor() {
   mountCharacterEditor(state.project.project_id);
 }
 
+// Edit > Build with AI...: Treeで選んだ作品を、生成AIと相談しながら作るパネル(ai_build_panel.js)を開く。
+async function actionOpenAiBuild() {
+  if (!state.project) {
+    showToast("先にプロジェクトを開いてください", "error");
+    return;
+  }
+  if (!state.selectedDramaturgyId) {
+    showToast("先にTreeのDramaturgiesで作品を選択してください", "error");
+    return;
+  }
+  const mainArea = document.getElementById("main-area");
+  mainArea.innerHTML = "";
+  const panel = document.createElement("ai-build-panel");
+  panel.addEventListener("ai-build-saved", () => reloadGroupNode("dramaturgies"));
+  panel.addEventListener("ai-build-closed", () => {
+    mainArea.innerHTML = "";
+  });
+  mainArea.appendChild(panel);
+  await panel.load(state.project.project_id, state.selectedDramaturgyId);
+}
+
 // Edit > Dramaturgy Editor: Treeで選んだ作品を開く。
 function actionOpenDramaturgyEditor() {
   if (!state.project) {
@@ -901,6 +922,8 @@ function buildMenus() {
         { label: "New Dramaturgy...", action: actionNewDramaturgy },
         { label: "Dramaturgy Editor", action: actionOpenDramaturgyEditor },
         { label: "Character Editor", action: actionOpenCharacterEditor },
+        { separator: true },
+        { label: "Build with AI...", action: actionOpenAiBuild },
       ],
     },
     {

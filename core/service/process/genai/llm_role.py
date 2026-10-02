@@ -24,6 +24,8 @@ TASK_LLM_ROLES: dict[str, LlmRole] = {
     # Scriptwriter
     "draft_proposal": LlmRole.CREATIVE,
     "create_character": LlmRole.CREATIVE,
+    "create_character_group": LlmRole.CREATIVE,  # Build with AIのGroupsの工程(2026-10-02)
+    "create_relationship": LlmRole.CREATIVE,  # Build with AIのRelationshipsの工程(2026-10-02)
     "import_proposal_character": LlmRole.ASSISTIVE,  # 企画書の登場人物から骨組みを作る・統合する(2026-10-02)
     "check_character_conflict": LlmRole.ASSISTIVE,  # 登録済みの人物と企画書の矛盾を確かめる(2026-10-02)
     "write_synopsis": LlmRole.CREATIVE,

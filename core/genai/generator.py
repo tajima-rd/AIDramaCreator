@@ -20,7 +20,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Literal, Optional, TypeVar, Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from .prompt import Prompt
 
@@ -201,6 +201,22 @@ class EmbeddingGenerator(abc.ABC):
     @abc.abstractmethod
     def embed_texts(self, texts: list[str], purpose: EmbeddingPurpose) -> list[list[float]]:
         """提供元ごとの埋め込み(texts・戻り値は同じ順)。"""
+
+
+def parse_structured[T: BaseModel](text: str, schema: type[T]) -> T:
+    """構造化出力の文字列を、schemaで検証する。
+
+    提供元・モデルによっては、JSONモードでもJSONの前後にコードの囲み(```json … ```)や説明の文を付けて返す
+    (Gemini APIのGemma等)。そのまま読めなければ、最初の{から最後の}までを取り出して読み直す。
+    それでも合わなければpydantic.ValidationError。
+    """
+    try:
+        return schema.model_validate_json(text)
+    except ValidationError:
+        start, end = text.find("{"), text.rfind("}")
+        if start == -1 or end <= start:
+            raise
+        return schema.model_validate_json(text[start : end + 1])
 
 
 def instruction_text(system_instruction: Optional[Union[str, Prompt]]) -> Optional[str]:

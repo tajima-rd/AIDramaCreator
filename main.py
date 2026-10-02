@@ -69,7 +69,7 @@ def open_project(root_dir: str, with_generators: bool):
 
     # 生成AIの接続先。<root_dir>/project.yamlのgenai(creative_llm・tts)があればそれを、無ければ既定を使う(仮置き。
     # docs/model_design.md)。APIキーは~/.aidc/secrets.envに保存したもの(AIDC_GEMINI_API_KEY)を使う
-    llm_setting = LlmSetting(client="Gemini", model="gemini-3.5-flash")
+    llm_setting = LlmSetting(client="Gemini", model="gemma-4-31b-it")
     tts_setting = TtsSetting(client="Gemini", model="gemini-3.1-flash-tts-preview")
     if os.path.exists(os.path.join(root_dir, "project.yaml")):
         from core.infra.store.project_file_store import read_project

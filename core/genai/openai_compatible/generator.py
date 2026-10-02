@@ -24,6 +24,7 @@ from ..generator import (
     TextConfig,
     TextGenerator,
     instruction_text,
+    parse_structured,
     to_messages,
 )
 from ..prompt import Prompt
@@ -175,7 +176,7 @@ class OpenAiCompatibleTextGenerator(TextGenerator):
                 "思考が長すぎた可能性があります。送り直すと通ることがあります。続く場合はサーバーの文脈長"
                 "(llama.cppの-c)または出力の上限を大きくしてください。"
             )
-        return schema.model_validate_json(message.get("content") or "")
+        return parse_structured(message.get("content") or "", schema)
 
 
 class OpenAiCompatibleEmbeddingGenerator(EmbeddingGenerator):

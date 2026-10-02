@@ -15,6 +15,9 @@
  * - Relationships: 人物関係(誰から誰へ・ラベル・呼び方・口調・時期・説明)
  * 経歴・人物関係の時期は、下書きにある時期(temporal_nodes)から選ぶだけ(時期の編集の置き場所は保留)。
  * 他から参照されている人物・人物関係は削除せず、参照している所を示す(参照切れを作らない)。
+ *
+ * 埋め込み(loadEmbedded): Build with AIの右側で、決まったタブだけを出す(ヘッダー・タブは隠し、編集用の下書きは埋め込む側の
+ * EditorDraftを共有する)。編集したら"character-editor-edited"を出す(埋め込む側がSave Versionの表示を直すため)。
  */
 
 // 新しい要素を編集中であることを示す選択の値
@@ -62,6 +65,7 @@ customElements.define(
       this.selectedGroupId = null;
       this.selectedRelationshipId = null;
       this.relationshipFilter = ""; // 人物のkey(空ならすべて)
+      this.embedded = false; // 他のパネルに埋め込んで、決まったタブだけを出す
     }
 
     connectedCallback() {
@@ -81,6 +85,20 @@ customElements.define(
           this.dispatchEvent(new CustomEvent("character-editor-closed", { bubbles: true }));
           return;
         }
+        await this.reloadContent();
+      } catch (e) {
+        showApiError(e);
+      }
+    }
+
+    // 他のパネル(Build with AI)に埋め込む。draftは埋め込む側のEditorDraft、tabは出すタブ(characters・groups・relationships)
+    async loadEmbedded(projectId, draft, tab) {
+      this.embedded = true;
+      this.projectId = projectId;
+      this.draft = draft;
+      this.activeTab = tab;
+      this.importResults = {};
+      try {
         await this.reloadContent();
       } catch (e) {
         showApiError(e);
@@ -109,6 +127,7 @@ customElements.define(
     async edit(patch) {
       await this.draft.edit(patch);
       await this.reloadContent();
+      if (this.embedded) this.dispatchEvent(new CustomEvent("character-editor-edited", { bubbles: true }));
     }
 
     async withButtonBusy(button, label, fn) {
@@ -175,8 +194,12 @@ customElements.define(
     // ---------------------------------------------------------------
 
     render() {
-      this.renderHeader();
-      this.renderTabs();
+      this.querySelector("#ce-header").hidden = this.embedded;
+      this.querySelector("#ce-tabs").hidden = this.embedded;
+      if (!this.embedded) {
+        this.renderHeader();
+        this.renderTabs();
+      }
       this.renderBody();
     }
 
@@ -756,6 +779,7 @@ customElements.define(
             bodyObj: { dramaturgy_id: dramaturgy.id, name, mode: action },
           });
           this.draft.noteChange();
+          if (this.embedded) this.dispatchEvent(new CustomEvent("character-editor-edited", { bubbles: true }));
           delete this.importResults[name];
           const verb = { create: "登録しました", merge: "統合しました", replace: "置き換えました" }[action];
           showToast(`「${name}」を${verb}。内容を確かめてください(下書きに入りました。Save Versionで確定)`, "warn");

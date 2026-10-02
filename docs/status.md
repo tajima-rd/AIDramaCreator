@@ -101,6 +101,17 @@
   プロンプトは`core/prompt/character_import.py`、APIは`POST /projects/{id}/drama-drafts/{draft_id}/character-import`(と`/check`)。矛盾の理由は今は保存しない。
   headless Chromeで、手元のllama.cpp(Gemma 4 26B-A4B)による取り込み・矛盾の確認・キャンセル、名前だけの人物の追加、同名の拒否、まとまり・人物関係の表示、
   使われている人物関係の削除の拒否、Save Versionを確かめた(手元の生成AIでは1回に約3分かかった。[known_issues.md](known_issues.md))。
+- Build with AI(`ai_build_panel.js`、Edit > Build with AI...、2026-10-02): 生成AIと相談しながら作品を作るパネル([architecture.md](architecture.md) 10節)。
+  左に参照する資料・チャット(Dialogue/One-shot Draft)、右に工程のタブ(Proposal・Characters・Groups・Relationships。Castingは選べない)と
+  その内容(企画書のフォーム、人物パネルの該当タブを埋め込んだもの)。人物の工程(2026-10-02)は追加と更新だけで削除しない。
+  Gemma(`gemma-4-31b-it`)で、企画書から人物4人・まとまり・向きのある関係6つを作れることを確かめた(約90秒)。
+  提案は会話の中に変わる項目を出し、Apply・Undo。Clear・Save Version。会話は作品ごとに保存し、パネルを開き直すと続きから。
+  処理は`core/service/process/genai/ai_builder.py`、プロンプトは`core/prompt/ai_build/`、会話は`core/infra/store/ai_build_store.py`、
+  APIは`ai_build`(`GET /projects/{id}/ai-build/steps`、`GET|POST|DELETE .../ai-build/{工程}/messages`、`POST .../ai-build/messages/{id}/apply|undo`)。
+  企画書のフォームはDramaturgy Editorと共通(`proposal_form.js`)。headless Chromeで、生成AIを決まった応答に差し替えたサーバーにより、
+  対話・ワンショット・Apply・Undo・フォームの直接の保存・Save Version・開き直し・Clearを確かめた。
+- 文章生成の既定をGemma(Gemini APIの`gemma-4-31b-it`)にした(2026-10-02): `apps/sample_data/project.yaml`の`creative_llm`・`assistive_llm`と、
+  `main.py`の既定(project.yamlに設定が無いとき)。GUIで作った新しいプロジェクトには既定が無い(Generative AIタブで設定する)。
 - 文章生成の設定の分離(2026-10-02): Generative AIタブで、作品作り(Creative LLM)と作業補助(Assistive LLM)を別々に設定する
   (`project.yaml`の`genai.creative_llm`・`assistive_llm`。タスクとの対応は`core/service/process/genai/llm_role.py`。[architecture.md](architecture.md) 2.1節)。
   headless Chromeで、Assistive LLMに手元のllama.cpp(`localhost:8080`)を選ぶ→URLの自動検出→モデル一覧→接続テスト→保存を確かめた。
@@ -124,4 +135,4 @@
   - `preference`: 生成AIの設定・APIキー・接続確認・モデル一覧・接続先の候補
   - `dataset`: 一覧・PDF/DOCX/XLSXの追加・中身とファイルの取得・メタデータの参照と更新・削除。
     ドラマへの割り当ては無い(常に未割当。[future_design.md](future_design.md)「Drama」)
-- テスト(`tests/`、`.venv/bin/python -m pytest`): 170件が通り、3件がskip(2026-10-02)。skipは参考資料のサンプルが無いため([open_tasks.md](open_tasks.md))。
+- テスト(`tests/`、`.venv/bin/python -m pytest`): 187件が通り、3件がskip(2026-10-02)。skipは参考資料のサンプルが無いため([open_tasks.md](open_tasks.md))。

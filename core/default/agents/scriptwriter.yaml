@@ -22,7 +22,17 @@ dramaturgy:
         prohibitions: []
       - code: create_character
         title: 人物を作る
-        description: 企画書とあらすじから、人物(人物像・経歴・人物関係)を作る。
+        description: 企画書とプロジェクトの人物から、この作品の人物の一覧(読み・性別・年齢・話し方・人物像の特徴)を作る。人物のまとまりと人物関係も大まかに作る。
+        rules: []
+        prohibitions: []
+      - code: create_character_group
+        title: 人物のまとまりを作る
+        description: 人物のまとまり(家族・職場等)の名前・種類・説明・メンバーを固める。
+        rules: []
+        prohibitions: []
+      - code: create_relationship
+        title: 人物関係を作る
+        description: 人物関係(誰から誰へ・関係の名前・説明・呼び方・口調)を固める。
         rules: []
         prohibitions: []
       - code: import_proposal_character

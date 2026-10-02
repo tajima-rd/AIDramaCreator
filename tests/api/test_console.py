@@ -17,5 +17,7 @@ def test_console_scripts_are_served(client):
         "/app/static/project_genai_tab.js",
         "/app/static/data_viewer_panel.js",
         "/app/static/dramaturgy_editor_panel.js",
+        "/app/static/proposal_form.js",
+        "/app/static/ai_build_panel.js",
     ):
         assert client.get(path).status_code == 200, path
