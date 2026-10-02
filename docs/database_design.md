@@ -86,7 +86,8 @@ QIDMのdraftsにあった根拠(evidence)・会話(conversation)は、対話方�
 | テーブル | 列 |
 | --- | --- |
 | `temporal_node` | id・label・date_type・string_date |
-| `location` | id・name・latitude・longitude・address・instruction・description |
+| `location` | fid(整数の主キー)・id(一意)・name・geom(形。GeoPackageのBLOB)・address・instruction・description |
+| `site_flow` | fid(整数の主キー)・id(一意)・name・geom(線)・direction・origin_id→location・destination_id→location |
 | `character` | id・name・reading・gender・age・speech_first_person・speech_tone・speech_description |
 | `sentence_ending` ⊂character | character_id・sort_order・kind・examples(JSONの配列)・description |
 | `characteristic` ⊂character | character_id・sort_order・item・definition・description |
@@ -97,17 +98,29 @@ QIDMのdraftsにあった根拠(evidence)・会話(conversation)は、対話方�
 | `dramaturgy` | id・sort_order・title・synopsis・input_language・output_language・premise_text |
 | `proposal` ⊂dramaturgy | dramaturgy_id(作品ごとに1行)・title・catchphrase・logline・intent・target_area・synopsis |
 | `proposal_character` ⊂proposal | dramaturgy_id・sort_order・name・description |
-| `agent` ⊂dramaturgy | id・dramaturgy_id・sort_order・kind(職能。YAMLの区画名の単数形)・name・role・persona・rules・prohibitions(JSONの文字列の一覧)・casting_id(Actorだけ。ID参照で制約なし)・voice_name |
+| `agent` ⊂dramaturgy | id・dramaturgy_id・sort_order・kind(職能。YAMLの区画名の単数形)・name・role・persona・rules・prohibitions(JSONの文字列の一覧)・casting_id(Actorだけ。ID参照で制約なし)・voice_name・tts_provider・tts_model |
 | `agent_task` ⊂agent | agent_id・sort_order・code・title・description・rules・prohibitions(JSON) |
 | `temporal_edge` ⊂dramaturgy | id・dramaturgy_id・sort_order・label・kind・source_id・target_id→temporal_node |
-| `cast` ⊂dramaturgy | id・dramaturgy_id・sort_order・character_id・performance_title・performance_description・performance_pace・voice_gender・language・accent |
+| `cast` ⊂dramaturgy | id・dramaturgy_id・sort_order・character_id・performance_title・performance_description・performance_pace・voice_gender・language・accent・billing |
 | `act` ⊂dramaturgy | id・dramaturgy_id・sort_order・title・synopsis |
 | `scene` ⊂act | id・act_id・sort_order・title・synopsis・period_id・location_id・situation_location_id・situation_description・situation_time_of_day・situation_environment |
 | `line` ⊂scene | id・scene_id・sort_order・cast_id→cast・text |
 | `script_element` ⊂scene | id・scene_id・sort_order・kind(dialogue / sound_effect / atmosphere / music)・Dialogueの列(line_id・cast_id・text・action・direction_style・direction_pace・direction_dynamics・direction_emotion・direction_pause_after・translated_text・has_situation・situation_location_id・situation_description・situation_time_of_day・situation_environment) |
 
 多対多(中間テーブル。並びを持つものは`sort_order`付き):
-`dramaturgy_character`・`dramaturgy_relationship`・`character_group_member`・`biography_relationship`。
+`dramaturgy_character`・`dramaturgy_relationship`・`dramaturgy_location`・`dramaturgy_site_flow`・`character_group_member`・`biography_relationship`。
+
+### GeoPackage(2026-10-02ユーザー決定)
+
+project.dbはGeoPackage(1.4)としても読める(`core/gis/io/geopackage.py`)。`location`・`site_flow`は形の列`geom`を持つ地物の表で、
+QGIS等でそのまま開ける(GDALは拡張子が`.gpkg`でないという警告を出すが開ける)。
+
+- GeoPackageの印(`application_id`・`user_version`)と管理の表(`gpkg_spatial_ref_sys`・`gpkg_contents`・`gpkg_geometry_columns`)を作る。
+  `gpkg_contents`に載せるのは`location`(形の種類はGEOMETRY)と`site_flow`(LINESTRING)だけで、ほかの表はGISの道具から見えない。座標系はWGS84(EPSG:4326)。
+- GeoPackageは地物の表に整数の主キーを求めるので、この2つは`fid`を主キーにし、識別子`id`は一意の列にする(他の表は`id`を参照する)。
+- 空間索引(R-tree)は付けない(GDALが作る索引のトリガーはSpatiaLiteの関数を使い、標準の`sqlite3`から書けなくなるため)。
+- モデルは形をWKTで持ち、BLOB(ヘッダー+WKB)との変換は`shapely`で行う。
+- QGISで直した形を正本に入れる経路は、KML・GeoPackageの取り込み(Import)・書き出し(Export)にする(下書きと版を通す。取り込みは実装済み、書き出しは保留。[architecture.md](architecture.md) 7節)。
 
 ### 値オブジェクト・継承の扱い
 
@@ -138,6 +151,9 @@ QIDMのdraftsにあった根拠(evidence)・会話(conversation)は、対話方�
 | POST `/drama-drafts/{draft_id}/edit`(本文=部分YAML) | `drama_draft.edit_draft` | 履歴の番号 |
 | POST `/drama-drafts/{draft_id}/import`(本文=YAML、`?replace=`) | `drama_draft.import_yaml` | 履歴の番号 |
 | POST `/drama-drafts/{draft_id}/import-path`(`path`・`replace`) | `drama_draft.import_path` | 履歴の番号 |
+| POST `/drama-drafts/{draft_id}/import-geodata`(`dramaturgy_id`・`filename`・`content_base64`) | `drama_draft.import_geodata` | 履歴の番号・件数・補助情報のDataset |
+| GET `/drama-drafts/{draft_id}/map`(`?dramaturgy_id=`) | `drama_draft.get_map` | 作品の場所・移動(形はGeoJSON)・補助情報の層 |
+| POST `/drama-drafts/{draft_id}/map`(`dramaturgy_id`・`locations`・`site_flows`) | `drama_draft.save_map` | 履歴の番号・件数 |
 | POST `/drama-drafts/{draft_id}/undo` | `drama_draft.undo` | 履歴の番号 |
 | POST `/drama-drafts/{draft_id}/confirm`(`note`) | `drama_draft.confirm_draft` | 版の番号 |
 | POST `/drama-drafts/{draft_id}/discard` | `drama_draft.discard_draft` | 下書きの管理情報 |

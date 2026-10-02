@@ -20,12 +20,13 @@ from core.project.project import ProjectLayout
 METADATA_SUFFIX = ".yaml"
 
 # 拡張子 → データ本体の形式。ここに無い拡張子は"other"(一覧には出るが、表示・分析はできない)
-FILE_FORMATS = {".csv": "csv", ".pdf": "pdf", ".docx": "docx", ".xlsx": "xlsx"}
+FILE_FORMATS = {".csv": "csv", ".pdf": "pdf", ".docx": "docx", ".xlsx": "xlsx", ".gpkg": "gpkg"}
 MEDIA_TYPES = {
     "csv": "text/csv",
     "pdf": "application/pdf",
     "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "gpkg": "application/geopackage+sqlite3",  # 場所の地図の補助情報(地図の取り込みが作る。2026-10-02)
 }
 # ブラウザの中で表示できる形式(それ以外はダウンロードさせる)
 INLINE_FORMATS = ("csv", "pdf")

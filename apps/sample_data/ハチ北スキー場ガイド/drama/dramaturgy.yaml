@@ -1,5 +1,6 @@
 # 企画書「ハチ北 Locatone スキーガイド（仮）」(ユーザー提供のテキスト、2026-10-01)をモデル定義YAMLにしたもの。
 # 企画書は作品の初期シードで、題・あらすじ・登場人物は作品(dramaturgy)とは共有しない。作品の幕・人物等はまだ無い。
+# 作品で使う場所・移動(locations・site_flows)は参照で持つ(実体は同じディレクトリのlocations.yaml)。
 # idは uuid5(NAMESPACE_URL, "aidc:sample_data:ハチ北スキー場ガイド:<key>") で、作り直しても変わらない。
 protocol_version: 0.1.0
 dramaturgy:
@@ -8,6 +9,8 @@ dramaturgy:
   title: ハチ北スキー場ガイド
   input_language: ja
   output_language: ja
+  locations: [{ref: location_001}, {ref: location_002}, {ref: location_003}, {ref: location_004}, {ref: location_005}, {ref: location_006}, {ref: location_007}, {ref: location_008}, {ref: location_009}, {ref: location_010}, {ref: location_011}]
+  site_flows: [{ref: site_flow_001}, {ref: site_flow_002}, {ref: site_flow_003}, {ref: site_flow_004}, {ref: site_flow_005}, {ref: site_flow_006}, {ref: site_flow_007}]
   proposal:
     title: ハチ北 Locatone スキーガイド（仮）
     catchphrase: スキー場をスムーズに案内し、家族に父としてのカッコよさをアピールしよう

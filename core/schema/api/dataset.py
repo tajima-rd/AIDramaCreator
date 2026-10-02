@@ -15,7 +15,7 @@ class DatasetSummary(BaseModel):
     size_bytes: int
     drama_id: Optional[str] = None
     dataset_category: Optional[DatasetCategory] = None  # データメタデータYAMLのdataset.dataset_category(あれば)
-    file_format: str = "csv"  # データ本体の形式(拡張子から決まる。"csv"・"pdf"・"docx"・"xlsx"・"other")
+    file_format: str = "csv"  # データ本体の形式(拡張子から決まる。"csv"・"pdf"・"docx"・"xlsx"・"gpkg"・"other")
 
 class DatasetListResult(BaseModel):
     datasets: list[DatasetSummary]

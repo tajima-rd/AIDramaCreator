@@ -67,8 +67,7 @@ LOCATIONS = """
 locations:
   - key: lighthouse
     name: 灯台
-    latitude: 34.6
-    longitude: 135.0
+    geometry: POINT (135 34.6)
 """
 
 CHARACTERS = """
@@ -154,8 +153,7 @@ temporal_nodes:
 locations:
   - key: lighthouse
     name: 灯台
-    latitude: 34.6
-    longitude: 135.0
+    geometry: POINT (135 34.6)
 relationships:
   - key: taro_father
     source: {ref: taro}

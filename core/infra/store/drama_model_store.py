@@ -14,6 +14,8 @@ write_modelは、すべての行を消してから書き直す(コミットし�
 - sort_orderは、Act・Scene・Line・ScriptElementではモデルのorder、それ以外は一覧の中の位置。並びの無い一覧(人物・場所等)は
   書いた順(rowid)に読む。
 - Character.relationshipsは保存しない(人物関係を組み立てるとそろう)。
+- 場所(location)・移動(site_flow)は形の列(geom)を持つGeoPackageの地物の表(core.gis.io.geopackage。2026-10-02)。
+  GeoPackageは地物の表に整数の主キーを求めるので、この2つはfid(整数)を主キーにし、識別子(id)は一意の列にする。
 - エージェント(core.model.agent。作品が所有する)は1テーブル+職能の列(kind)。rules・prohibitions(文字列の一覧)はJSONの列、
   タスクはagent_task(並び順はタスクの並び。codeで特定)。Actor.casting_idはID参照なので外部キーの制約を付けない。
 """
@@ -22,6 +24,7 @@ import json
 import sqlite3
 from typing import Any, Optional
 
+from core.gis.io.geopackage import decode_geometry, encode_geometry, ensure_geopackage
 from core.infra.io.model_definition_reader import ModelDefinition
 from core.model.agent import Actor, AgentTask, BaseAgent
 from core.model.agent.factory import AGENT_ROLES, build_actor, build_agent
@@ -62,6 +65,7 @@ from core.model.drama.factory import (
     build_plain_element,
     build_relationship,
     build_scene,
+    build_site_flow,
     build_temporal_edge,
     build_temporal_node,
 )
@@ -74,13 +78,22 @@ CREATE TABLE IF NOT EXISTS temporal_node (
     string_date TEXT
 );
 CREATE TABLE IF NOT EXISTS location (
-    id TEXT PRIMARY KEY,
+    fid INTEGER PRIMARY KEY AUTOINCREMENT,
+    id TEXT NOT NULL UNIQUE,
     name TEXT NOT NULL,
-    latitude REAL,
-    longitude REAL,
+    geom BLOB,
     address TEXT,
     instruction TEXT,
     description TEXT
+);
+CREATE TABLE IF NOT EXISTS site_flow (
+    fid INTEGER PRIMARY KEY AUTOINCREMENT,
+    id TEXT NOT NULL UNIQUE,
+    name TEXT,
+    geom BLOB,
+    direction TEXT,
+    origin_id TEXT NOT NULL REFERENCES location(id),
+    destination_id TEXT NOT NULL REFERENCES location(id)
 );
 CREATE TABLE IF NOT EXISTS character (
     id TEXT PRIMARY KEY,
@@ -172,7 +185,9 @@ CREATE TABLE IF NOT EXISTS agent (
     rules TEXT NOT NULL,
     prohibitions TEXT NOT NULL,
     casting_id TEXT,
-    voice_name TEXT
+    voice_name TEXT,
+    tts_provider TEXT,
+    tts_model TEXT
 );
 CREATE TABLE IF NOT EXISTS agent_task (
     agent_id TEXT NOT NULL REFERENCES agent(id) ON DELETE CASCADE,
@@ -210,7 +225,8 @@ CREATE TABLE IF NOT EXISTS "cast" (
     performance_pace TEXT,
     voice_gender TEXT,
     language TEXT,
-    accent TEXT
+    accent TEXT,
+    billing TEXT
 );
 CREATE TABLE IF NOT EXISTS act (
     id TEXT PRIMARY KEY,
@@ -272,6 +288,18 @@ CREATE TABLE IF NOT EXISTS dramaturgy_relationship (
     sort_order INTEGER NOT NULL,
     PRIMARY KEY (dramaturgy_id, relationship_id)
 );
+CREATE TABLE IF NOT EXISTS dramaturgy_location (
+    dramaturgy_id TEXT NOT NULL REFERENCES dramaturgy(id) ON DELETE CASCADE,
+    location_id TEXT NOT NULL REFERENCES location(id) ON DELETE CASCADE,
+    sort_order INTEGER NOT NULL,
+    PRIMARY KEY (dramaturgy_id, location_id)
+);
+CREATE TABLE IF NOT EXISTS dramaturgy_site_flow (
+    dramaturgy_id TEXT NOT NULL REFERENCES dramaturgy(id) ON DELETE CASCADE,
+    site_flow_id TEXT NOT NULL REFERENCES site_flow(id) ON DELETE CASCADE,
+    sort_order INTEGER NOT NULL,
+    PRIMARY KEY (dramaturgy_id, site_flow_id)
+);
 CREATE TABLE IF NOT EXISTS character_group_member (
     character_group_id TEXT NOT NULL REFERENCES character_group(id) ON DELETE CASCADE,
     character_id TEXT NOT NULL REFERENCES character(id) ON DELETE CASCADE,
@@ -290,6 +318,8 @@ CREATE TABLE IF NOT EXISTS biography_relationship (
 _TABLES = (
     "biography_relationship",
     "character_group_member",
+    "dramaturgy_site_flow",
+    "dramaturgy_location",
     "dramaturgy_relationship",
     "dramaturgy_character",
     "script_element",
@@ -310,6 +340,7 @@ _TABLES = (
     "characteristic",
     "sentence_ending",
     "character",
+    "site_flow",
     "location",
     "temporal_node",
 )
@@ -330,8 +361,9 @@ _ELEMENT_KINDS: dict[type[ScriptElement], str] = {
 
 
 def ensure_schema(conn: sqlite3.Connection) -> None:
-    """作品のテーブルが無ければ作る。"""
+    """作品のテーブルが無ければ作る。場所・移動の表はGeoPackageの地物の表として登録する。"""
     conn.executescript(_SCHEMA)
+    ensure_geopackage(conn, {"location": ("geom", "GEOMETRY"), "site_flow": ("geom", "LINESTRING")})
 
 
 def _insert(conn: sqlite3.Connection, table: str, values: dict[str, Any]) -> None:
@@ -385,11 +417,23 @@ def write_model(conn: sqlite3.Connection, definition: ModelDefinition) -> None:
             {
                 "id": location.id,
                 "name": location.name,
-                "latitude": location.latitude,
-                "longitude": location.longitude,
+                "geom": encode_geometry(location.geometry),
                 "address": location.address,
                 "instruction": location.instruction,
                 "description": location.description,
+            },
+        )
+    for flow in definition.site_flows:
+        _insert(
+            conn,
+            "site_flow",
+            {
+                "id": flow.id,
+                "name": flow.name,
+                "geom": encode_geometry(flow.geometry),
+                "direction": _enum(flow.direction),
+                "origin_id": flow.origin.id,
+                "destination_id": flow.destination.id,
             },
         )
     for character in definition.characters:
@@ -566,6 +610,18 @@ def _write_dramaturgy(conn: sqlite3.Connection, dramaturgy: Dramaturgy, index: i
                 "sort_order": position,
             },
         )
+    for position, location in enumerate(dramaturgy.locations):
+        _insert(
+            conn,
+            "dramaturgy_location",
+            {"dramaturgy_id": dramaturgy.id, "location_id": location.id, "sort_order": position},
+        )
+    for position, flow in enumerate(dramaturgy.site_flows):
+        _insert(
+            conn,
+            "dramaturgy_site_flow",
+            {"dramaturgy_id": dramaturgy.id, "site_flow_id": flow.id, "sort_order": position},
+        )
     for position, edge in enumerate(dramaturgy.history.edges):
         _insert(
             conn,
@@ -595,6 +651,7 @@ def _write_dramaturgy(conn: sqlite3.Connection, dramaturgy: Dramaturgy, index: i
                 "voice_gender": _enum(cast.voice_gender),
                 "language": cast.language,
                 "accent": cast.accent,
+                "billing": _enum(cast.billing),
             },
         )
     for act in dramaturgy.acts:
@@ -714,6 +771,8 @@ def _write_agent(
             "prohibitions": json.dumps(agent.prohibitions, ensure_ascii=False),
             "casting_id": agent.casting_id if is_actor else None,
             "voice_name": agent.voice_name if is_actor else None,
+            "tts_provider": agent.tts_provider if is_actor else None,
+            "tts_model": agent.tts_model if is_actor else None,
         },
     )
     for order, task in enumerate(agent.tasks):
@@ -758,7 +817,13 @@ def _read_agents(conn: sqlite3.Connection, dramaturgy_id: str) -> list[BaseAgent
         )
         if row["kind"] == "actor":
             agent = build_actor(
-                row["casting_id"], row["name"], row["voice_name"], *common, id=row["id"]
+                row["casting_id"],
+                row["name"],
+                row["voice_name"],
+                row["tts_provider"],
+                row["tts_model"],
+                *common,
+                id=row["id"],
             )
         else:
             agent = build_agent(row["kind"], row["name"], *common, id=row["id"])
@@ -801,14 +866,24 @@ def read_model(conn: sqlite3.Connection) -> ModelDefinition:
     locations = {
         row["id"]: build_location(
             row["name"],
-            row["latitude"],
-            row["longitude"],
+            decode_geometry(row["geom"]),
             row["address"],
             row["instruction"],
             row["description"],
             id=row["id"],
         )
-        for row in _rows(conn, "SELECT * FROM location ORDER BY rowid")
+        for row in _rows(conn, "SELECT * FROM location ORDER BY fid")
+    }
+    site_flows = {
+        row["id"]: build_site_flow(
+            locations[row["origin_id"]],
+            locations[row["destination_id"]],
+            row["direction"],
+            decode_geometry(row["geom"]),
+            row["name"],
+            id=row["id"],
+        )
+        for row in _rows(conn, "SELECT * FROM site_flow ORDER BY fid")
     }
 
     endings = _grouped(
@@ -911,7 +986,7 @@ def read_model(conn: sqlite3.Connection) -> ModelDefinition:
         )
 
     dramaturgies = [
-        _read_dramaturgy(conn, row, characters, relationships, nodes, locations)
+        _read_dramaturgy(conn, row, characters, relationships, nodes, locations, site_flows)
         for row in _rows(conn, "SELECT * FROM dramaturgy ORDER BY sort_order")
     ]
     return ModelDefinition(
@@ -921,6 +996,7 @@ def read_model(conn: sqlite3.Connection) -> ModelDefinition:
         character_groups,
         list(nodes.values()),
         list(locations.values()),
+        list(site_flows.values()),
     )
 
 
@@ -931,6 +1007,7 @@ def _read_dramaturgy(
     relationships: dict[str, Relationship],
     nodes: dict[str, TemporalNode],
     locations: dict[str, Any],
+    site_flows: dict[str, Any],
 ) -> Dramaturgy:
     dramaturgy_id = row["id"]
     history = History(
@@ -960,6 +1037,7 @@ def _read_dramaturgy(
             cast["voice_gender"],
             cast["language"],
             cast["accent"],
+            cast["billing"],
             id=cast["id"],
         )
         for cast in _rows(
@@ -1037,6 +1115,22 @@ def _read_dramaturgy(
         history,
         _read_proposal(conn, dramaturgy_id),
         _read_agents(conn, dramaturgy_id),
+        [
+            locations[item["location_id"]]
+            for item in _rows(
+                conn,
+                "SELECT * FROM dramaturgy_location WHERE dramaturgy_id = ? ORDER BY sort_order",
+                dramaturgy_id,
+            )
+        ],
+        [
+            site_flows[item["site_flow_id"]]
+            for item in _rows(
+                conn,
+                "SELECT * FROM dramaturgy_site_flow WHERE dramaturgy_id = ? ORDER BY sort_order",
+                dramaturgy_id,
+            )
+        ],
         id=dramaturgy_id,
     )
 

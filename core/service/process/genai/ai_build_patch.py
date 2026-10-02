@@ -7,11 +7,17 @@ Build with AIの生成AIの提案を、編集用の下書きへ重ねる部分YA
 - 人物・まとまり・人物関係(Characters・Groups・Relationships): 追加と更新だけで、削除はしない。既存の要素は名前で対応付ける
   (人物=名前、まとまり=名前、人物関係=起点・相手の人物と関係の名前)。空の値では既存の値を消さない。名前の分からない人物を
   指すメンバー・関係は外して、注意として返す。Charactersの工程で出てきた人物と、新しく作った人物関係は、作品の参照にも加える
+- 配役(Casting): 追加と更新だけ。配役は人物の名前で対応付ける(作品の配役のうち、その人物のもの)。空の値では既存の値を消さない。
+  いない人物の配役・決まりに無い値(役の重さ・声の性別)は外して注意を返す。配役した人物は作品の登場人物の参照にも加える
+- 声(Audition): 配役ごとに演者(Actor)の話者・音声合成の提供元・モデルを決める。演者がいなければ作る。声の一覧に無い声・
+  配役の無い人物は外して注意を返す
 """
 
 from typing import Any, Optional
 
-from core.model.drama import Dramaturgy
+from core.genai import VoiceInfo
+from core.model.drama import CastBilling, Dramaturgy, VoiceGender
+from core.prompt.ai_build.casting import BILLING_LABELS, CastDraft, VoiceChoice
 from core.prompt.ai_build.characters import CharacterDraft, GroupDraft, RelationshipDraft
 from core.prompt.ai_build.common import BuildMode
 from core.prompt.ai_build.proposal import ProposalReply
@@ -20,6 +26,8 @@ from core.prompt.ai_build.proposal import ProposalReply
 NEW_CHARACTER_KEY = "ai_character_"
 NEW_GROUP_KEY = "ai_group_"
 NEW_RELATIONSHIP_KEY = "ai_relationship_"
+NEW_CAST_KEY = "ai_cast_"
+NEW_ACTOR_KEY = "ai_actor_"
 
 
 class PatchOutcome:
@@ -309,3 +317,143 @@ def world_patch(
     world.add_groups(groups, keep_members=is_characters)
     world.add_relationships(relationships)
     return world.outcome(link_to_dramaturgy=is_characters or task_code == "create_relationship")
+
+
+# ---------------------------------------------------------------------------
+# 配役・声
+# ---------------------------------------------------------------------------
+
+
+def _dramaturgy_spec(content: dict[str, Any], dramaturgy_id: str) -> dict[str, Any]:
+    return next(d for d in content.get("dramaturgies", []) if d.get("id") == dramaturgy_id)
+
+
+def _character_names(content: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    return {c["name"].strip(): c for c in content.get("characters", []) if c.get("name")}
+
+
+def _cast_by_character_key(dramaturgy: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    return {c["character"]["ref"]: c for c in dramaturgy.get("casts", []) if c.get("character")}
+
+
+def cast_patch(content: dict[str, Any], dramaturgy_id: str, drafts: list[CastDraft]) -> PatchOutcome:
+    """配役の提案を部分YAMLにする(追加と更新だけ)。"""
+    dramaturgy = _dramaturgy_spec(content, dramaturgy_id)
+    characters = _character_names(content)
+    casts = _cast_by_character_key(dramaturgy)
+    patches: list[dict[str, Any]] = []
+    changes: list[str] = []
+    warnings: list[str] = []
+    character_refs = [r["ref"] for r in dramaturgy.get("characters", [])]
+    added_refs: list[str] = []
+    for index, draft in enumerate(drafts):
+        name = (draft.character or "").strip()
+        if not name:
+            continue
+        character = characters.get(name)
+        if character is None:
+            warnings.append(f"配役の人物「{name}」がいないので、外しました(先にCharactersの工程で人物を作ってください)。")
+            continue
+        fields: dict[str, Any] = _compact(
+            {"language": _text(draft.language), "accent": _text(draft.accent)}
+        )
+        billing = _text(draft.billing)
+        if billing is not None:
+            if billing in {b.value for b in CastBilling}:
+                fields["billing"] = billing
+            else:
+                warnings.append(f"「{name}」の役の重さ「{billing}」は決まりに無いので、外しました。")
+        gender = _text(draft.voice_gender)
+        if gender is not None:
+            if gender in {g.value for g in VoiceGender}:
+                fields["voice_gender"] = gender
+            else:
+                warnings.append(f"「{name}」の声の性別「{gender}」は決まりに無いので、外しました。")
+        performance = _compact(
+            {
+                "title": _text(draft.performance_title),
+                "description": _text(draft.performance_description),
+                "pace": _text(draft.pace),
+            }
+        )
+        if performance:
+            fields["performance"] = performance
+        existing = casts.get(character["key"])
+        if existing is not None:
+            current_performance = existing.get("performance") or {}
+            changed = {
+                k: v
+                for k, v in fields.items()
+                if (k == "performance" and {**current_performance, **v} != current_performance)
+                or (k != "performance" and existing.get(k) != v)
+            }
+            if changed:
+                patches.append({"id": existing["id"], **changed})
+                changes.append(f"「{name}」の配役を更新")
+        else:
+            key = f"{NEW_CAST_KEY}{index + 1}"
+            casts[character["key"]] = {"key": key, "character": {"ref": character["key"]}}
+            patches.append({"key": key, "character": {"ref": character["key"]}, **fields})
+            label = BILLING_LABELS.get(fields.get("billing", ""), "")
+            changes.append(f"「{name}」の配役を追加" + (f"({label})" if label else ""))
+        if character["key"] not in character_refs and character["key"] not in added_refs:
+            added_refs.append(character["key"])
+    if not patches:
+        return PatchOutcome(None, [], warnings)
+    dramaturgy_patch: dict[str, Any] = {"id": dramaturgy_id, "casts": patches}
+    if added_refs:
+        # 作品の参照の一覧は丸ごと置き換わるので、今の参照に足して渡す
+        dramaturgy_patch["characters"] = [{"ref": k} for k in [*character_refs, *added_refs]]
+        changes.append("配役した人物をこの作品の登場人物に加える")
+    return PatchOutcome({"dramaturgies": [dramaturgy_patch]}, changes, warnings)
+
+
+def audition_patch(
+    content: dict[str, Any],
+    dramaturgy_id: str,
+    choices: list[VoiceChoice],
+    voices: list[VoiceInfo],
+    tts_provider: str,
+    tts_model: str,
+) -> PatchOutcome:
+    """選んだ声を、配役ごとの演者(Actor)の話者・提供元・モデルにする部分YAML。演者がいなければ作る。"""
+    dramaturgy = _dramaturgy_spec(content, dramaturgy_id)
+    characters = _character_names(content)
+    casts = _cast_by_character_key(dramaturgy)
+    by_id = {v.voice_id: v for v in voices}
+    actors = {a["cast"]["ref"]: a for a in (dramaturgy.get("agents") or {}).get("actors", []) if a.get("cast")}
+    patches: list[dict[str, Any]] = []
+    changes: list[str] = []
+    warnings: list[str] = []
+    for index, choice in enumerate(choices):
+        name = (choice.character or "").strip()
+        voice_id = (choice.voice_id or "").strip()
+        if not (name and voice_id):
+            continue
+        character = characters.get(name)
+        cast = casts.get(character["key"]) if character else None
+        if cast is None:
+            warnings.append(f"「{name}」の配役が無いので、声を外しました(先にCastingの工程で配役を作ってください)。")
+            continue
+        voice = by_id.get(voice_id)
+        if voice is None:
+            warnings.append(f"「{name}」の声「{voice_id}」は声の一覧に無いので、外しました。")
+            continue
+        fields = {"voice_name": voice_id, "tts_provider": tts_provider, "tts_model": tts_model}
+        label = f"{voice_id}" + (f"({voice.display_name})" if voice.display_name else "")
+        existing = actors.get(cast["key"])
+        if existing is not None:
+            changed = {k: v for k, v in fields.items() if existing.get(k) != v}
+            if changed:
+                patches.append({"id": existing["id"], **changed})
+                changes.append(f"「{name}」の声を{label}にする")
+        else:
+            patches.append(
+                {"key": f"{NEW_ACTOR_KEY}{index + 1}", "name": f"{name}役の演者", "cast": {"ref": cast["key"]}, **fields}
+            )
+            changes.append(f"「{name}」の演者を作り、声を{label}にする")
+    if not patches:
+        return PatchOutcome(None, [], warnings)
+    return PatchOutcome(
+        {"dramaturgies": [{"id": dramaturgy_id, "agents": {"actors": patches}}]}, changes, warnings
+    )

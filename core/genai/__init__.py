@@ -29,6 +29,7 @@ from .generator import (
     TextConfig,
     TextGenerator,
     ThinkingLevel,
+    VoiceInfo,
 )
 from .prompt import (
     BulletInstruction,
@@ -56,6 +57,7 @@ __all__ = [
     "TextConfig",
     "TextGenerator",
     "ThinkingLevel",
+    "VoiceInfo",
     "BulletInstruction",
     "ForbiddenRule",
     "MandatoryRule",

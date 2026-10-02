@@ -162,7 +162,8 @@ def test_steps_are_listed_with_availability(client, ctx):
         ("characters", True),
         ("groups", True),
         ("relationships", True),
-        ("casting", False),
+        ("casting", True),
+        ("audition", True),
     ]
     assert steps[0]["role_name"] == "scriptwriter" and steps[0]["task_code"] == "draft_proposal"
 
@@ -246,8 +247,8 @@ def test_undo_is_refused_after_another_change(client, ctx, fake):
 def test_errors_and_clear(client, ctx, fake):
     assert _send(client, ctx, "dialogue", "").status_code == 400  # 対話では空の発言を断る
     assert (
-        _send(client, ctx, "dialogue", "x", step="casting").status_code == 400
-    )  # まだ使えない工程
+        _send(client, ctx, "dialogue", "x", step="nowhere").status_code == 400
+    )  # 無い工程
     assert _action(client, ctx, 9999, "apply").status_code == 404
 
     fake["generator"] = _FakeGenerator(RuntimeError("接続できない"))

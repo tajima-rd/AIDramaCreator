@@ -39,7 +39,7 @@
   `core/infra/io/model_definition_reader.py`・`model_definition_writer.py`。1ファイルでも分割した複数のファイル(シーンごとのプロット・台詞・原稿も別のファイル)でも読み書きでき、
   識別子を保って往復できる(2026-09-30。形は2026-10-01承認。[model_design.md](model_design.md))。テストは`tests/core/test_model_definition_io.py`。
   公開API・制作の流れからはまだ使っていない。
-- `apps/sample_data/`: 作品ごとのディレクトリに分けた(2026-10-01ユーザー)。`令和但馬道中膝栗毛/`はサンプルの人物・プロット・配役を分割方式のモデル定義YAMLにしたもの(旧来のサンプル`apps/sample_project`から変換。元は2026-10-01に削除)。`ハチ北スキー場ガイド/`は企画書(`proposal`)だけを持つ作品(2026-10-01、ユーザー提供の企画書のテキストから)
+- `apps/sample_data/`: 作品ごとのディレクトリに分けた(2026-10-01ユーザー)。`令和但馬道中膝栗毛/`はサンプルの人物・プロット・配役を分割方式のモデル定義YAMLにしたもの(旧来のサンプル`apps/sample_project`から変換。元は2026-10-01に削除)。`ハチ北スキー場ガイド/`は企画書(`proposal`)だけを持つ作品(2026-10-01、ユーザー提供の企画書のテキストから)。同じディレクトリの`ハチ北スキー場.kml`は場所の雛形の形に整理した地図(2026-10-02。ユーザー提供のKMLとリフト施設概要表から。2026-10-02にユーザーがGoogle マイマップでLocation 2つとSiteFlow 7本を描き足した。Location 11・SiteFlow 7(`direction`は空)・補助情報)
   (2026-09-30、10-01。作品は`drama/`、エージェント(演者)は`agent/`。直下の`project.yaml`はプロジェクトの見本(モデル定義ではない)。場所・台詞・原稿は空の骨組み。変換で見つかった構造上の問題は
   [model_design.md](model_design.md)「サンプルデータ」)。
 - 人物・人物関係は作品の外(持ち主はProject。今は読み込み結果`ModelDefinition`の`characters`・`relationships`に仮置き)。作品は参照で持つ(2026-10-01)。
@@ -74,10 +74,30 @@
 
 ## Web GUI(AIDC Console、2026-10-01)
 
+- 場所と移動(2026-10-02): `Location.geometry`(WKT)と`SiteFlow`(場所の間の移動)、作品の`locations`・`site_flows`(参照)。
+  project.dbはGeoPackageとしても読め、`location`・`site_flow`をQGIS・GDALで開ける(テストでogrinfoから確かめる)。
+  Dramaturgy EditorにLocations(場所の編集・移動の向き・Generate Scenes)とScenes(シーンの一覧・編集・追加・削除)のタブ。
+  テストは`tests/core/test_site_flow.py`。ハチ北のサンプルは`drama/locations.yaml`(Location 11・SiteFlow 7)を作品が参照する。
+- 配役と声(2026-10-02): `Cast.billing`(主役・脇役・端役)、`Actor`の`tts_provider`・`tts_model`、声の一覧(`core/genai`の
+  `SpeechGenerator.list_voices`、`GET /projects/{id}/voices`)。Dramaturgy EditorのCastsタブ(配役・演じ方・声の条件・演者の声)と、
+  Build with AIのCasting(`cast_character`)・Audition(`assign_voice`)の工程。テストは`tests/api/test_ai_build_casting.py`・`tests/core/test_cast_actor.py`。
+- 場所の地図の取り込み(2026-10-02): KML・KMZ・GeoPackageを作品ごとに取り込む(LocationsタブのImport KML / GeoPackage...、
+  `POST .../drama-drafts/{draft_id}/import-geodata`)。補助情報は作品に割り当てたDataset(GeoPackage)になる。書き出しはまだ無い。
+  テストは`tests/api/test_geodata_import.py`・`tests/core/test_geodata_reader.py`。
+- 地図の上での場所の編集(2026-10-02): Edit > Edit Location on Map(`apps/AIDC-Console/static/location_map_panel.js`。Leaflet 1.9.4・
+  Leaflet-Geoman(無料版)2.20.2を`static/vendor/`にベンダリング。背景は地理院タイル(標準・淡色・写真)とOpenStreetMap)。面を描くとLocation、
+  線を描くとSiteFlow(頂点をクリックして描く)、形の編集・移動・削除、属性の入力、移動の向きの矢印、形の無い場所への面の描き足し(Draw Shape)。
+  補助情報のDatasetは表示だけ。保存は`GET`・`POST .../drama-drafts/{draft_id}/map`(地図の取り込みと同じ規則で下書きに入る)。
+  テストは`tests/api/test_location_map.py`(画面はPlaywrightで確かめた。自動テストは無い)。
+- GISの汎用ライブラリ`core/gis/`(2026-10-02): `core/infra/io`の`geometry_wkt.py`・`geopackage.py`と、`geodata_reader.py`のKMLの読み取りを移し、
+  GeoJSONとの変換と点を含む面の判定を足した。テストは`tests/core/test_gis_geometry.py`・`tests/core/test_gis_independence.py`。
+- 場所の雛形(2026-10-02): `apps/AIDC-Console/templates/location_template.kml`・`location_template.gpkg`(Location=面・SiteFlow=線・それ以外=補助情報。
+  説明は同じディレクトリの`README.md`、設計は[future_design.md](future_design.md)「LocationとSiteFlow」)。作品モデル・project.dbへの組み込みと取り込みは下の項目。
+
 - `apps/AIDC-Console/`(ビルド不要の素のHTML/CSS/JS)。APIサーバーが`/app/`で配信する(`scripts/server/start.sh`の後に
   `http://127.0.0.1:8100/app/`)。QIDM Consoleの共通部分を複製して直したもの([qidm_reuse.md](qidm_reuse.md))。
 - 画面: 上にメニューバー(`Project`・`Edit`・`Connection`)、左にTree、右にパネルの入れ物(main-area)。QIDMにあったPropertiesの区画は置かない。
-- メニュー: Project(作成・開く・保存・別名で保存・閉じる・Preferences・Exit)、Edit(New Dramaturgy・Dramaturgy Editor)、
+- メニュー: Project(作成・開く・保存・別名で保存・閉じる・Preferences・Exit)、Edit(New Dramaturgy・Dramaturgy Editor・Edit Location on Map・Character Editor・Build with AI)、
   Connection(接続・接続テスト・パスの更新・切断)。
 - Tree: `Project`(Project Overviewを開く)・`Dramaturgies`(正本の作品の一覧。選ぶとDramaturgy Editor)・`Datasets`
   (Datasetの一覧。選ぶとData Viewer)。作品の中(Act→Scene・人物等)の並びはまだ無い。
@@ -135,4 +155,4 @@
   - `preference`: 生成AIの設定・APIキー・接続確認・モデル一覧・接続先の候補
   - `dataset`: 一覧・PDF/DOCX/XLSXの追加・中身とファイルの取得・メタデータの参照と更新・削除。
     ドラマへの割り当ては無い(常に未割当。[future_design.md](future_design.md)「Drama」)
-- テスト(`tests/`、`.venv/bin/python -m pytest`): 187件が通り、3件がskip(2026-10-02)。skipは参考資料のサンプルが無いため([open_tasks.md](open_tasks.md))。
+- テスト(`tests/`、`.venv/bin/python -m pytest`): 221件が通り、3件がskip(2026-10-02)。skipは参考資料のサンプルが無いため([open_tasks.md](open_tasks.md))。

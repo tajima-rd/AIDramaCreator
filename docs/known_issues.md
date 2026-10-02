@@ -10,6 +10,10 @@
 
 ## 技術的負債
 
+- **制作の流れ(`main.py`→`core/service/process/production/`)は、演者の声を旧来の30声の表(`GeminiVoice`)で引く**(2026-10-02)。Castsタブ・Auditionで
+  新しい声の一覧から選んだ声(例: `ja-jp-advisor-1`)は「声にありません」のエラーになり、演者の`tts_provider`・`tts_model`も使わない
+  (常にproject.yamlの`genai.tts`)。制作の流れを新しいモデルへ移すときに直す(`_model_definition_project.py`の`_actor`)。
+
 - **作業補助の生成AIに手元のllama.cppを使うと、企画書の登場人物の取り込み・矛盾の確認に1回約3分かかる**(2026-10-02、Ryzen AI 7 PRO 350の内蔵GPU、
   Gemma 4 26B-A4B Q8)。原因は2つ: llama.cppがGemma 4の推論(thinking)を既定で行うこと(要求に`chat_template_kwargs: {enable_thinking: false}`を
   付ければ止まることを確かめた)と、プロンプトの読み込みが毎秒約30トークンと遅いこと(登録済みの人物の設定は約2500トークン)。`core/genai`の

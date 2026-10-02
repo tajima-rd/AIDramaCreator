@@ -5,7 +5,7 @@
 
 - 一覧の要素は、idがあればidで、無ければkeyで同じ要素を探して重ねる。無ければ末尾に追加する。
 - 同じ場所の値は上書きする。nullを書くと、その属性を消す。
-- idもkeyも持たない一覧(_REPLACED_LISTS。作品の中ではcharacters・relationships、企画書の中ではcharactersも)は、
+- idもkeyも持たない一覧(_REPLACED_LISTS。作品の中ではcharacters・relationships・locations・site_flows、企画書の中ではcharactersも)は、
   書いた一覧で丸ごと置き換える。
 - {id: …, delete: true}(keyでも可)で要素を消す。所有している子も一緒に消える。
 - dramaturgy(単数)は、dramaturgiesの1要素として扱う。
@@ -31,10 +31,10 @@ _REPLACED_LISTS = frozenset(
         "tasks",
     }
 )
-# 区画ごとに、丸ごと置き換える一覧(区画の名前→一覧の名前)。作品(dramaturgy)の中のcharacters・relationshipsは
-# 参照の一覧(最上位では人物・人物関係そのものの一覧)。企画書(proposal)のcharactersは識別子の無い仮の登場人物
+# 区画ごとに、丸ごと置き換える一覧(区画の名前→一覧の名前)。作品(dramaturgy)の中のcharacters・relationships・locations・
+# site_flowsは参照の一覧(最上位では人物・人物関係・場所・移動そのものの一覧)。企画書(proposal)のcharactersは識別子の無い仮の登場人物
 _REPLACED_IN_SECTION = {
-    "dramaturgy": frozenset({"characters", "relationships"}),
+    "dramaturgy": frozenset({"characters", "relationships", "locations", "site_flows"}),
     "proposal": frozenset({"characters"}),
 }
 

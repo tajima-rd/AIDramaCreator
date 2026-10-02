@@ -25,6 +25,7 @@
 | `project/` | A | プロジェクトの定義のみ(操作は`infra/store`・`service/process`) |
 | `prompt/` | A | 用途ごとのプロンプトと、生成AIに返させる構造。生成AIは呼ばない。`drama_production/`=制作の流れの各工程 |
 | `genai/` | (独立) | 生成AIの汎用ライブラリ(2節) |
+| `gis/` | (独立) | 地理情報(GIS)の汎用ライブラリ(2.2節) |
 | `infra/io/`・`infra/store/` | B | 外部とやり取りする形式との変換(モデル定義YAML)・内部状態の永続化(`*_store`) |
 | `service/process/` | B | 内部の処理。`production/`=制作の流れの各工程(`dialogue_generator`・`scene_generator`・`sound_generator`)、`edit/`=プロジェクト・設定・Datasetの手順、`genai/`=生成AIを使う処理 |
 | `service/api/` | C | 公開API(`project`・`preference`・`dataset`・`drama_model`・`drama_draft`) |
@@ -39,6 +40,7 @@
   `service/process`は`service/api`をimportしない。
 - `prompt`は`genai.prompt`(プロンプトの部品)と`model`だけを使う。
 - `genai`はパッケージの外を一切importしない。生成AIを呼ぶのは`service/process`。
+- `gis`もパッケージの外を一切importしない。使うのは`infra`・`service`(`model`は使わない。形はWKTの文字列で持つ)。
 
 ### ファイルの命名規則(2026-09-29ユーザー決定、QIDMに合わせる)
 
@@ -81,6 +83,16 @@
 - **未設定の役割を、もう一方の役割で代わりに動かさない**(作業補助が未設定なら、作品作り(課金あり)で黙って動かさずにエラーにし、
   設定を促す)。表に無いタスクもエラーにする。
 - 既存のタスクは、2026-10-02時点ですべて`creative`(それまでの動きのまま)。作業補助に回すタスクは、作るときに決める。
+
+### 2.2 GISの機能は`core/gis/`に集める(2026-10-02ユーザー決定)
+
+- 地理情報の処理(形の検査・変換、ファイル形式の読み書き、空間の関係)は`core/gis/`に置く。`core/genai`と同じく、他のプロジェクトでも
+  使える独立したライブラリとし、パッケージの外をimportしない(パッケージの中は相対import。`tests/core/test_gis_independence.py`)。依存はshapelyだけ。
+- **分け方は機能の種類**: `geometry.py`(WKTの検査・正規化、GeoJSONとの変換)・`feature.py`(地物の型)・`io/`(`geopackage.py`・`kml.py`)・
+  `analysis/`(`containment.py`=点を含む面。後に距離・隣接等)。edit・view・analysisの用途で分ける案は採らなかった(地図の表示はGUIの役目で、
+  GeoJSONとの変換は表示と編集の両方が使い、境界がはっきりしないため)。
+- **Location・SiteFlow等のAIDCの意味づけは使う側に残す**: 層の名前による振り分け(`infra/io/geodata_reader.py`)、移動の端点の検査
+  (`infra/io/model_definition_reader.py`)、下書きへの部分YAML(`service/process/edit/geodata_importer.py`)。
 
 ## 3. APIキー
 
@@ -144,6 +156,26 @@
 - 下書きの元にした版(`base_version`)が今の版と違えば、確定を拒否する(作り直してもらう。差分の統合は後で考える)。
 - ②・③の写しはモデル定義YAMLの文字列。プロジェクト全体を写すため、モデル定義YAMLの最上位に`dramaturgies:`の一覧を足す。
 - 置き場所はプロジェクトの`project.db`(Datasetの台帳と同じDB)。
+- **project.dbはGeoPackageとしても読める**(2026-10-02ユーザー決定)。場所(`location`)と場所の間の移動(`site_flow`)は形の列を持ち、
+  QGIS等でそのまま開ける。GISの道具からの編集は、KML・GeoPackageの取り込み・書き出しで下書きを通す(書き出しは保留)。詳細は
+  [database_design.md](database_design.md)「GeoPackage」。
+
+### 場所の地図の取り込み(2026-10-02ユーザー決定・実装)
+
+- 対象はKML(Google マイマップの書き出しの`.xml`も)・KMZ・GeoPackage。**作品ごとに取り込む**(場所・移動の実体はプロジェクトに入り、
+  作品はファイルにあるものを参照する。シリーズの別の作品の場所まで並ばないように)。形の決まりは`apps/AIDC-Console/templates/README.md`。
+- 層(KMLのフォルダ・GeoPackageの表)の名前が`Location`・`SiteFlow`(大文字・小文字と`_`・空白を無視)のものが場所・移動、それ以外はすべて補助情報。
+- **取り込み直しはファイルの内容で置き換え**: 場所は属性`id`が同じものを更新し、作品の参照(`locations`・`site_flows`)はファイルのもので
+  置き換える(プロジェクトの実体は消さない)。移動は`id`か、この作品の移動のうちorigin・destinationが同じものを更新する。
+- 移動のorigin・destinationは、線の始点・終点を含む場所の面から決める。**どの面にも入らない・2つ以上の面に入る端点があれば、取り込み全体を断る**
+  (問題のある線をすべて示す。下書きは変わらない)。
+- **補助情報は、作品に割り当てたDataset**(`<取り込んだファイル名>_補助情報.gpkg`。`dataset_registry.drama_id`に作品のid)として保存する。
+  Datasetは下書きを通らず、すぐに保存される(取り込み直すと同じファイルを上書きする)。
+- KMLはGDAL(LIBKML)ではなく標準のXMLで読む(LIBKMLはExtendedDataの`id`・`description`とKML自体の要素を同じ列にまとめ、
+  Google マイマップの書き出しで値が混ざるため)。GeoPackageもsqlite3で読む(形式の読み書きは`core/gis/io/`の`kml.py`・`geopackage.py`、層の振り分けは`core/infra/io/geodata_reader.py`)。
+  依存はshapelyだけで、GDALは要らない(GDALで変換したGeoPackageも読める。属性の名前は大文字・小文字を区別しない)。
+- 実装: `core/service/process/edit/geodata_importer.py`(下書きへの部分YAML)、公開APIは`drama_draft.import_geodata`
+  (`POST /projects/{id}/drama-drafts/{draft_id}/import-geodata`。ファイルはbase64)、GUIはLocationsタブのImport KML / GeoPackage...。
 
 ### Projectの役割(2026-10-01ユーザー決定)
 
@@ -171,19 +203,40 @@
   `core/project/project.py`の`DEFAULT_SERVER_BASE_URL`・`app.js`の`DEFAULT_SERVER_BASE_URL`・`apps/sample_data/project.yaml`を揃える)。
 - パネルはShadow DOMを使わない(light DOM)Custom Elementとし、`app.css`の共通クラス(`.field`・`.btn`・`.panel-*`等)を使う。
 - メニュー: Project・**Edit**・Connection。Editに`New Dramaturgy...`(題・幕数・言語。空の幕を持つ作品を作り、すぐに確定する)と
-  `Dramaturgy Editor`(Treeで選んだ作品。QIDMのDomain Editorにあたる)。
+  `Dramaturgy Editor`(Treeで選んだ作品。QIDMのDomain Editorにあたる)、`Edit Location on Map`(下の「地図の上での場所の編集」)。
 - **Dramaturgy Editorは編集用の下書きを通す**(正本を変えるのは下書きの確定だけ、7節): 題が`Dramaturgy Editor`のopenな下書きを
   プロジェクトに1つ持ち、各タブのSaveは部分YAMLの直接編集(`edit`)、ヘッダーの`Save Version`が確定(版を1つ作る。QIDMのSave Schemaに
   あたる。未確定の変更があれば緑)。確定したら新しい版から下書きを作り直す。下書きの元の版が古ければ、変更が無ければ黙って、
   あれば利用者に確かめてから破棄して作り直す。Saveのたびに確定する案(Saveごとに版が増える)は採らなかった。
 - 幕数は、Actsタブでの幕の追加・削除で決める(Propertiesに数の欄は置かない)。
-- タブ: Properties・Proposal(企画書)・Agents(エージェント)・Acts。Agentsタブは作品のエージェントの文面を書き換える。
+- タブ: Properties・Proposal(企画書)・Agents(エージェント)・Locations・Acts・Scenes。Agentsタブは作品のエージェントの文面を書き換える。
+  - Locations(2026-10-02): 作品が参照する場所と、その間の移動(SiteFlow)。地図の取り込み(Import KML / GeoPackage...。7節)、
+    場所の名前・案内・事実を書き換え(場所はプロジェクトで共有)、
+    移動の向きを決める。形は表示だけ(編集はEdit Location on Mapか取り込みで)。**Generate Scenes**は、シーンの無い場所から選んだ幕にシーンを機械的に作る
+    (題=場所の名前、場所=その場所。生成AIは使わない)。並びは移動を辿った順(入ってくる移動が無い場所から深さ優先。どの移動にも
+    つながらない場所は末尾)。
+  - Scenes(2026-10-02): すべての幕のシーンの一覧と、題・あらすじ・場所の編集、追加・削除(削除したら同じ幕のorderを詰める)。
   - エージェントは利用者が足さない(既定から読み込む。2026-10-02ユーザー決定)。New Dramaturgyはユーザー既定の6職能を必ず入れ、
     Agentsタブを開いたとき足りない職能はユーザー既定から自動で下書きに読み込む(未確定の変更になる)。追加・削除の操作は置かない。
   - Reset to Default=作品のエージェントをユーザー既定で置き換える。Save as User Default=今の入力をユーザー既定にする。
     Restore System Default=ユーザー既定をシステム既定に戻す(作品は変えない)。空にした項目はシステム既定になる(部分YAMLの`null`)。
   - Actor(演者)は出さない(置き場所は保留)。幕の`order`は0から連番で、削除したら詰める。
 - New Dramaturgyは別の下書きで作品を足して確定するため、Dramaturgy Editorの下書きに未確定の変更があれば断る(先にSave Versionを求める)。
+
+### 地図の上での場所の編集(Edit > Edit Location on Map。2026-10-02ユーザー決定・実装)
+
+- **Leaflet + Leaflet-Geoman(無料版)**を`static/vendor/`にベンダリングする(どちらもMIT。ビルド不要の1ファイル)。頂点をクリックして描く形で十分なため
+  (ペンで描く手書きは要らない。頂点の間引きもしない)。背景は地理院タイル(既定は標準)とOpenStreetMap。タイルの取得にはインターネットが要る。
+- Treeで選んだ作品が対象。**面を描くとLocation、線を描くとSiteFlow**。選んだ地物の属性(Locationは名前・住所・案内・事実、SiteFlowは名前・向き)を右の欄で書く。
+- 保存の経路はDramaturgy Editorと同じ: **Saveで編集用の下書きへ(直接編集)、Save Versionで確定**。地図の変更はSaveまで画面の中だけにあり、
+  Save Versionは先にSaveする。画面とサーバーは形をGeoJSONでやり取りし、WKTへの変換はサーバー(`core/gis/geometry.py`)で行う
+  (緯度・経度の順の取り違えを画面に持ち込まない)。
+- **保存は「画面の地図の状態を取り込む」のと同じ規則**(`geodata_importer.build_patch`を共通に使う。`core/service/process/edit/location_map_editor.py`):
+  移動のorigin・destinationは線の始点・終点を含む面から決め、**どの面にも入らない・2つ以上の面に入る端点があれば保存全体を断る**(面を動かして
+  端点が外れた場合も同じ。移動を未接続のまま残すことはしない)。地図から消した場所・移動は作品の参照から外す(プロジェクトの実体は消さない)。
+  形の無い場所・移動は地図に出ないので参照をそのまま残す(一覧のDraw Shapeで面を描ける)。
+- **補助情報(作品のDatasetのGeoPackage)は表示だけ**。Datasetは下書きを通らずにすぐ保存されるため、同じ地図で保存の時機が異なると紛らわしい。
+  編集は、困ったときに改めて考える。
 
 ### GUI実装上の落とし穴(QIDMから引き継いだもの)
 
@@ -201,20 +254,24 @@
   サーバー側でZIPにまとめ、`saveBlobToFile`(`showSaveFilePicker`)で1回で保存する。
 
 
-## 9. 人物パネルとCasting(2026-10-02ユーザー決定。人物パネルと企画書の取り込みは実装済み、Castingは未実装)
+## 9. 人物パネルとCasting(2026-10-02ユーザー決定。人物パネル・企画書の取り込み・Castsタブ・Build with AIのCasting/Auditionは実装済み)
 
 前提は「世界観が先、作品は後」([overview.md](overview.md))。人物はプロジェクトに登録し、作品はそこから使う。
 
 - **人物パネル**(プロジェクト全体。Treeで作品を選んでいなくても開ける): Characters・Groups・Relationshipsのタブ。
   どの作品からも使われない人物・設定の少ない人物(通行人A等)を、不備として扱わない(警告・必須にしない)。
-- **Castingタブ**は Dramaturgy Editor(作品)に置く。流れは、①人物の設定(人物パネル)→②誰を主役・脇役にするか→③役に合う
+- **Castsタブ**(当初の呼び名はCastingタブ)は Dramaturgy Editor(作品)に置く。流れは、①人物の設定(人物パネル)→②誰を主役・脇役にするか→③役に合う
   配役の条件→④Audition(条件に最適な、音声合成のモデルと話者を生成AIに選ばせる)→演者(`Actor`)の決定。Actorの設定もここで行う。
-  - 主役か脇役かは`Cast`に持たせる(台詞の無い人物には配役が無い)。`Cast`の演じ方・声の性別・言語・訛りがAuditionの条件になる。
+  - 主役・脇役・端役は`Cast.billing`(lead・supporting・minor。2026-10-02)。台詞の無い人物には配役が無い。`Cast`の演じ方・声の性別・言語・訛りがAuditionの条件になる。
+  - Castsタブ(2026-10-02実装): 配役の一覧(作品の登場人物から足す)・役の重さ・演じ方・声の条件の編集・削除(演者も消す。台詞が使う配役は参照切れで断られる)、
+    演者の声の選択(声の一覧は配役の言語、無ければ作品の言語で絞る。保存すると演者が無ければ作り、提供元・モデルは一覧を取った音声合成の設定)。
   - Auditionの対象は人物ではなく、音声合成の話者(演者)。担うのはCastingDirectorの`assign_voice`。
   - **`Actor`は音声合成の提供元・モデル・話者を持つ**(文章生成と音声合成は仕事が違うため、「どの生成AIで動かすかはモデルに持たない」
     の例外。4節)。音声合成の設定は、Auditionの候補として複数持てる形にする(当面は1つでよい)。
-  - 話者とその特徴の一覧は`core/genai`で提供元から取得する(Geminiは`GET /v1beta/voices`。性別・声の高さ・訛り・言語・persona・
-    説明)。取得の手段が無い提供元では、利用者が自分で調べて入れる(当面は許容)。
+  - 話者とその特徴の一覧は`core/genai`で提供元から取得する(`SpeechGenerator.list_voices`。Geminiは`GET /v1beta/voices`。性別・声の高さ・訛り・言語・persona・
+    説明)。取得の手段が無い提供元では、利用者が自分で調べて入れる(当面は許容)。2026-10-02に確かめた: Geminiは約2,100声(日本語は115声。
+    年齢・職業・訛り(大阪弁等)の説明付き)をページに分けて返す。提供元・モデルごとに1時間覚えておき、言語は手元で絞る
+    (`core/service/process/genai/voice_catalog.py`。公開APIは`GET /projects/{id}/voices?language=ja`)。
 - **企画書との連携**: 企画書の登場人物とプロジェクトの人物を照らし合わせる。
   - 企画書の登場人物がまだ登録されていなければ、新しい人物として登録する(骨組みは作業補助の生成AIで作る。`assistive`)。
   - 登録済みの人物が新しい作品の企画書で抜擢された場合、矛盾があればその理由を示して警告し、キャンセル・統合・置き換えを選ばせる。
@@ -256,4 +313,10 @@
   - 経歴と人物関係の時期は扱わない(時期の設定が要る。企画書の取り込みと同じ)。
   - 右側は人物パネル(Character Editor)の該当タブを埋め込む(`loadEmbedded`。ヘッダー・タブを隠し、編集用の下書きを共有する)。
   - 提案の部分YAMLは`core/service/process/genai/ai_build_patch.py`、プロンプトは`core/prompt/ai_build/characters.py`。
+- **配役の工程は2つのタブ**(2026-10-02ユーザー決定・実装): Casting(CastingDirectorの`cast_character`。配役・役の重さ・演じ方・声の条件)と
+  Audition(`assign_voice`。配役ごとに、条件に合う声を声の一覧から選ぶ)。右側はDramaturgy EditorのCastsタブを埋め込む(`loadEmbedded`)。
+  - 生成AIは配役を人物の名前で指す(同じ人物の配役があれば更新、無ければ追加)。削除させない。空の値では既存の値を消さない。
+    いない人物の配役・決まりに無い値(役の重さ・声の性別)・一覧に無い声は外して注意を返す。配役した人物は作品の登場人物に加える。
+  - Auditionに渡す声は、作品の言語(Output Language、無ければInput Language)の声。作品の言語が無ければ断る。選んだ声は演者(`Actor`)の
+    話者・提供元・モデルにする(演者がいなければ「<人物>役の演者」を作る)。プロンプトは`core/prompt/ai_build/casting.py`。
 

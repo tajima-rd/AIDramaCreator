@@ -44,7 +44,7 @@
 - [x] 文章生成の設定を作品作り用(`creative_llm`)と作業補助用(`assistive_llm`)に分ける(2026-10-02)
 - [x] GUI: 人物パネル(Characters・Groups・Relationships。プロジェクト全体)と企画書の登場人物の取り込み(2026-10-02)。[architecture.md](architecture.md) 9節
 - [ ] 企画書の取り込みの矛盾の理由の保存・再確認(仕組みは保留)
-- [ ] GUI: Dramaturgy EditorのCastingタブ(主役・脇役・配役の条件・Audition・Actor)。`Cast`・`Actor`のモデルの変更、`core/genai`の話者の一覧。
+- [ ] 新しい声の一覧の識別子(例: `ja-jp-advisor-1`)で音声合成できるかを、実際に1回呼んで確かめる(課金を伴うのでユーザーに確認してから)。
   [architecture.md](architecture.md) 9節
 - [x] 企画書のモデル(`Proposal`)とモデル定義YAML、Dramaturgy EditorのProposalタブ(2026-10-01)
 - [x] GUI: Build with AI(生成AIと相談しながら作るパネル。Proposalの工程、対話とワンショット下書き。2026-10-02)
@@ -52,7 +52,7 @@
 - [ ] Build with AI: 利用者が「提案だけ聞かせて」と言っても、生成AIが企画書の変更を提案(proposal)してしまう(Applyしなければ入らないので実害は無い)。
   指示を直すか(ユーザーと相談)
 - [x] Build with AIの人物の工程(Characters・Groups・Relationships。2026-10-02)
-- [ ] Build with AIの工程を足す(Casting=CastingDirectorの`assign_voice`等)
+- [ ] Build with AIの工程を足す(プロット・台詞等)
 - [x] 企画書のYAMLの読み込み(ProposalタブのImport from YAML。フォームに入れ、Saveで下書きへ。2026-10-01)
 - [ ] GUI: 準備の5項目(future_design.md「GUIで扱う制作の準備」)
 - [ ] GUIの検証の手順(QIDMの`.claude/skills/qidm-browser-verify/`を持ち込むか)

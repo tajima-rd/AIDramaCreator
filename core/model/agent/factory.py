@@ -62,10 +62,14 @@ def build_actor(
     casting_id: str,
     name: str,
     voice_name: Optional[str] = None,
+    tts_provider: Optional[str] = None,
+    tts_model: Optional[str] = None,
     role: Optional[str] = None,
     persona: Optional[str] = None,
     rules: Optional[list[str]] = None,
     prohibitions: Optional[list[str]] = None,
     tasks: Optional[list[AgentTask]] = None,
 ) -> Actor:
-    return Actor(casting_id, name, voice_name, role, persona, rules, prohibitions, tasks)
+    return Actor(
+        casting_id, name, voice_name, tts_provider, tts_model, role, persona, rules, prohibitions, tasks
+    )

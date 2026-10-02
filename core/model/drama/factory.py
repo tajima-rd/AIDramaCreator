@@ -13,7 +13,7 @@ from typing import Optional
 
 from core.model.agent.base_agent import BaseAgent
 from core.model.drama.act import Act
-from core.model.drama.cast import Cast, Performance, VoiceGender
+from core.model.drama.cast import Cast, CastBilling, Performance, VoiceGender
 from core.model.drama.character import Biography, Character
 from core.model.drama.character_group import CharacterGroup
 from core.model.drama.dramaturgy import Dramaturgy
@@ -33,6 +33,7 @@ from core.model.drama.script_element import (
     ScriptElement,
     SoundEffect,
 )
+from core.model.drama.site_flow import SiteFlow, SiteFlowDirection
 from core.model.drama.situation import Situation
 from core.model.drama.speech_style import SpeechStyle
 from core.model.drama.temporal import (
@@ -73,6 +74,8 @@ def build_dramaturgy(
     history: Optional[History] = None,
     proposal: Optional[Proposal] = None,
     agents: Optional[list[BaseAgent]] = None,
+    locations: Optional[list[Location]] = None,
+    site_flows: Optional[list[SiteFlow]] = None,
 ) -> Dramaturgy:
     return Dramaturgy(
         title,
@@ -87,6 +90,8 @@ def build_dramaturgy(
         history,
         proposal,
         agents,
+        locations,
+        site_flows,
     )
 
 
@@ -116,13 +121,29 @@ def build_temporal_edge(
 @_keeps_id
 def build_location(
     name: str,
-    latitude: Optional[float] = None,
-    longitude: Optional[float] = None,
+    geometry: Optional[str] = None,
     address: Optional[str] = None,
     instruction: Optional[str] = None,
     description: Optional[str] = None,
 ) -> Location:
-    return Location(name, latitude, longitude, address, instruction, description)
+    return Location(name, geometry, address, instruction, description)
+
+
+@_keeps_id
+def build_site_flow(
+    origin: Location,
+    destination: Location,
+    direction: Optional[str] = None,
+    geometry: Optional[str] = None,
+    name: Optional[str] = None,
+) -> SiteFlow:
+    return SiteFlow(
+        origin,
+        destination,
+        SiteFlowDirection(direction) if direction is not None else None,
+        geometry,
+        name,
+    )
 
 
 @_keeps_id
@@ -177,6 +198,7 @@ def build_cast(
     voice_gender: Optional[str] = None,
     language: Optional[str] = None,
     accent: Optional[str] = None,
+    billing: Optional[str] = None,
 ) -> Cast:
     return Cast(
         character,
@@ -184,6 +206,7 @@ def build_cast(
         VoiceGender(voice_gender) if voice_gender is not None else None,
         language,
         accent,
+        CastBilling(billing) if billing is not None else None,
     )
 
 

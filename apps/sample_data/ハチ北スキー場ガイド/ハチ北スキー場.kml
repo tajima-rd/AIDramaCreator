@@ -1,0 +1,2859 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ハチ北スキー場の場所(場所の雛形 apps/AIDC-Console/templates/location_template.kml の形)。
+  元: ユーザー提供のKML「ハチ北スキー場」(Google マイマップ)と「ハチ北スキー場リフト施設概要表」(2026年6月、PDF)。
+  2026-10-02に整理し、ユーザーがGoogle マイマップでLocation 2つ・SiteFlow・補助情報の線を描き足したもの。
+  - Location: シーンの場所(面)。idは uuid5(NAMESPACE_URL, "aidc:sample_data:ハチ北スキー場ガイド:<key>")。
+  - SiteFlow: Locationどうしの移動(線)。directionはまだ空。
+  - それ以外のフォルダ: 補助情報。リフトにはリフト施設概要表の値を添えた。
+-->
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>ハチ北スキー場</name>
+    <description />
+    <Style id="icon-1899-0288D1-nodesc-normal">
+      <IconStyle>
+        <color>ffd18802</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+        <hotSpot x="32" xunits="pixels" y="64" yunits="insetPixels" />
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text>&lt;h3&gt;$[name]&lt;/h3&gt;</text>
+      </BalloonStyle>
+    </Style>
+    <Style id="icon-1899-0288D1-nodesc-highlight">
+      <IconStyle>
+        <color>ffd18802</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+        <hotSpot x="32" xunits="pixels" y="64" yunits="insetPixels" />
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text>&lt;h3&gt;$[name]&lt;/h3&gt;</text>
+      </BalloonStyle>
+    </Style>
+    <StyleMap id="icon-1899-0288D1-nodesc">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1899-0288D1-nodesc-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1899-0288D1-nodesc-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="line-000000-1200-normal">
+      <LineStyle>
+        <color>ff000000</color>
+        <width>1.2</width>
+      </LineStyle>
+    </Style>
+    <Style id="line-000000-1200-highlight">
+      <LineStyle>
+        <color>ff000000</color>
+        <width>1.8</width>
+      </LineStyle>
+    </Style>
+    <StyleMap id="line-000000-1200">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#line-000000-1200-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#line-000000-1200-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="line-000000-1200-nodesc-normal">
+      <LineStyle>
+        <color>ff000000</color>
+        <width>1.2</width>
+      </LineStyle>
+      <BalloonStyle>
+        <text>&lt;h3&gt;$[name]&lt;/h3&gt;</text>
+      </BalloonStyle>
+    </Style>
+    <Style id="line-000000-1200-nodesc-highlight">
+      <LineStyle>
+        <color>ff000000</color>
+        <width>1.8</width>
+      </LineStyle>
+      <BalloonStyle>
+        <text>&lt;h3&gt;$[name]&lt;/h3&gt;</text>
+      </BalloonStyle>
+    </Style>
+    <StyleMap id="line-000000-1200-nodesc">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#line-000000-1200-nodesc-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#line-000000-1200-nodesc-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="line-9C27B0-3519-nodesc-normal">
+      <LineStyle>
+        <color>ffb0279c</color>
+        <width>3.519</width>
+      </LineStyle>
+      <BalloonStyle>
+        <text>&lt;h3&gt;$[name]&lt;/h3&gt;</text>
+      </BalloonStyle>
+    </Style>
+    <Style id="line-9C27B0-3519-nodesc-highlight">
+      <LineStyle>
+        <color>ffb0279c</color>
+        <width>5.2785</width>
+      </LineStyle>
+      <BalloonStyle>
+        <text>&lt;h3&gt;$[name]&lt;/h3&gt;</text>
+      </BalloonStyle>
+    </Style>
+    <StyleMap id="line-9C27B0-3519-nodesc">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#line-9C27B0-3519-nodesc-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#line-9C27B0-3519-nodesc-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="line-E65100-6000-normal">
+      <LineStyle>
+        <color>ff0051e6</color>
+        <width>6</width>
+      </LineStyle>
+    </Style>
+    <Style id="line-E65100-6000-highlight">
+      <LineStyle>
+        <color>ff0051e6</color>
+        <width>9</width>
+      </LineStyle>
+    </Style>
+    <StyleMap id="line-E65100-6000">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#line-E65100-6000-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#line-E65100-6000-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="poly-0288D1-2000-76-normal">
+      <LineStyle>
+        <color>ffd18802</color>
+        <width>2</width>
+      </LineStyle>
+      <PolyStyle>
+        <color>4cd18802</color>
+        <fill>1</fill>
+        <outline>1</outline>
+      </PolyStyle>
+    </Style>
+    <Style id="poly-0288D1-2000-76-highlight">
+      <LineStyle>
+        <color>ffd18802</color>
+        <width>3</width>
+      </LineStyle>
+      <PolyStyle>
+        <color>4cd18802</color>
+        <fill>1</fill>
+        <outline>1</outline>
+      </PolyStyle>
+    </Style>
+    <StyleMap id="poly-0288D1-2000-76">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#poly-0288D1-2000-76-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#poly-0288D1-2000-76-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="poly-FFEA00-1200-76-normal">
+      <LineStyle>
+        <color>ff00eaff</color>
+        <width>1.2</width>
+      </LineStyle>
+      <PolyStyle>
+        <color>4c00eaff</color>
+        <fill>1</fill>
+        <outline>1</outline>
+      </PolyStyle>
+    </Style>
+    <Style id="poly-FFEA00-1200-76-highlight">
+      <LineStyle>
+        <color>ff00eaff</color>
+        <width>1.8</width>
+      </LineStyle>
+      <PolyStyle>
+        <color>4c00eaff</color>
+        <fill>1</fill>
+        <outline>1</outline>
+      </PolyStyle>
+    </Style>
+    <StyleMap id="poly-FFEA00-1200-76">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#poly-FFEA00-1200-76-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#poly-FFEA00-1200-76-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Folder>
+      <name>Location</name>
+      <Placemark>
+        <name>キッズパーク</name>
+        <styleUrl>#poly-FFEA00-1200-76</styleUrl>
+        <ExtendedData>
+          <Data name="id">
+            <value>41cbd4c2-3d8f-5551-b58c-554c79fa2990</value>
+          </Data>
+          <Data name="key">
+            <value>location_001</value>
+          </Data>
+          <Data name="address">
+            <value />
+          </Data>
+          <Data name="instruction">
+            <value />
+          </Data>
+          <Data name="description">
+            <value />
+          </Data>
+        </ExtendedData>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                134.551956,35.406942,0
+                134.552182,35.406663,0
+                134.552396,35.406584,0
+                134.553196,35.406842,0
+                134.55341,35.407178,0
+                134.552831,35.407262,0
+                134.551956,35.406942,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>ちょっと急なエリア</name>
+        <styleUrl>#poly-FFEA00-1200-76</styleUrl>
+        <ExtendedData>
+          <Data name="id">
+            <value>933ffeab-1a14-5628-8ba2-31f7d41ad2db</value>
+          </Data>
+          <Data name="key">
+            <value>location_002</value>
+          </Data>
+          <Data name="address">
+            <value />
+          </Data>
+          <Data name="instruction">
+            <value>小さな子供の最初の難関。クリアできれば野間ゲレンデに向けて中央リフトへ。</value>
+          </Data>
+          <Data name="description">
+            <value />
+          </Data>
+        </ExtendedData>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                134.55055,35.406704,0
+                134.550767,35.40654,0
+                134.551081,35.406754,0
+                134.55085,35.406916,0
+                134.55055,35.406704,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>少し急</name>
+        <styleUrl>#poly-FFEA00-1200-76</styleUrl>
+        <ExtendedData>
+          <Data name="id">
+            <value>8f0477b8-b33b-5a7c-9d5d-4bbfd94fafdc</value>
+          </Data>
+          <Data name="key">
+            <value>location_003</value>
+          </Data>
+          <Data name="address">
+            <value />
+          </Data>
+          <Data name="instruction">
+            <value>二番目の難関。</value>
+          </Data>
+          <Data name="description">
+            <value />
+          </Data>
+        </ExtendedData>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                134.544758,35.40709,0
+                134.545043,35.406574,0
+                134.54589,35.406792,0
+                134.545713,35.407103,0
+                134.544758,35.40709,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>迂回ポイント</name>
+        <styleUrl>#poly-FFEA00-1200-76</styleUrl>
+        <ExtendedData>
+          <Data name="id">
+            <value>b0347b8c-c336-50a4-8d57-c585ac61cae2</value>
+          </Data>
+          <Data name="key">
+            <value>location_004</value>
+          </Data>
+          <Data name="address">
+            <value />
+          </Data>
+          <Data name="instruction">
+            <value>左に迂回するように案内する</value>
+          </Data>
+          <Data name="description">
+            <value />
+          </Data>
+        </ExtendedData>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                134.543745,35.405857,0
+                134.543546,35.406237,0
+                134.542994,35.406084,0
+                134.543219,35.405634,0
+                134.543745,35.405857,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>急なエリア</name>
+        <styleUrl>#poly-FFEA00-1200-76</styleUrl>
+        <ExtendedData>
+          <Data name="id">
+            <value>07f3af40-12bb-5c3f-a313-4ae918948357</value>
+          </Data>
+          <Data name="key">
+            <value>location_005</value>
+          </Data>
+          <Data name="address">
+            <value />
+          </Data>
+          <Data name="instruction">
+            <value>少し、急だけれど、コースを広く使って、横に滑るイメージで。保護者は上から降りてくる人に注意し、守りながら降りよう。</value>
+          </Data>
+          <Data name="description">
+            <value />
+          </Data>
+        </ExtendedData>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                134.547038,35.408938,0
+                134.547177,35.408466,0
+                134.549291,35.408807,0
+                134.549124,35.409236,0
+                134.547038,35.408938,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>旅館街への導線</name>
+        <styleUrl>#poly-FFEA00-1200-76</styleUrl>
+        <ExtendedData>
+          <Data name="id">
+            <value>801cdd34-c7ac-5fef-a00f-6c8b9d5bbc7b</value>
+          </Data>
+          <Data name="key">
+            <value>location_006</value>
+          </Data>
+          <Data name="address">
+            <value />
+          </Data>
+          <Data name="instruction">
+            <value>リフトAを使って降りるように案内。16:00 くらいを目標に降りるようにしましょう。</value>
+          </Data>
+          <Data name="description">
+            <value />
+          </Data>
+        </ExtendedData>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                134.545733,35.406671,0
+                134.546913,35.405753,0
+                134.549113,35.406225,0
+                134.54893,35.406583,0
+                134.547182,35.406251,0
+                134.546398,35.406885,0
+                134.545733,35.406671,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>間違いポイント</name>
+        <styleUrl>#poly-FFEA00-1200-76</styleUrl>
+        <ExtendedData>
+          <Data name="id">
+            <value>484d1f79-2c94-57d0-9356-e43b423d4501</value>
+          </Data>
+          <Data name="key">
+            <value>location_007</value>
+          </Data>
+          <Data name="address">
+            <value />
+          </Data>
+          <Data name="instruction">
+            <value>旅館街からの人は、今乗ってきたリフトの場所を確認するように促す。周囲の風景を確認し、この場所からしか帰れないことを家族と確認する。スキー初心者は、右側の緩斜面に進むことを勧める。特に、右側ほど緩やかで、真ん中になるとやや急になる。この斜面に慣れたら、この先の正面の野間ゲレンデに進むことを勧める。子供をスキースクールに入れたいのであれば左側の建物、スノボスクールに入れたいのであれば、野間ゲレンデに向かう。スキースクールの横の建物がゲレンデコンビニ。トイレや授乳室などもある。</value>
+          </Data>
+          <Data name="description">
+            <value />
+          </Data>
+        </ExtendedData>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                134.549735,35.406478,0
+                134.549746,35.406098,0
+                134.550357,35.406076,0
+                134.550438,35.406395,0
+                134.550121,35.406514,0
+                134.549735,35.406478,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>間違いポイント</name>
+        <styleUrl>#poly-FFEA00-1200-76</styleUrl>
+        <ExtendedData>
+          <Data name="id">
+            <value>64f11e2f-cd98-53fd-9de7-f88a0ae156d0</value>
+          </Data>
+          <Data name="key">
+            <value>location_008</value>
+          </Data>
+          <Data name="address">
+            <value />
+          </Data>
+          <Data name="instruction">
+            <value>旅館街の人は注意。15:30ごろであれば、帰り道を確認させる。このまま、まっすぐに降りてしまうと、時間によってはリフトAに戻れなくなる可能性がある。</value>
+          </Data>
+          <Data name="description">
+            <value />
+          </Data>
+        </ExtendedData>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                134.545926,35.407156,0
+                134.54606,35.40685,0
+                134.546634,35.407043,0
+                134.546323,35.407371,0
+                134.545926,35.407156,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>最初の場所</name>
+        <styleUrl>#poly-FFEA00-1200-76</styleUrl>
+        <ExtendedData>
+          <Data name="id">
+            <value>cb1f986d-0212-53c8-99d2-1f1d3a33f807</value>
+          </Data>
+          <Data name="key">
+            <value>location_009</value>
+          </Data>
+          <Data name="address">
+            <value />
+          </Data>
+          <Data name="instruction">
+            <value>ハチ北スキー場に関する一般的な説明をする。スキー場の入口となる場所はここ以外にもう一箇所ある。間違って、もう一方の入口からは旅館街に戻ってこれないことがあるので、リフトの名前をきちんと確認することを伝える。</value>
+          </Data>
+          <Data name="description">
+            <value />
+          </Data>
+        </ExtendedData>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                134.557827,35.404279,0
+                134.558241,35.404658,0
+                134.557769,35.404913,0
+                134.55755,35.404752,0
+                134.557261,35.404498,0
+                134.557827,35.404279,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>ポリゴン 11</name>
+        <styleUrl>#poly-FFEA00-1200-76</styleUrl>
+        <ExtendedData>
+          <Data name="id">
+            <value>76e3a1fe-32a8-5d7d-a2a6-f8a559662aa2</value>
+          </Data>
+          <Data name="key">
+            <value>location_010</value>
+          </Data>
+          <Data name="address">
+            <value />
+          </Data>
+          <Data name="instruction">
+            <value>野間ゲレンデの説明を行う</value>
+          </Data>
+          <Data name="description">
+            <value />
+          </Data>
+        </ExtendedData>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                134.5490702,35.4065261,0
+                134.5485525,35.4074377,0
+                134.5474928,35.4070771,0
+                134.5481083,35.4061099,0
+                134.5490702,35.4065261,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>ポリゴン 14</name>
+        <styleUrl>#poly-FFEA00-1200-76</styleUrl>
+        <ExtendedData>
+          <Data name="id">
+            <value>5afe79b1-c4ba-52f9-aec2-a831b9f869b7</value>
+          </Data>
+          <Data name="key">
+            <value>location_011</value>
+          </Data>
+          <Data name="address">
+            <value />
+          </Data>
+          <Data name="instruction">
+            <value>野間ゲレンデの楽しみ方を解説。途中で迂回ポイントがあることを説明する。</value>
+          </Data>
+          <Data name="description">
+            <value />
+          </Data>
+        </ExtendedData>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                134.5414762,35.4048482,0
+                134.5411225,35.4057265,0
+                134.5401806,35.4053541,0
+                134.5407813,35.4045318,0
+                134.5414762,35.4048482,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+    </Folder>
+    <Folder>
+      <name>SiteFlow</name>
+      <Placemark>
+        <name>ライン 1</name>
+        <styleUrl>#line-9C27B0-3519-nodesc</styleUrl>
+        <ExtendedData>
+          <Data name="direction">
+            <value />
+          </Data>
+        </ExtendedData>
+        <LineString>
+          <tessellate>1</tessellate>
+          <coordinates>
+            134.5579457,35.4046866,0
+            134.5500041,35.4062699,0
+          </coordinates>
+        </LineString>
+      </Placemark>
+      <Placemark>
+        <name>ライン 2</name>
+        <styleUrl>#line-9C27B0-3519-nodesc</styleUrl>
+        <ExtendedData>
+          <Data name="direction">
+            <value />
+          </Data>
+        </ExtendedData>
+        <LineString>
+          <tessellate>1</tessellate>
+          <coordinates>
+            134.5501717,35.4063196,0
+            134.5508037,35.4067727,0
+          </coordinates>
+        </LineString>
+      </Placemark>
+      <Placemark>
+        <name>ライン 3</name>
+        <styleUrl>#line-9C27B0-3519-nodesc</styleUrl>
+        <ExtendedData>
+          <Data name="direction">
+            <value />
+          </Data>
+        </ExtendedData>
+        <LineString>
+          <tessellate>1</tessellate>
+          <coordinates>
+            134.5502389,35.4062925,0
+            134.5524724,35.4068171,0
+          </coordinates>
+        </LineString>
+      </Placemark>
+      <Placemark>
+        <name>ライン 4</name>
+        <styleUrl>#line-9C27B0-3519-nodesc</styleUrl>
+        <ExtendedData>
+          <Data name="direction">
+            <value />
+          </Data>
+        </ExtendedData>
+        <LineString>
+          <tessellate>1</tessellate>
+          <coordinates>
+            134.5499106,35.406257,0
+            134.5485205,35.4068808,0
+          </coordinates>
+        </LineString>
+      </Placemark>
+      <Placemark>
+        <name>ライン 5</name>
+        <styleUrl>#line-9C27B0-3519-nodesc</styleUrl>
+        <ExtendedData>
+          <Data name="direction">
+            <value />
+          </Data>
+        </ExtendedData>
+        <LineString>
+          <tessellate>1</tessellate>
+          <coordinates>
+            134.5479734,35.4068847,0
+            134.5408975,35.4049847,0
+          </coordinates>
+        </LineString>
+      </Placemark>
+      <Placemark>
+        <name>ライン 6</name>
+        <styleUrl>#line-9C27B0-3519-nodesc</styleUrl>
+        <ExtendedData>
+          <Data name="direction">
+            <value />
+          </Data>
+        </ExtendedData>
+        <LineString>
+          <tessellate>1</tessellate>
+          <coordinates>
+            134.5408496,35.4052382,0
+            134.5433351,35.406037,0
+          </coordinates>
+        </LineString>
+      </Placemark>
+      <Placemark>
+        <name>ライン 7</name>
+        <styleUrl>#line-9C27B0-3519-nodesc</styleUrl>
+        <ExtendedData>
+          <Data name="direction">
+            <value />
+          </Data>
+        </ExtendedData>
+        <LineString>
+          <tessellate>1</tessellate>
+          <coordinates>
+            134.5435334,35.4060862,0
+            134.5451631,35.4068477,0
+            134.5452579,35.4069093,0
+          </coordinates>
+        </LineString>
+      </Placemark>
+    </Folder>
+    <Folder>
+      <name>リフト乗降場所</name>
+      <Placemark>
+        <name>A-S</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            134.557767,35.404428,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>B-S</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            134.560251,35.405246,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>B-E</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            134.555349,35.409211,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>D-S</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            134.552801,35.409188,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>C-S</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            134.552514,35.407375,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>C-E</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            134.550388,35.406516,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>A-E</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            134.550612,35.406158,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>D-E</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            134.541208,35.405095,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>F-E</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            134.53799,35.400012,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>E-S</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            134.548307,35.406838,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>K-S</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            134.540297,35.404106,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>F-S</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            134.540211,35.40421,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>H-S</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            134.539065,35.401288,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>E-E</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            134.541955,35.404635,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>J-S</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            134.540132,35.401439,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>H-E</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            134.536267,35.39573,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>J-E</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            134.538555,35.397827,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>K-E</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            134.536105,35.395755,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>6-E</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            134.536251,35.394987,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>6-S</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            134.533876,35.391136,0
+          </coordinates>
+        </Point>
+      </Placemark>
+    </Folder>
+    <Folder>
+      <name>リフト</name>
+      <Placemark>
+        <name>ムービングベルト・オレンジ</name>
+        <description>説明: &lt;br&gt;リフト名: &lt;br&gt;方式: &lt;br&gt;運輸開始日: &lt;br&gt;斜距離_m: &lt;br&gt;高低差_m: &lt;br&gt;最急勾配: &lt;br&gt;最急勾配の箇所: &lt;br&gt;支柱基数: &lt;br&gt;営業線路: &lt;br&gt;乗車時間: &lt;br&gt;乗車時間_予備エンジン運転: &lt;br&gt;輸送能力_人毎時: &lt;br&gt;秒速_m: &lt;br&gt;減速時の秒速_m: &lt;br&gt;予備エンジン運転時の秒速_m: &lt;br&gt;搬器間隔_秒: &lt;br&gt;搬器間隔_m: &lt;br&gt;搬器: &lt;br&gt;搬器数: &lt;br&gt;回転方向: &lt;br&gt;運行日数_2025-26シーズン: &lt;br&gt;乗車人数_上り_2025-26シーズン: &lt;br&gt;乗車人数_下り_2025-26シーズン: &lt;br&gt;備考: &lt;br&gt;出典: &lt;br&gt;場内の秒速_m: &lt;br&gt;場内減速時の秒速_m: &lt;br&gt;description: </description>
+        <styleUrl>#line-E65100-6000</styleUrl>
+        <ExtendedData>
+          <Data name="説明">
+            <value />
+          </Data>
+          <Data name="リフト名">
+            <value />
+          </Data>
+          <Data name="方式">
+            <value />
+          </Data>
+          <Data name="運輸開始日">
+            <value />
+          </Data>
+          <Data name="斜距離_m">
+            <value />
+          </Data>
+          <Data name="高低差_m">
+            <value />
+          </Data>
+          <Data name="最急勾配">
+            <value />
+          </Data>
+          <Data name="最急勾配の箇所">
+            <value />
+          </Data>
+          <Data name="支柱基数">
+            <value />
+          </Data>
+          <Data name="営業線路">
+            <value />
+          </Data>
+          <Data name="乗車時間">
+            <value />
+          </Data>
+          <Data name="乗車時間_予備エンジン運転">
+            <value />
+          </Data>
+          <Data name="輸送能力_人毎時">
+            <value />
+          </Data>
+          <Data name="秒速_m">
+            <value />
+          </Data>
+          <Data name="減速時の秒速_m">
+            <value />
+          </Data>
+          <Data name="予備エンジン運転時の秒速_m">
+            <value />
+          </Data>
+          <Data name="搬器間隔_秒">
+            <value />
+          </Data>
+          <Data name="搬器間隔_m">
+            <value />
+          </Data>
+          <Data name="搬器">
+            <value />
+          </Data>
+          <Data name="搬器数">
+            <value />
+          </Data>
+          <Data name="回転方向">
+            <value />
+          </Data>
+          <Data name="運行日数_2025-26シーズン">
+            <value />
+          </Data>
+          <Data name="乗車人数_上り_2025-26シーズン">
+            <value />
+          </Data>
+          <Data name="乗車人数_下り_2025-26シーズン">
+            <value />
+          </Data>
+          <Data name="備考">
+            <value />
+          </Data>
+          <Data name="出典">
+            <value />
+          </Data>
+          <Data name="場内の秒速_m">
+            <value />
+          </Data>
+          <Data name="場内減速時の秒速_m">
+            <value />
+          </Data>
+          <Data name="description">
+            <value />
+          </Data>
+        </ExtendedData>
+        <LineString>
+          <tessellate>1</tessellate>
+          <coordinates>
+            134.549317,35.406126,0
+            134.55033,35.405929,0
+          </coordinates>
+        </LineString>
+      </Placemark>
+      <Placemark>
+        <name>ムービングベルト・ブルー</name>
+        <description>説明: &lt;br&gt;リフト名: &lt;br&gt;方式: &lt;br&gt;運輸開始日: &lt;br&gt;斜距離_m: &lt;br&gt;高低差_m: &lt;br&gt;最急勾配: &lt;br&gt;最急勾配の箇所: &lt;br&gt;支柱基数: &lt;br&gt;営業線路: &lt;br&gt;乗車時間: &lt;br&gt;乗車時間_予備エンジン運転: &lt;br&gt;輸送能力_人毎時: &lt;br&gt;秒速_m: &lt;br&gt;減速時の秒速_m: &lt;br&gt;予備エンジン運転時の秒速_m: &lt;br&gt;搬器間隔_秒: &lt;br&gt;搬器間隔_m: &lt;br&gt;搬器: &lt;br&gt;搬器数: &lt;br&gt;回転方向: &lt;br&gt;運行日数_2025-26シーズン: &lt;br&gt;乗車人数_上り_2025-26シーズン: &lt;br&gt;乗車人数_下り_2025-26シーズン: &lt;br&gt;備考: &lt;br&gt;出典: &lt;br&gt;場内の秒速_m: &lt;br&gt;場内減速時の秒速_m: &lt;br&gt;description: </description>
+        <styleUrl>#line-E65100-6000</styleUrl>
+        <ExtendedData>
+          <Data name="説明">
+            <value />
+          </Data>
+          <Data name="リフト名">
+            <value />
+          </Data>
+          <Data name="方式">
+            <value />
+          </Data>
+          <Data name="運輸開始日">
+            <value />
+          </Data>
+          <Data name="斜距離_m">
+            <value />
+          </Data>
+          <Data name="高低差_m">
+            <value />
+          </Data>
+          <Data name="最急勾配">
+            <value />
+          </Data>
+          <Data name="最急勾配の箇所">
+            <value />
+          </Data>
+          <Data name="支柱基数">
+            <value />
+          </Data>
+          <Data name="営業線路">
+            <value />
+          </Data>
+          <Data name="乗車時間">
+            <value />
+          </Data>
+          <Data name="乗車時間_予備エンジン運転">
+            <value />
+          </Data>
+          <Data name="輸送能力_人毎時">
+            <value />
+          </Data>
+          <Data name="秒速_m">
+            <value />
+          </Data>
+          <Data name="減速時の秒速_m">
+            <value />
+          </Data>
+          <Data name="予備エンジン運転時の秒速_m">
+            <value />
+          </Data>
+          <Data name="搬器間隔_秒">
+            <value />
+          </Data>
+          <Data name="搬器間隔_m">
+            <value />
+          </Data>
+          <Data name="搬器">
+            <value />
+          </Data>
+          <Data name="搬器数">
+            <value />
+          </Data>
+          <Data name="回転方向">
+            <value />
+          </Data>
+          <Data name="運行日数_2025-26シーズン">
+            <value />
+          </Data>
+          <Data name="乗車人数_上り_2025-26シーズン">
+            <value />
+          </Data>
+          <Data name="乗車人数_下り_2025-26シーズン">
+            <value />
+          </Data>
+          <Data name="備考">
+            <value />
+          </Data>
+          <Data name="出典">
+            <value />
+          </Data>
+          <Data name="場内の秒速_m">
+            <value />
+          </Data>
+          <Data name="場内減速時の秒速_m">
+            <value />
+          </Data>
+          <Data name="description">
+            <value />
+          </Data>
+        </ExtendedData>
+        <LineString>
+          <tessellate>1</tessellate>
+          <coordinates>
+            134.553263,35.409206,0
+            134.553862,35.409271,0
+          </coordinates>
+        </LineString>
+      </Placemark>
+      <Placemark>
+        <name>A</name>
+        <description>説明: &lt;br&gt;リフト名: 旅館街ペアリフト&lt;br&gt;方式: 固定循環式&lt;br&gt;運輸開始日: 平成18.12.16&lt;br&gt;斜距離_m: 706.00&lt;br&gt;高低差_m: 170.75&lt;br&gt;最急勾配: 27°32'&lt;br&gt;最急勾配の箇所: 7号柱&lt;br&gt;支柱基数: 12&lt;br&gt;営業線路: 上り・下り&lt;br&gt;乗車時間: 7分20秒&lt;br&gt;乗車時間_予備エンジン運転: 23分32秒&lt;br&gt;輸送能力_人毎時: 900&lt;br&gt;秒速_m: 1.6&lt;br&gt;減速時の秒速_m: 1.0&lt;br&gt;予備エンジン運転時の秒速_m: 0.50&lt;br&gt;搬器間隔_秒: 8&lt;br&gt;搬器間隔_m: 12.8&lt;br&gt;搬器: 2人乗り&lt;br&gt;搬器数: 111&lt;br&gt;回転方向: 反時計&lt;br&gt;運行日数_2025-26シーズン: 99日&lt;br&gt;乗車人数_上り_2025-26シーズン: 67,374人&lt;br&gt;乗車人数_下り_2025-26シーズン: 10,451人&lt;br&gt;備考: 下り線はスキー等を付けて乗車できない。下り線は2人乗車可能。搬器はセフティーバー付き&lt;br&gt;出典: ハチ北スキー場リフト施設概要表(2026年6月)&lt;br&gt;場内の秒速_m: &lt;br&gt;場内減速時の秒速_m: &lt;br&gt;description: </description>
+        <styleUrl>#line-E65100-6000</styleUrl>
+        <ExtendedData>
+          <Data name="説明">
+            <value />
+          </Data>
+          <Data name="リフト名">
+            <value>旅館街ペアリフト</value>
+          </Data>
+          <Data name="方式">
+            <value>固定循環式</value>
+          </Data>
+          <Data name="運輸開始日">
+            <value>平成18.12.16</value>
+          </Data>
+          <Data name="斜距離_m">
+            <value>706.00</value>
+          </Data>
+          <Data name="高低差_m">
+            <value>170.75</value>
+          </Data>
+          <Data name="最急勾配">
+            <value>27°32'</value>
+          </Data>
+          <Data name="最急勾配の箇所">
+            <value>7号柱</value>
+          </Data>
+          <Data name="支柱基数">
+            <value>12</value>
+          </Data>
+          <Data name="営業線路">
+            <value>上り・下り</value>
+          </Data>
+          <Data name="乗車時間">
+            <value>7分20秒</value>
+          </Data>
+          <Data name="乗車時間_予備エンジン運転">
+            <value>23分32秒</value>
+          </Data>
+          <Data name="輸送能力_人毎時">
+            <value>900</value>
+          </Data>
+          <Data name="秒速_m">
+            <value>1.6</value>
+          </Data>
+          <Data name="減速時の秒速_m">
+            <value>1.0</value>
+          </Data>
+          <Data name="予備エンジン運転時の秒速_m">
+            <value>0.50</value>
+          </Data>
+          <Data name="搬器間隔_秒">
+            <value>8</value>
+          </Data>
+          <Data name="搬器間隔_m">
+            <value>12.8</value>
+          </Data>
+          <Data name="搬器">
+            <value>2人乗り</value>
+          </Data>
+          <Data name="搬器数">
+            <value>111</value>
+          </Data>
+          <Data name="回転方向">
+            <value>反時計</value>
+          </Data>
+          <Data name="運行日数_2025-26シーズン">
+            <value>99日</value>
+          </Data>
+          <Data name="乗車人数_上り_2025-26シーズン">
+            <value>67,374人</value>
+          </Data>
+          <Data name="乗車人数_下り_2025-26シーズン">
+            <value>10,451人</value>
+          </Data>
+          <Data name="備考">
+            <value>下り線はスキー等を付けて乗車できない。下り線は2人乗車可能。搬器はセフティーバー付き</value>
+          </Data>
+          <Data name="出典">
+            <value>ハチ北スキー場リフト施設概要表(2026年6月)</value>
+          </Data>
+          <Data name="場内の秒速_m">
+            <value />
+          </Data>
+          <Data name="場内減速時の秒速_m">
+            <value />
+          </Data>
+          <Data name="description">
+            <value />
+          </Data>
+        </ExtendedData>
+        <LineString>
+          <tessellate>1</tessellate>
+          <coordinates>
+            134.55069,35.406191,0
+            134.557674,35.404477,0
+          </coordinates>
+        </LineString>
+      </Placemark>
+      <Placemark>
+        <name>B</name>
+        <description>説明: &lt;br&gt;リフト名: 旅館街シングルリフト&lt;br&gt;方式: 固定循環式&lt;br&gt;運輸開始日: 昭和48.1.13&lt;br&gt;斜距離_m: 665.72&lt;br&gt;高低差_m: 141.00&lt;br&gt;最急勾配: 34°40'&lt;br&gt;最急勾配の箇所: 5号柱&lt;br&gt;支柱基数: 18&lt;br&gt;営業線路: 上り・下り&lt;br&gt;乗車時間: 約6分15秒&lt;br&gt;乗車時間_予備エンジン運転: &lt;br&gt;輸送能力_人毎時: 600&lt;br&gt;秒速_m: 1.8&lt;br&gt;減速時の秒速_m: &lt;br&gt;予備エンジン運転時の秒速_m: &lt;br&gt;搬器間隔_秒: 6&lt;br&gt;搬器間隔_m: 10.8&lt;br&gt;搬器: 1人乗り&lt;br&gt;搬器数: 126&lt;br&gt;回転方向: 反時計&lt;br&gt;運行日数_2025-26シーズン: 68日&lt;br&gt;乗車人数_上り_2025-26シーズン: 8,590人&lt;br&gt;乗車人数_下り_2025-26シーズン: 7,573人&lt;br&gt;備考: 上り・下り線共スキー等を付けて乗車できない。&lt;br&gt;出典: ハチ北スキー場リフト施設概要表(2026年6月)&lt;br&gt;場内の秒速_m: &lt;br&gt;場内減速時の秒速_m: &lt;br&gt;description: </description>
+        <styleUrl>#line-E65100-6000</styleUrl>
+        <ExtendedData>
+          <Data name="説明">
+            <value />
+          </Data>
+          <Data name="リフト名">
+            <value>旅館街シングルリフト</value>
+          </Data>
+          <Data name="方式">
+            <value>固定循環式</value>
+          </Data>
+          <Data name="運輸開始日">
+            <value>昭和48.1.13</value>
+          </Data>
+          <Data name="斜距離_m">
+            <value>665.72</value>
+          </Data>
+          <Data name="高低差_m">
+            <value>141.00</value>
+          </Data>
+          <Data name="最急勾配">
+            <value>34°40'</value>
+          </Data>
+          <Data name="最急勾配の箇所">
+            <value>5号柱</value>
+          </Data>
+          <Data name="支柱基数">
+            <value>18</value>
+          </Data>
+          <Data name="営業線路">
+            <value>上り・下り</value>
+          </Data>
+          <Data name="乗車時間">
+            <value>約6分15秒</value>
+          </Data>
+          <Data name="乗車時間_予備エンジン運転">
+            <value />
+          </Data>
+          <Data name="輸送能力_人毎時">
+            <value>600</value>
+          </Data>
+          <Data name="秒速_m">
+            <value>1.8</value>
+          </Data>
+          <Data name="減速時の秒速_m">
+            <value />
+          </Data>
+          <Data name="予備エンジン運転時の秒速_m">
+            <value />
+          </Data>
+          <Data name="搬器間隔_秒">
+            <value>6</value>
+          </Data>
+          <Data name="搬器間隔_m">
+            <value>10.8</value>
+          </Data>
+          <Data name="搬器">
+            <value>1人乗り</value>
+          </Data>
+          <Data name="搬器数">
+            <value>126</value>
+          </Data>
+          <Data name="回転方向">
+            <value>反時計</value>
+          </Data>
+          <Data name="運行日数_2025-26シーズン">
+            <value>68日</value>
+          </Data>
+          <Data name="乗車人数_上り_2025-26シーズン">
+            <value>8,590人</value>
+          </Data>
+          <Data name="乗車人数_下り_2025-26シーズン">
+            <value>7,573人</value>
+          </Data>
+          <Data name="備考">
+            <value>上り・下り線共スキー等を付けて乗車できない。</value>
+          </Data>
+          <Data name="出典">
+            <value>ハチ北スキー場リフト施設概要表(2026年6月)</value>
+          </Data>
+          <Data name="場内の秒速_m">
+            <value />
+          </Data>
+          <Data name="場内減速時の秒速_m">
+            <value />
+          </Data>
+          <Data name="description">
+            <value />
+          </Data>
+        </ExtendedData>
+        <LineString>
+          <tessellate>1</tessellate>
+          <coordinates>
+            134.555335,35.409059,0
+            134.560152,35.405343,0
+          </coordinates>
+        </LineString>
+      </Placemark>
+      <Placemark>
+        <name>C</name>
+        <description>説明: &lt;br&gt;リフト名: ファミリーペアリフト&lt;br&gt;方式: 固定循環式&lt;br&gt;運輸開始日: 平成12.12.10&lt;br&gt;斜距離_m: 239.86&lt;br&gt;高低差_m: 49.60&lt;br&gt;最急勾配: 27°08'&lt;br&gt;最急勾配の箇所: 2号柱&lt;br&gt;支柱基数: 5&lt;br&gt;営業線路: 上り・下り&lt;br&gt;乗車時間: 2分30秒&lt;br&gt;乗車時間_予備エンジン運転: &lt;br&gt;輸送能力_人毎時: 1,200&lt;br&gt;秒速_m: 1.6&lt;br&gt;減速時の秒速_m: 1.0&lt;br&gt;予備エンジン運転時の秒速_m: &lt;br&gt;搬器間隔_秒: 6&lt;br&gt;搬器間隔_m: 9.6&lt;br&gt;搬器: 2人乗り&lt;br&gt;搬器数: 51&lt;br&gt;回転方向: 時計&lt;br&gt;運行日数_2025-26シーズン: 99日&lt;br&gt;乗車人数_上り_2025-26シーズン: 139,331人&lt;br&gt;乗車人数_下り_2025-26シーズン: 4,902人&lt;br&gt;備考: 下り線はスキー等を付けて乗車できない。1人乗車を原則とする。搬器はセフティーバー付き&lt;br&gt;出典: ハチ北スキー場リフト施設概要表(2026年6月)&lt;br&gt;場内の秒速_m: &lt;br&gt;場内減速時の秒速_m: &lt;br&gt;description: </description>
+        <styleUrl>#line-E65100-6000</styleUrl>
+        <ExtendedData>
+          <Data name="説明">
+            <value />
+          </Data>
+          <Data name="リフト名">
+            <value>ファミリーペアリフト</value>
+          </Data>
+          <Data name="方式">
+            <value>固定循環式</value>
+          </Data>
+          <Data name="運輸開始日">
+            <value>平成12.12.10</value>
+          </Data>
+          <Data name="斜距離_m">
+            <value>239.86</value>
+          </Data>
+          <Data name="高低差_m">
+            <value>49.60</value>
+          </Data>
+          <Data name="最急勾配">
+            <value>27°08'</value>
+          </Data>
+          <Data name="最急勾配の箇所">
+            <value>2号柱</value>
+          </Data>
+          <Data name="支柱基数">
+            <value>5</value>
+          </Data>
+          <Data name="営業線路">
+            <value>上り・下り</value>
+          </Data>
+          <Data name="乗車時間">
+            <value>2分30秒</value>
+          </Data>
+          <Data name="乗車時間_予備エンジン運転">
+            <value />
+          </Data>
+          <Data name="輸送能力_人毎時">
+            <value>1,200</value>
+          </Data>
+          <Data name="秒速_m">
+            <value>1.6</value>
+          </Data>
+          <Data name="減速時の秒速_m">
+            <value>1.0</value>
+          </Data>
+          <Data name="予備エンジン運転時の秒速_m">
+            <value />
+          </Data>
+          <Data name="搬器間隔_秒">
+            <value>6</value>
+          </Data>
+          <Data name="搬器間隔_m">
+            <value>9.6</value>
+          </Data>
+          <Data name="搬器">
+            <value>2人乗り</value>
+          </Data>
+          <Data name="搬器数">
+            <value>51</value>
+          </Data>
+          <Data name="回転方向">
+            <value>時計</value>
+          </Data>
+          <Data name="運行日数_2025-26シーズン">
+            <value>99日</value>
+          </Data>
+          <Data name="乗車人数_上り_2025-26シーズン">
+            <value>139,331人</value>
+          </Data>
+          <Data name="乗車人数_下り_2025-26シーズン">
+            <value>4,902人</value>
+          </Data>
+          <Data name="備考">
+            <value>下り線はスキー等を付けて乗車できない。1人乗車を原則とする。搬器はセフティーバー付き</value>
+          </Data>
+          <Data name="出典">
+            <value>ハチ北スキー場リフト施設概要表(2026年6月)</value>
+          </Data>
+          <Data name="場内の秒速_m">
+            <value />
+          </Data>
+          <Data name="場内減速時の秒速_m">
+            <value />
+          </Data>
+          <Data name="description">
+            <value />
+          </Data>
+        </ExtendedData>
+        <LineString>
+          <tessellate>1</tessellate>
+          <coordinates>
+            134.550468,35.406549,0
+            134.552461,35.407388,0
+          </coordinates>
+        </LineString>
+      </Placemark>
+      <Placemark>
+        <name>D</name>
+        <description>説明: &lt;br&gt;リフト名: 野間クワッドリフト&lt;br&gt;方式: 自動循環式&lt;br&gt;運輸開始日: 平成9.1.7&lt;br&gt;斜距離_m: 1,154.98&lt;br&gt;高低差_m: 208.00&lt;br&gt;最急勾配: 23°30'&lt;br&gt;最急勾配の箇所: 10号柱&lt;br&gt;支柱基数: 17&lt;br&gt;営業線路: 上り・下り&lt;br&gt;乗車時間: 4分49秒&lt;br&gt;乗車時間_予備エンジン運転: 32分5秒&lt;br&gt;輸送能力_人毎時: 2,400&lt;br&gt;秒速_m: 4.0&lt;br&gt;減速時の秒速_m: 2.0&lt;br&gt;予備エンジン運転時の秒速_m: 0.60&lt;br&gt;搬器間隔_秒: 6&lt;br&gt;搬器間隔_m: 24.0&lt;br&gt;搬器: 4人乗り&lt;br&gt;搬器数: 101&lt;br&gt;回転方向: 反時計&lt;br&gt;運行日数_2025-26シーズン: 84日&lt;br&gt;乗車人数_上り_2025-26シーズン: 339,143人&lt;br&gt;乗車人数_下り_2025-26シーズン: 267人&lt;br&gt;備考: 下り線はスキー等を付けて乗車できない。1人乗車を原則とする。搬器はセフティーバー付き&lt;br&gt;出典: ハチ北スキー場リフト施設概要表(2026年6月)&lt;br&gt;場内の秒速_m: 0.73&lt;br&gt;場内減速時の秒速_m: 0.36&lt;br&gt;description: </description>
+        <styleUrl>#line-E65100-6000</styleUrl>
+        <ExtendedData>
+          <Data name="説明">
+            <value />
+          </Data>
+          <Data name="リフト名">
+            <value>野間クワッドリフト</value>
+          </Data>
+          <Data name="方式">
+            <value>自動循環式</value>
+          </Data>
+          <Data name="運輸開始日">
+            <value>平成9.1.7</value>
+          </Data>
+          <Data name="斜距離_m">
+            <value>1,154.98</value>
+          </Data>
+          <Data name="高低差_m">
+            <value>208.00</value>
+          </Data>
+          <Data name="最急勾配">
+            <value>23°30'</value>
+          </Data>
+          <Data name="最急勾配の箇所">
+            <value>10号柱</value>
+          </Data>
+          <Data name="支柱基数">
+            <value>17</value>
+          </Data>
+          <Data name="営業線路">
+            <value>上り・下り</value>
+          </Data>
+          <Data name="乗車時間">
+            <value>4分49秒</value>
+          </Data>
+          <Data name="乗車時間_予備エンジン運転">
+            <value>32分5秒</value>
+          </Data>
+          <Data name="輸送能力_人毎時">
+            <value>2,400</value>
+          </Data>
+          <Data name="秒速_m">
+            <value>4.0</value>
+          </Data>
+          <Data name="減速時の秒速_m">
+            <value>2.0</value>
+          </Data>
+          <Data name="予備エンジン運転時の秒速_m">
+            <value>0.60</value>
+          </Data>
+          <Data name="搬器間隔_秒">
+            <value>6</value>
+          </Data>
+          <Data name="搬器間隔_m">
+            <value>24.0</value>
+          </Data>
+          <Data name="搬器">
+            <value>4人乗り</value>
+          </Data>
+          <Data name="搬器数">
+            <value>101</value>
+          </Data>
+          <Data name="回転方向">
+            <value>反時計</value>
+          </Data>
+          <Data name="運行日数_2025-26シーズン">
+            <value>84日</value>
+          </Data>
+          <Data name="乗車人数_上り_2025-26シーズン">
+            <value>339,143人</value>
+          </Data>
+          <Data name="乗車人数_下り_2025-26シーズン">
+            <value>267人</value>
+          </Data>
+          <Data name="備考">
+            <value>下り線はスキー等を付けて乗車できない。1人乗車を原則とする。搬器はセフティーバー付き</value>
+          </Data>
+          <Data name="出典">
+            <value>ハチ北スキー場リフト施設概要表(2026年6月)</value>
+          </Data>
+          <Data name="場内の秒速_m">
+            <value>0.73</value>
+          </Data>
+          <Data name="場内減速時の秒速_m">
+            <value>0.36</value>
+          </Data>
+          <Data name="description">
+            <value />
+          </Data>
+        </ExtendedData>
+        <LineString>
+          <tessellate>1</tessellate>
+          <coordinates>
+            134.541208,35.405095,0
+            134.552699,35.409161,0
+          </coordinates>
+        </LineString>
+      </Placemark>
+      <Placemark>
+        <name>E</name>
+        <description>説明: &lt;br&gt;リフト名: 中央クワッドリフト&lt;br&gt;方式: 自動循環式&lt;br&gt;運輸開始日: 平成4.12.19&lt;br&gt;斜距離_m: 654.77&lt;br&gt;高低差_m: 164.9&lt;br&gt;最急勾配: 29°38'&lt;br&gt;最急勾配の箇所: 2号柱&lt;br&gt;支柱基数: 12&lt;br&gt;営業線路: 上り・下り&lt;br&gt;乗車時間: 2分44秒&lt;br&gt;乗車時間_予備エンジン運転: 20分35秒&lt;br&gt;輸送能力_人毎時: 2,400&lt;br&gt;秒速_m: 4.0&lt;br&gt;減速時の秒速_m: 2.0&lt;br&gt;予備エンジン運転時の秒速_m: 0.53&lt;br&gt;搬器間隔_秒: 6&lt;br&gt;搬器間隔_m: 24.0&lt;br&gt;搬器: 4人乗り&lt;br&gt;搬器数: 61&lt;br&gt;回転方向: 時計&lt;br&gt;運行日数_2025-26シーズン: 99日&lt;br&gt;乗車人数_上り_2025-26シーズン: 551,067人&lt;br&gt;乗車人数_下り_2025-26シーズン: 857人&lt;br&gt;備考: 下り線はスキー等を付けて乗車できない。1人乗車を原則とする。搬器はセフティーバー付き&lt;br&gt;出典: ハチ北スキー場リフト施設概要表(2026年6月)&lt;br&gt;場内の秒速_m: 0.8&lt;br&gt;場内減速時の秒速_m: 0.4&lt;br&gt;description: </description>
+        <styleUrl>#line-E65100-6000</styleUrl>
+        <ExtendedData>
+          <Data name="説明">
+            <value />
+          </Data>
+          <Data name="リフト名">
+            <value>中央クワッドリフト</value>
+          </Data>
+          <Data name="方式">
+            <value>自動循環式</value>
+          </Data>
+          <Data name="運輸開始日">
+            <value>平成4.12.19</value>
+          </Data>
+          <Data name="斜距離_m">
+            <value>654.77</value>
+          </Data>
+          <Data name="高低差_m">
+            <value>164.9</value>
+          </Data>
+          <Data name="最急勾配">
+            <value>29°38'</value>
+          </Data>
+          <Data name="最急勾配の箇所">
+            <value>2号柱</value>
+          </Data>
+          <Data name="支柱基数">
+            <value>12</value>
+          </Data>
+          <Data name="営業線路">
+            <value>上り・下り</value>
+          </Data>
+          <Data name="乗車時間">
+            <value>2分44秒</value>
+          </Data>
+          <Data name="乗車時間_予備エンジン運転">
+            <value>20分35秒</value>
+          </Data>
+          <Data name="輸送能力_人毎時">
+            <value>2,400</value>
+          </Data>
+          <Data name="秒速_m">
+            <value>4.0</value>
+          </Data>
+          <Data name="減速時の秒速_m">
+            <value>2.0</value>
+          </Data>
+          <Data name="予備エンジン運転時の秒速_m">
+            <value>0.53</value>
+          </Data>
+          <Data name="搬器間隔_秒">
+            <value>6</value>
+          </Data>
+          <Data name="搬器間隔_m">
+            <value>24.0</value>
+          </Data>
+          <Data name="搬器">
+            <value>4人乗り</value>
+          </Data>
+          <Data name="搬器数">
+            <value>61</value>
+          </Data>
+          <Data name="回転方向">
+            <value>時計</value>
+          </Data>
+          <Data name="運行日数_2025-26シーズン">
+            <value>99日</value>
+          </Data>
+          <Data name="乗車人数_上り_2025-26シーズン">
+            <value>551,067人</value>
+          </Data>
+          <Data name="乗車人数_下り_2025-26シーズン">
+            <value>857人</value>
+          </Data>
+          <Data name="備考">
+            <value>下り線はスキー等を付けて乗車できない。1人乗車を原則とする。搬器はセフティーバー付き</value>
+          </Data>
+          <Data name="出典">
+            <value>ハチ北スキー場リフト施設概要表(2026年6月)</value>
+          </Data>
+          <Data name="場内の秒速_m">
+            <value>0.8</value>
+          </Data>
+          <Data name="場内減速時の秒速_m">
+            <value>0.4</value>
+          </Data>
+          <Data name="description">
+            <value />
+          </Data>
+        </ExtendedData>
+        <LineString>
+          <tessellate>1</tessellate>
+          <coordinates>
+            134.542095,35.40467,0
+            134.548307,35.406838,0
+          </coordinates>
+        </LineString>
+      </Placemark>
+      <Placemark>
+        <name>F</name>
+        <description>説明: &lt;br&gt;リフト名: マロニエペアリフト&lt;br&gt;方式: 固定循環式&lt;br&gt;運輸開始日: 平成15.12.14&lt;br&gt;斜距離_m: 542.00&lt;br&gt;高低差_m: 143.00&lt;br&gt;最急勾配: 35°57'&lt;br&gt;最急勾配の箇所: 5号柱&lt;br&gt;支柱基数: 10&lt;br&gt;営業線路: 上り・下り&lt;br&gt;乗車時間: 4分31秒&lt;br&gt;乗車時間_予備エンジン運転: 15分03秒&lt;br&gt;輸送能力_人毎時: 1,200&lt;br&gt;秒速_m: 2.0&lt;br&gt;減速時の秒速_m: 1.6&lt;br&gt;予備エンジン運転時の秒速_m: 0.60&lt;br&gt;搬器間隔_秒: 6&lt;br&gt;搬器間隔_m: 12.0&lt;br&gt;搬器: 2人乗り&lt;br&gt;搬器数: 91&lt;br&gt;回転方向: 時計&lt;br&gt;運行日数_2025-26シーズン: 97日&lt;br&gt;乗車人数_上り_2025-26シーズン: 88,930人&lt;br&gt;乗車人数_下り_2025-26シーズン: 264人&lt;br&gt;備考: 下り線はスキー等を付けて乗車できない。1人乗車を原則とする。搬器はセフティーバー付き&lt;br&gt;出典: ハチ北スキー場リフト施設概要表(2026年6月)&lt;br&gt;場内の秒速_m: &lt;br&gt;場内減速時の秒速_m: &lt;br&gt;description: </description>
+        <styleUrl>#line-E65100-6000</styleUrl>
+        <ExtendedData>
+          <Data name="説明">
+            <value />
+          </Data>
+          <Data name="リフト名">
+            <value>マロニエペアリフト</value>
+          </Data>
+          <Data name="方式">
+            <value>固定循環式</value>
+          </Data>
+          <Data name="運輸開始日">
+            <value>平成15.12.14</value>
+          </Data>
+          <Data name="斜距離_m">
+            <value>542.00</value>
+          </Data>
+          <Data name="高低差_m">
+            <value>143.00</value>
+          </Data>
+          <Data name="最急勾配">
+            <value>35°57'</value>
+          </Data>
+          <Data name="最急勾配の箇所">
+            <value>5号柱</value>
+          </Data>
+          <Data name="支柱基数">
+            <value>10</value>
+          </Data>
+          <Data name="営業線路">
+            <value>上り・下り</value>
+          </Data>
+          <Data name="乗車時間">
+            <value>4分31秒</value>
+          </Data>
+          <Data name="乗車時間_予備エンジン運転">
+            <value>15分03秒</value>
+          </Data>
+          <Data name="輸送能力_人毎時">
+            <value>1,200</value>
+          </Data>
+          <Data name="秒速_m">
+            <value>2.0</value>
+          </Data>
+          <Data name="減速時の秒速_m">
+            <value>1.6</value>
+          </Data>
+          <Data name="予備エンジン運転時の秒速_m">
+            <value>0.60</value>
+          </Data>
+          <Data name="搬器間隔_秒">
+            <value>6</value>
+          </Data>
+          <Data name="搬器間隔_m">
+            <value>12.0</value>
+          </Data>
+          <Data name="搬器">
+            <value>2人乗り</value>
+          </Data>
+          <Data name="搬器数">
+            <value>91</value>
+          </Data>
+          <Data name="回転方向">
+            <value>時計</value>
+          </Data>
+          <Data name="運行日数_2025-26シーズン">
+            <value>97日</value>
+          </Data>
+          <Data name="乗車人数_上り_2025-26シーズン">
+            <value>88,930人</value>
+          </Data>
+          <Data name="乗車人数_下り_2025-26シーズン">
+            <value>264人</value>
+          </Data>
+          <Data name="備考">
+            <value>下り線はスキー等を付けて乗車できない。1人乗車を原則とする。搬器はセフティーバー付き</value>
+          </Data>
+          <Data name="出典">
+            <value>ハチ北スキー場リフト施設概要表(2026年6月)</value>
+          </Data>
+          <Data name="場内の秒速_m">
+            <value />
+          </Data>
+          <Data name="場内減速時の秒速_m">
+            <value />
+          </Data>
+          <Data name="description">
+            <value />
+          </Data>
+        </ExtendedData>
+        <LineString>
+          <tessellate>1</tessellate>
+          <coordinates>
+            134.540189,35.404171,0
+            134.538011,35.400126,0
+          </coordinates>
+        </LineString>
+      </Placemark>
+      <Placemark>
+        <name>H</name>
+        <description>説明: &lt;br&gt;リフト名: 北壁ペアリフト&lt;br&gt;方式: 固定循環式&lt;br&gt;運輸開始日: 平成元.12.30&lt;br&gt;斜距離_m: 714.26&lt;br&gt;高低差_m: 229.00&lt;br&gt;最急勾配: 36°23'&lt;br&gt;最急勾配の箇所: 12号柱&lt;br&gt;支柱基数: 15&lt;br&gt;営業線路: 上り・下り&lt;br&gt;乗車時間: 5分10秒&lt;br&gt;乗車時間_予備エンジン運転: &lt;br&gt;輸送能力_人毎時: 1,200&lt;br&gt;秒速_m: 2.3&lt;br&gt;減速時の秒速_m: 1.6&lt;br&gt;予備エンジン運転時の秒速_m: &lt;br&gt;搬器間隔_秒: 6&lt;br&gt;搬器間隔_m: 13.8&lt;br&gt;搬器: 2人乗り&lt;br&gt;搬器数: 104&lt;br&gt;回転方向: 時計&lt;br&gt;運行日数_2025-26シーズン: 24日&lt;br&gt;乗車人数_上り_2025-26シーズン: 56,082人&lt;br&gt;乗車人数_下り_2025-26シーズン: 186人&lt;br&gt;備考: 下り線は1人乗車を原則とする。&lt;br&gt;出典: ハチ北スキー場リフト施設概要表(2026年6月)&lt;br&gt;場内の秒速_m: &lt;br&gt;場内減速時の秒速_m: &lt;br&gt;description: よく止まる</description>
+        <styleUrl>#line-E65100-6000</styleUrl>
+        <ExtendedData>
+          <Data name="説明">
+            <value />
+          </Data>
+          <Data name="リフト名">
+            <value>北壁ペアリフト</value>
+          </Data>
+          <Data name="方式">
+            <value>固定循環式</value>
+          </Data>
+          <Data name="運輸開始日">
+            <value>平成元.12.30</value>
+          </Data>
+          <Data name="斜距離_m">
+            <value>714.26</value>
+          </Data>
+          <Data name="高低差_m">
+            <value>229.00</value>
+          </Data>
+          <Data name="最急勾配">
+            <value>36°23'</value>
+          </Data>
+          <Data name="最急勾配の箇所">
+            <value>12号柱</value>
+          </Data>
+          <Data name="支柱基数">
+            <value>15</value>
+          </Data>
+          <Data name="営業線路">
+            <value>上り・下り</value>
+          </Data>
+          <Data name="乗車時間">
+            <value>5分10秒</value>
+          </Data>
+          <Data name="乗車時間_予備エンジン運転">
+            <value />
+          </Data>
+          <Data name="輸送能力_人毎時">
+            <value>1,200</value>
+          </Data>
+          <Data name="秒速_m">
+            <value>2.3</value>
+          </Data>
+          <Data name="減速時の秒速_m">
+            <value>1.6</value>
+          </Data>
+          <Data name="予備エンジン運転時の秒速_m">
+            <value />
+          </Data>
+          <Data name="搬器間隔_秒">
+            <value>6</value>
+          </Data>
+          <Data name="搬器間隔_m">
+            <value>13.8</value>
+          </Data>
+          <Data name="搬器">
+            <value>2人乗り</value>
+          </Data>
+          <Data name="搬器数">
+            <value>104</value>
+          </Data>
+          <Data name="回転方向">
+            <value>時計</value>
+          </Data>
+          <Data name="運行日数_2025-26シーズン">
+            <value>24日</value>
+          </Data>
+          <Data name="乗車人数_上り_2025-26シーズン">
+            <value>56,082人</value>
+          </Data>
+          <Data name="乗車人数_下り_2025-26シーズン">
+            <value>186人</value>
+          </Data>
+          <Data name="備考">
+            <value>下り線は1人乗車を原則とする。</value>
+          </Data>
+          <Data name="出典">
+            <value>ハチ北スキー場リフト施設概要表(2026年6月)</value>
+          </Data>
+          <Data name="場内の秒速_m">
+            <value />
+          </Data>
+          <Data name="場内減速時の秒速_m">
+            <value />
+          </Data>
+          <Data name="description">
+            <value>よく止まる</value>
+          </Data>
+        </ExtendedData>
+        <LineString>
+          <tessellate>1</tessellate>
+          <coordinates>
+            134.539065,35.401288,0
+            134.536313,35.395964,0
+          </coordinates>
+        </LineString>
+      </Placemark>
+      <Placemark>
+        <name>J</name>
+        <description>説明: &lt;br&gt;リフト名: パノラマペアリフト&lt;br&gt;方式: 固定循環式&lt;br&gt;運輸開始日: 昭和58.12.19&lt;br&gt;斜距離_m: 425.54&lt;br&gt;高低差_m: 95.40&lt;br&gt;最急勾配: 23°59'&lt;br&gt;最急勾配の箇所: 9号柱&lt;br&gt;支柱基数: 9&lt;br&gt;営業線路: 上りのみ&lt;br&gt;乗車時間: 3分40秒&lt;br&gt;乗車時間_予備エンジン運転: 15分06秒&lt;br&gt;輸送能力_人毎時: 1,200&lt;br&gt;秒速_m: 2.0&lt;br&gt;減速時の秒速_m: 1.3&lt;br&gt;予備エンジン運転時の秒速_m: 0.53&lt;br&gt;搬器間隔_秒: 6&lt;br&gt;搬器間隔_m: 13.2&lt;br&gt;搬器: 2人乗り&lt;br&gt;搬器数: 67&lt;br&gt;回転方向: 反時計&lt;br&gt;運行日数_2025-26シーズン: 97日&lt;br&gt;乗車人数_上り_2025-26シーズン: 285,167人&lt;br&gt;乗車人数_下り_2025-26シーズン: &lt;br&gt;備考: 搬器はセフティーバー付き&lt;br&gt;出典: ハチ北スキー場リフト施設概要表(2026年6月)&lt;br&gt;場内の秒速_m: &lt;br&gt;場内減速時の秒速_m: &lt;br&gt;description: </description>
+        <styleUrl>#line-E65100-6000</styleUrl>
+        <ExtendedData>
+          <Data name="説明">
+            <value />
+          </Data>
+          <Data name="リフト名">
+            <value>パノラマペアリフト</value>
+          </Data>
+          <Data name="方式">
+            <value>固定循環式</value>
+          </Data>
+          <Data name="運輸開始日">
+            <value>昭和58.12.19</value>
+          </Data>
+          <Data name="斜距離_m">
+            <value>425.54</value>
+          </Data>
+          <Data name="高低差_m">
+            <value>95.40</value>
+          </Data>
+          <Data name="最急勾配">
+            <value>23°59'</value>
+          </Data>
+          <Data name="最急勾配の箇所">
+            <value>9号柱</value>
+          </Data>
+          <Data name="支柱基数">
+            <value>9</value>
+          </Data>
+          <Data name="営業線路">
+            <value>上りのみ</value>
+          </Data>
+          <Data name="乗車時間">
+            <value>3分40秒</value>
+          </Data>
+          <Data name="乗車時間_予備エンジン運転">
+            <value>15分06秒</value>
+          </Data>
+          <Data name="輸送能力_人毎時">
+            <value>1,200</value>
+          </Data>
+          <Data name="秒速_m">
+            <value>2.0</value>
+          </Data>
+          <Data name="減速時の秒速_m">
+            <value>1.3</value>
+          </Data>
+          <Data name="予備エンジン運転時の秒速_m">
+            <value>0.53</value>
+          </Data>
+          <Data name="搬器間隔_秒">
+            <value>6</value>
+          </Data>
+          <Data name="搬器間隔_m">
+            <value>13.2</value>
+          </Data>
+          <Data name="搬器">
+            <value>2人乗り</value>
+          </Data>
+          <Data name="搬器数">
+            <value>67</value>
+          </Data>
+          <Data name="回転方向">
+            <value>反時計</value>
+          </Data>
+          <Data name="運行日数_2025-26シーズン">
+            <value>97日</value>
+          </Data>
+          <Data name="乗車人数_上り_2025-26シーズン">
+            <value>285,167人</value>
+          </Data>
+          <Data name="乗車人数_下り_2025-26シーズン">
+            <value />
+          </Data>
+          <Data name="備考">
+            <value>搬器はセフティーバー付き</value>
+          </Data>
+          <Data name="出典">
+            <value>ハチ北スキー場リフト施設概要表(2026年6月)</value>
+          </Data>
+          <Data name="場内の秒速_m">
+            <value />
+          </Data>
+          <Data name="場内減速時の秒速_m">
+            <value />
+          </Data>
+          <Data name="description">
+            <value />
+          </Data>
+        </ExtendedData>
+        <LineString>
+          <tessellate>1</tessellate>
+          <coordinates>
+            134.540132,35.401439,0
+            134.538566,35.397906,0
+          </coordinates>
+        </LineString>
+      </Placemark>
+      <Placemark>
+        <name>K</name>
+        <description>説明: &lt;br&gt;リフト名: 北壁トリプルリフト&lt;br&gt;方式: 固定循環式&lt;br&gt;運輸開始日: 平成6.12.23&lt;br&gt;斜距離_m: 1,074.31&lt;br&gt;高低差_m: 341.58&lt;br&gt;最急勾配: 38°28'&lt;br&gt;最急勾配の箇所: 18号柱&lt;br&gt;支柱基数: 20&lt;br&gt;営業線路: 上りのみ&lt;br&gt;乗車時間: 8分50秒&lt;br&gt;乗車時間_予備エンジン運転: 36分32秒&lt;br&gt;輸送能力_人毎時: 1,800&lt;br&gt;秒速_m: 2.0&lt;br&gt;減速時の秒速_m: 1.3&lt;br&gt;予備エンジン運転時の秒速_m: 0.49&lt;br&gt;搬器間隔_秒: 6&lt;br&gt;搬器間隔_m: 12.0&lt;br&gt;搬器: 3人乗り&lt;br&gt;搬器数: 180&lt;br&gt;回転方向: 時計&lt;br&gt;運行日数_2025-26シーズン: 83日&lt;br&gt;乗車人数_上り_2025-26シーズン: 259,281人&lt;br&gt;乗車人数_下り_2025-26シーズン: &lt;br&gt;備考: 搬器はセフティーバー付き&lt;br&gt;出典: ハチ北スキー場リフト施設概要表(2026年6月)&lt;br&gt;場内の秒速_m: &lt;br&gt;場内減速時の秒速_m: &lt;br&gt;description: </description>
+        <styleUrl>#line-E65100-6000</styleUrl>
+        <ExtendedData>
+          <Data name="説明">
+            <value />
+          </Data>
+          <Data name="リフト名">
+            <value>北壁トリプルリフト</value>
+          </Data>
+          <Data name="方式">
+            <value>固定循環式</value>
+          </Data>
+          <Data name="運輸開始日">
+            <value>平成6.12.23</value>
+          </Data>
+          <Data name="斜距離_m">
+            <value>1,074.31</value>
+          </Data>
+          <Data name="高低差_m">
+            <value>341.58</value>
+          </Data>
+          <Data name="最急勾配">
+            <value>38°28'</value>
+          </Data>
+          <Data name="最急勾配の箇所">
+            <value>18号柱</value>
+          </Data>
+          <Data name="支柱基数">
+            <value>20</value>
+          </Data>
+          <Data name="営業線路">
+            <value>上りのみ</value>
+          </Data>
+          <Data name="乗車時間">
+            <value>8分50秒</value>
+          </Data>
+          <Data name="乗車時間_予備エンジン運転">
+            <value>36分32秒</value>
+          </Data>
+          <Data name="輸送能力_人毎時">
+            <value>1,800</value>
+          </Data>
+          <Data name="秒速_m">
+            <value>2.0</value>
+          </Data>
+          <Data name="減速時の秒速_m">
+            <value>1.3</value>
+          </Data>
+          <Data name="予備エンジン運転時の秒速_m">
+            <value>0.49</value>
+          </Data>
+          <Data name="搬器間隔_秒">
+            <value>6</value>
+          </Data>
+          <Data name="搬器間隔_m">
+            <value>12.0</value>
+          </Data>
+          <Data name="搬器">
+            <value>3人乗り</value>
+          </Data>
+          <Data name="搬器数">
+            <value>180</value>
+          </Data>
+          <Data name="回転方向">
+            <value>時計</value>
+          </Data>
+          <Data name="運行日数_2025-26シーズン">
+            <value>83日</value>
+          </Data>
+          <Data name="乗車人数_上り_2025-26シーズン">
+            <value>259,281人</value>
+          </Data>
+          <Data name="乗車人数_下り_2025-26シーズン">
+            <value />
+          </Data>
+          <Data name="備考">
+            <value>搬器はセフティーバー付き</value>
+          </Data>
+          <Data name="出典">
+            <value>ハチ北スキー場リフト施設概要表(2026年6月)</value>
+          </Data>
+          <Data name="場内の秒速_m">
+            <value />
+          </Data>
+          <Data name="場内減速時の秒速_m">
+            <value />
+          </Data>
+          <Data name="description">
+            <value />
+          </Data>
+        </ExtendedData>
+        <LineString>
+          <tessellate>1</tessellate>
+          <coordinates>
+            134.536105,35.395911,0
+            134.540342,35.404183,0
+          </coordinates>
+        </LineString>
+      </Placemark>
+      <Placemark>
+        <name>6</name>
+        <description>説明: &lt;br&gt;リフト名: &lt;br&gt;方式: &lt;br&gt;運輸開始日: &lt;br&gt;斜距離_m: &lt;br&gt;高低差_m: &lt;br&gt;最急勾配: &lt;br&gt;最急勾配の箇所: &lt;br&gt;支柱基数: &lt;br&gt;営業線路: &lt;br&gt;乗車時間: &lt;br&gt;乗車時間_予備エンジン運転: &lt;br&gt;輸送能力_人毎時: &lt;br&gt;秒速_m: &lt;br&gt;減速時の秒速_m: &lt;br&gt;予備エンジン運転時の秒速_m: &lt;br&gt;搬器間隔_秒: &lt;br&gt;搬器間隔_m: &lt;br&gt;搬器: &lt;br&gt;搬器数: &lt;br&gt;回転方向: &lt;br&gt;運行日数_2025-26シーズン: &lt;br&gt;乗車人数_上り_2025-26シーズン: &lt;br&gt;乗車人数_下り_2025-26シーズン: &lt;br&gt;備考: &lt;br&gt;出典: &lt;br&gt;場内の秒速_m: &lt;br&gt;場内減速時の秒速_m: &lt;br&gt;description: ハチ高原と結ぶリフト。3人乗り。15:30ごろを目処に帰ってくるように。天気によって停止することがあるので注意！</description>
+        <styleUrl>#line-E65100-6000</styleUrl>
+        <ExtendedData>
+          <Data name="説明">
+            <value />
+          </Data>
+          <Data name="リフト名">
+            <value />
+          </Data>
+          <Data name="方式">
+            <value />
+          </Data>
+          <Data name="運輸開始日">
+            <value />
+          </Data>
+          <Data name="斜距離_m">
+            <value />
+          </Data>
+          <Data name="高低差_m">
+            <value />
+          </Data>
+          <Data name="最急勾配">
+            <value />
+          </Data>
+          <Data name="最急勾配の箇所">
+            <value />
+          </Data>
+          <Data name="支柱基数">
+            <value />
+          </Data>
+          <Data name="営業線路">
+            <value />
+          </Data>
+          <Data name="乗車時間">
+            <value />
+          </Data>
+          <Data name="乗車時間_予備エンジン運転">
+            <value />
+          </Data>
+          <Data name="輸送能力_人毎時">
+            <value />
+          </Data>
+          <Data name="秒速_m">
+            <value />
+          </Data>
+          <Data name="減速時の秒速_m">
+            <value />
+          </Data>
+          <Data name="予備エンジン運転時の秒速_m">
+            <value />
+          </Data>
+          <Data name="搬器間隔_秒">
+            <value />
+          </Data>
+          <Data name="搬器間隔_m">
+            <value />
+          </Data>
+          <Data name="搬器">
+            <value />
+          </Data>
+          <Data name="搬器数">
+            <value />
+          </Data>
+          <Data name="回転方向">
+            <value />
+          </Data>
+          <Data name="運行日数_2025-26シーズン">
+            <value />
+          </Data>
+          <Data name="乗車人数_上り_2025-26シーズン">
+            <value />
+          </Data>
+          <Data name="乗車人数_下り_2025-26シーズン">
+            <value />
+          </Data>
+          <Data name="備考">
+            <value />
+          </Data>
+          <Data name="出典">
+            <value />
+          </Data>
+          <Data name="場内の秒速_m">
+            <value />
+          </Data>
+          <Data name="場内減速時の秒速_m">
+            <value />
+          </Data>
+          <Data name="description">
+            <value>ハチ高原と結ぶリフト。3人乗り。15:30ごろを目処に帰ってくるように。天気によって停止することがあるので注意！</value>
+          </Data>
+        </ExtendedData>
+        <LineString>
+          <tessellate>1</tessellate>
+          <coordinates>
+            134.533897,35.391232,0
+            134.536251,35.394987,0
+          </coordinates>
+        </LineString>
+      </Placemark>
+      <Placemark>
+        <name>キッズパーク・ムービングベルト</name>
+        <description>説明: &lt;br&gt;リフト名: &lt;br&gt;方式: &lt;br&gt;運輸開始日: &lt;br&gt;斜距離_m: &lt;br&gt;高低差_m: &lt;br&gt;最急勾配: &lt;br&gt;最急勾配の箇所: &lt;br&gt;支柱基数: &lt;br&gt;営業線路: &lt;br&gt;乗車時間: &lt;br&gt;乗車時間_予備エンジン運転: &lt;br&gt;輸送能力_人毎時: &lt;br&gt;秒速_m: &lt;br&gt;減速時の秒速_m: &lt;br&gt;予備エンジン運転時の秒速_m: &lt;br&gt;搬器間隔_秒: &lt;br&gt;搬器間隔_m: &lt;br&gt;搬器: &lt;br&gt;搬器数: &lt;br&gt;回転方向: &lt;br&gt;運行日数_2025-26シーズン: &lt;br&gt;乗車人数_上り_2025-26シーズン: &lt;br&gt;乗車人数_下り_2025-26シーズン: &lt;br&gt;備考: &lt;br&gt;出典: &lt;br&gt;場内の秒速_m: &lt;br&gt;場内減速時の秒速_m: &lt;br&gt;description: </description>
+        <styleUrl>#line-E65100-6000</styleUrl>
+        <ExtendedData>
+          <Data name="説明">
+            <value />
+          </Data>
+          <Data name="リフト名">
+            <value />
+          </Data>
+          <Data name="方式">
+            <value />
+          </Data>
+          <Data name="運輸開始日">
+            <value />
+          </Data>
+          <Data name="斜距離_m">
+            <value />
+          </Data>
+          <Data name="高低差_m">
+            <value />
+          </Data>
+          <Data name="最急勾配">
+            <value />
+          </Data>
+          <Data name="最急勾配の箇所">
+            <value />
+          </Data>
+          <Data name="支柱基数">
+            <value />
+          </Data>
+          <Data name="営業線路">
+            <value />
+          </Data>
+          <Data name="乗車時間">
+            <value />
+          </Data>
+          <Data name="乗車時間_予備エンジン運転">
+            <value />
+          </Data>
+          <Data name="輸送能力_人毎時">
+            <value />
+          </Data>
+          <Data name="秒速_m">
+            <value />
+          </Data>
+          <Data name="減速時の秒速_m">
+            <value />
+          </Data>
+          <Data name="予備エンジン運転時の秒速_m">
+            <value />
+          </Data>
+          <Data name="搬器間隔_秒">
+            <value />
+          </Data>
+          <Data name="搬器間隔_m">
+            <value />
+          </Data>
+          <Data name="搬器">
+            <value />
+          </Data>
+          <Data name="搬器数">
+            <value />
+          </Data>
+          <Data name="回転方向">
+            <value />
+          </Data>
+          <Data name="運行日数_2025-26シーズン">
+            <value />
+          </Data>
+          <Data name="乗車人数_上り_2025-26シーズン">
+            <value />
+          </Data>
+          <Data name="乗車人数_下り_2025-26シーズン">
+            <value />
+          </Data>
+          <Data name="備考">
+            <value />
+          </Data>
+          <Data name="出典">
+            <value />
+          </Data>
+          <Data name="場内の秒速_m">
+            <value />
+          </Data>
+          <Data name="場内減速時の秒速_m">
+            <value />
+          </Data>
+          <Data name="description">
+            <value />
+          </Data>
+        </ExtendedData>
+        <LineString>
+          <tessellate>1</tessellate>
+          <coordinates>
+            134.552254,35.406869,0
+            134.552774,35.407075,0
+          </coordinates>
+        </LineString>
+      </Placemark>
+    </Folder>
+    <Folder>
+      <name>施設</name>
+      <Placemark>
+        <name>スキースクール</name>
+        <description>説明: &lt;br&gt;description: </description>
+        <styleUrl>#poly-0288D1-2000-76</styleUrl>
+        <ExtendedData>
+          <Data name="説明">
+            <value />
+          </Data>
+          <Data name="description">
+            <value />
+          </Data>
+        </ExtendedData>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                134.549286,35.406019,0
+                134.549283,35.405848,0
+                134.549482,35.405835,0
+                134.549482,35.406008,0
+                134.549286,35.406019,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>スノボスクール</name>
+        <description>説明: &lt;br&gt;description: </description>
+        <styleUrl>#poly-0288D1-2000-76</styleUrl>
+        <ExtendedData>
+          <Data name="説明">
+            <value />
+          </Data>
+          <Data name="description">
+            <value />
+          </Data>
+        </ExtendedData>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                134.548669,35.407147,0
+                134.548725,35.407053,0
+                134.548827,35.407099,0
+                134.548779,35.407182,0
+                134.548669,35.407147,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>ゲレンデコンビニ</name>
+        <description>説明: &lt;br&gt;description: おむつ交換などができる。お菓子やジュースなどはある。ただし、レストランは無い。</description>
+        <styleUrl>#poly-0288D1-2000-76</styleUrl>
+        <ExtendedData>
+          <Data name="説明">
+            <value />
+          </Data>
+          <Data name="description">
+            <value>おむつ交換などができる。お菓子やジュースなどはある。ただし、レストランは無い。</value>
+          </Data>
+        </ExtendedData>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                134.549033,35.406065,0
+                134.548977,35.405942,0
+                134.549197,35.405877,0
+                134.549259,35.40601,0
+                134.549033,35.406065,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>マセンジョー</name>
+        <description>説明: &lt;br&gt;description: レストラン営業。限定的かも？</description>
+        <styleUrl>#poly-0288D1-2000-76</styleUrl>
+        <ExtendedData>
+          <Data name="説明">
+            <value />
+          </Data>
+          <Data name="description">
+            <value>レストラン営業。限定的かも？</value>
+          </Data>
+        </ExtendedData>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                134.549051,35.406999,0
+                134.549151,35.406865,0
+                134.549399,35.406986,0
+                134.549304,35.407105,0
+                134.549051,35.406999,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>ふぃーるどばれい</name>
+        <description>説明: &lt;br&gt;description: 丼系の食事をとることができる。上に上がれないファミリーの食事どころ。</description>
+        <styleUrl>#poly-0288D1-2000-76</styleUrl>
+        <ExtendedData>
+          <Data name="説明">
+            <value />
+          </Data>
+          <Data name="description">
+            <value>丼系の食事をとることができる。上に上がれないファミリーの食事どころ。</value>
+          </Data>
+        </ExtendedData>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                134.548186,35.407879,0
+                134.548269,35.407753,0
+                134.548414,35.407807,0
+                134.548327,35.407933,0
+                134.548186,35.407879,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>あさひ</name>
+        <description>説明: &lt;br&gt;description: </description>
+        <styleUrl>#poly-0288D1-2000-76</styleUrl>
+        <ExtendedData>
+          <Data name="説明">
+            <value />
+          </Data>
+          <Data name="description">
+            <value />
+          </Data>
+        </ExtendedData>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                134.553038,35.408996,0
+                134.552984,35.408677,0
+                134.553279,35.40865,0
+                134.553349,35.40897,0
+                134.553038,35.408996,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>青い鳥</name>
+        <description>説明: &lt;br&gt;description: </description>
+        <styleUrl>#poly-0288D1-2000-76</styleUrl>
+        <ExtendedData>
+          <Data name="説明">
+            <value />
+          </Data>
+          <Data name="description">
+            <value />
+          </Data>
+        </ExtendedData>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                134.553599,35.40998,0
+                134.553565,35.409874,0
+                134.553823,35.409831,0
+                134.553844,35.409933,0
+                134.553599,35.40998,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>クリスタKAZAO</name>
+        <description>説明: &lt;br&gt;description: メインの食事どころ。リフト会社が経営</description>
+        <styleUrl>#poly-0288D1-2000-76</styleUrl>
+        <ExtendedData>
+          <Data name="説明">
+            <value />
+          </Data>
+          <Data name="description">
+            <value>メインの食事どころ。リフト会社が経営</value>
+          </Data>
+        </ExtendedData>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                134.5411,35.404226,0
+                134.541233,35.403991,0
+                134.541634,35.404145,0
+                134.541486,35.404367,0
+                134.5411,35.404226,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>展望レストランハチ北</name>
+        <description>説明: &lt;br&gt;description: 営業していないこともある</description>
+        <styleUrl>#poly-0288D1-2000-76</styleUrl>
+        <ExtendedData>
+          <Data name="説明">
+            <value />
+          </Data>
+          <Data name="description">
+            <value>営業していないこともある</value>
+          </Data>
+        </ExtendedData>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                134.540572,35.399668,0
+                134.540795,35.399443,0
+                134.541092,35.399633,0
+                134.540886,35.399845,0
+                134.540572,35.399668,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>休憩所</name>
+        <description>説明: &lt;br&gt;description: トイレと自動販売機</description>
+        <styleUrl>#poly-0288D1-2000-76</styleUrl>
+        <ExtendedData>
+          <Data name="説明">
+            <value />
+          </Data>
+          <Data name="description">
+            <value>トイレと自動販売機</value>
+          </Data>
+        </ExtendedData>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                134.539073,35.40146,0
+                134.539034,35.401345,0
+                134.539224,35.401298,0
+                134.539262,35.401422,0
+                134.539073,35.40146,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>トイレ</name>
+        <description>説明: &lt;br&gt;description: </description>
+        <styleUrl>#poly-0288D1-2000-76</styleUrl>
+        <ExtendedData>
+          <Data name="説明">
+            <value />
+          </Data>
+          <Data name="description">
+            <value />
+          </Data>
+        </ExtendedData>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                134.548316,35.4069,0
+                134.548352,35.406843,0
+                134.548414,35.406866,0
+                134.548375,35.406929,0
+                134.548316,35.4069,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>トイレ</name>
+        <description>説明: &lt;br&gt;description: </description>
+        <styleUrl>#poly-0288D1-2000-76</styleUrl>
+        <ExtendedData>
+          <Data name="説明">
+            <value />
+          </Data>
+          <Data name="description">
+            <value />
+          </Data>
+        </ExtendedData>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                134.552838,35.407684,0
+                134.552871,35.407618,0
+                134.552947,35.407641,0
+                134.552918,35.407703,0
+                134.552838,35.407684,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>更衣室</name>
+        <description>説明: &lt;br&gt;description: </description>
+        <styleUrl>#poly-0288D1-2000-76</styleUrl>
+        <ExtendedData>
+          <Data name="説明">
+            <value />
+          </Data>
+          <Data name="description">
+            <value />
+          </Data>
+        </ExtendedData>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                134.552831,35.407696,0
+                134.552902,35.407721,0
+                134.552835,35.407844,0
+                134.552769,35.407822,0
+                134.552831,35.407696,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>トイレ</name>
+        <description>説明: &lt;br&gt;description: </description>
+        <styleUrl>#poly-0288D1-2000-76</styleUrl>
+        <ExtendedData>
+          <Data name="説明">
+            <value />
+          </Data>
+          <Data name="description">
+            <value />
+          </Data>
+        </ExtendedData>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                134.555118,35.40967,0
+                134.55519,35.409564,0
+                134.555264,35.409598,0
+                134.555197,35.409697,0
+                134.555118,35.40967,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>トイレ</name>
+        <description>説明: &lt;br&gt;description: </description>
+        <styleUrl>#poly-0288D1-2000-76</styleUrl>
+        <ExtendedData>
+          <Data name="説明">
+            <value />
+          </Data>
+          <Data name="description">
+            <value />
+          </Data>
+        </ExtendedData>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                134.556132,35.410031,0
+                134.556178,35.409978,0
+                134.556237,35.41001,0
+                134.556206,35.410056,0
+                134.556132,35.410031,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>更衣室</name>
+        <description>説明: &lt;br&gt;description: </description>
+        <styleUrl>#poly-0288D1-2000-76</styleUrl>
+        <ExtendedData>
+          <Data name="説明">
+            <value />
+          </Data>
+          <Data name="description">
+            <value />
+          </Data>
+        </ExtendedData>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                134.553382,35.408001,0
+                134.553351,35.407953,0
+                134.553431,35.407922,0
+                134.553461,35.407978,0
+                134.553382,35.408001,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>更衣室</name>
+        <description>説明: &lt;br&gt;description: </description>
+        <styleUrl>#poly-0288D1-2000-76</styleUrl>
+        <ExtendedData>
+          <Data name="説明">
+            <value />
+          </Data>
+          <Data name="description">
+            <value />
+          </Data>
+        </ExtendedData>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                134.553824,35.407969,0
+                134.553756,35.40787,0
+                134.553797,35.407851,0
+                134.553868,35.40795,0
+                134.553824,35.407969,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>事務所</name>
+        <description>説明: &lt;br&gt;description: 忘れ物があった場合や、何か問題があった場合の対応場所</description>
+        <styleUrl>#poly-0288D1-2000-76</styleUrl>
+        <ExtendedData>
+          <Data name="説明">
+            <value />
+          </Data>
+          <Data name="description">
+            <value>忘れ物があった場合や、何か問題があった場合の対応場所</value>
+          </Data>
+        </ExtendedData>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                134.553927,35.40762,0
+                134.553923,35.407502,0
+                134.554092,35.407503,0
+                134.554088,35.407627,0
+                134.553927,35.40762,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>チケット売り場（旅館街）</name>
+        <description>説明: &lt;br&gt;description: </description>
+        <styleUrl>#poly-0288D1-2000-76</styleUrl>
+        <ExtendedData>
+          <Data name="説明">
+            <value />
+          </Data>
+          <Data name="description">
+            <value />
+          </Data>
+        </ExtendedData>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                134.5576,35.404878,0
+                134.557571,35.40485,0
+                134.557617,35.404815,0
+                134.557638,35.40484,0
+                134.5576,35.404878,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>トイレと更衣室</name>
+        <description>説明: &lt;br&gt;description: </description>
+        <styleUrl>#poly-0288D1-2000-76</styleUrl>
+        <ExtendedData>
+          <Data name="説明">
+            <value />
+          </Data>
+          <Data name="description">
+            <value />
+          </Data>
+        </ExtendedData>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                134.557531,35.404759,0
+                134.557609,35.404807,0
+                134.557554,35.40485,0
+                134.557479,35.40479,0
+                134.557531,35.404759,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>ライン 21</name>
+        <description>説明: &lt;br&gt;description: </description>
+        <styleUrl>#line-000000-1200</styleUrl>
+        <ExtendedData>
+          <Data name="説明">
+            <value />
+          </Data>
+          <Data name="description">
+            <value />
+          </Data>
+        </ExtendedData>
+        <LineString>
+          <tessellate>1</tessellate>
+          <coordinates>
+            134.5499395,35.4063982,0
+            134.5492596,35.406954,0
+          </coordinates>
+        </LineString>
+      </Placemark>
+      <Placemark>
+        <name>ライン 22</name>
+        <description>説明: &lt;br&gt;description: </description>
+        <styleUrl>#line-000000-1200</styleUrl>
+        <ExtendedData>
+          <Data name="説明">
+            <value />
+          </Data>
+          <Data name="description">
+            <value />
+          </Data>
+        </ExtendedData>
+        <LineString>
+          <tessellate>1</tessellate>
+          <coordinates>
+            134.5497945,35.4063735,0
+            134.5487374,35.4071059,0
+          </coordinates>
+        </LineString>
+      </Placemark>
+    </Folder>
+    <Folder>
+      <name>チケット売り場</name>
+      <Placemark>
+        <name>チケット売り場（ファミリー）</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            134.552933,35.407611,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>チケット売り場（野間）</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            134.553923,35.409518,0
+          </coordinates>
+        </Point>
+      </Placemark>
+    </Folder>
+    <Folder>
+      <name>参照</name>
+      <Placemark>
+        <name>ライン 1</name>
+        <styleUrl>#line-000000-1200-nodesc</styleUrl>
+        <LineString>
+          <tessellate>1</tessellate>
+          <coordinates>
+            134.5498335,35.4062904,0
+            134.5494061,35.4059365,0
+          </coordinates>
+        </LineString>
+      </Placemark>
+      <Placemark>
+        <name>ライン 2</name>
+        <styleUrl>#line-000000-1200-nodesc</styleUrl>
+        <LineString>
+          <tessellate>1</tessellate>
+          <coordinates>
+            134.5498911,35.4063565,0
+            134.5491299,35.4059609,0
+          </coordinates>
+        </LineString>
+      </Placemark>
+    </Folder>
+  </Document>
+</kml>

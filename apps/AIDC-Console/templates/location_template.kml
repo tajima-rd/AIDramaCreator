@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  場所の雛形(KML)。説明は同じディレクトリのREADME.md。
+  - Location: シーンの場所。形は面(Polygon)。1つの面がLocation 1つ。
+      ExtendedDataに id・key・address・instruction・description を書く(nameはPlacemarkのname。値が無ければ空)。
+  - SiteFlow: 線(LineString)。始点を含むLocationから、終点を含むLocationへの移動。
+      ExtendedDataに direction(forward | backward | both)を書く。
+  - それ以外のフォルダ: 補助情報。位置関係の説明に使う地物(リフト・施設等)。フォルダの名前・形・属性は自由。
+-->
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>場所の雛形</name>
+    <Folder>
+      <name>Location</name>
+      <!--
+      <Placemark>
+        <name>最初の場所</name>
+        <ExtendedData>
+          <Data name="id"><value></value></Data>
+          <Data name="key"><value>location_001</value></Data>
+          <Data name="address"><value></value></Data>
+          <Data name="instruction"><value>このエリアで案内すること</value></Data>
+          <Data name="description"><value>このエリアの事実</value></Data>
+        </ExtendedData>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <coordinates>経度,緯度,0 … 最初の点に戻る</coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      -->
+    </Folder>
+    <Folder>
+      <name>SiteFlow</name>
+      <!--
+      <Placemark>
+        <name>最初の場所→間違いポイント</name>
+        <ExtendedData>
+          <Data name="direction"><value>forward</value></Data>
+        </ExtendedData>
+        <LineString>
+          <coordinates>始点(Locationの面の内側) … 終点(Locationの面の内側)</coordinates>
+        </LineString>
+      </Placemark>
+      -->
+    </Folder>
+    <Folder>
+      <name>補助情報</name>
+    </Folder>
+  </Document>
+</kml>

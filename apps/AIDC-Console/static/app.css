@@ -479,6 +479,12 @@ body {
   height: 100%;
   min-height: 0;
 }
+/* 一覧の下の、選んで追加する行(CastsタブのAdd Cast等) */
+.panel-master-add-row { display: flex; gap: 6px; align-items: center; padding: 6px 8px; }
+.panel-master-add-row select { flex: 1 1 auto; min-width: 0; }
+.panel-master-add-row .panel-master-add { flex: 0 0 auto; width: auto; }
+/* 上に操作の行(LocationsタブのGenerate Scenes等)を置くとき: 高さ100%ではなく、その下の残りを埋める */
+.panel-master-detail--fill { flex: 1 1 auto; height: auto; }
 .panel-master {
   flex: 0 0 240px;
   border: 1px solid var(--border);
@@ -632,7 +638,7 @@ body {
  * dl等)は、flexの既定(flex-shrink:1)のままだと残り領域を埋めるために
  * 潰れてしまい、内容が見切れる。表以外は常に自然な高さを保つこと。
  */
-.panel-body > :not(.data-table-wrap--fill):not(.panel-fill-section),
+.panel-body > :not(.data-table-wrap--fill):not(.panel-fill-section):not(.panel-master-detail--fill),
 .panel-fill-section > :not(.data-table-wrap--fill) {
   flex-shrink: 0;
 }
@@ -688,5 +694,29 @@ ai-build-panel .panel-tab:disabled { color: var(--text-disabled); cursor: defaul
 .ab-view { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 8px 4px; }
 /* 人物の工程: 人物パネルの該当タブを埋め込む(人物パネルの一覧+詳細を、右側の残りの高さに収める) */
 .ab-view.ab-view--embed { display: flex; flex-direction: column; overflow: hidden; padding: 0; }
-.ab-view--embed > character-editor-panel { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+.ab-view--embed > character-editor-panel,
+.ab-view--embed > dramaturgy-editor-panel { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
 
+
+/* Location Map(location_map_panel.js): 左に地図、右に属性と一覧 */
+.lm-body { display: flex; flex: 1 1 auto; min-height: 0; }
+.lm-map { flex: 1 1 auto; min-width: 0; min-height: 0; }
+.lm-side {
+  flex: 0 0 340px;
+  overflow-y: auto;
+  border-left: 1px solid var(--border);
+  background: var(--surface);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.lm-side .panel-form { max-width: none; }
+.lm-help { line-height: 1.6; }
+.lm-list { border: 1px solid var(--border); border-radius: var(--radius-sm); flex-shrink: 0; }
+.lm-arrow { background: none; border: none; }
+.lm-arrow div { color: #7a1f1f; font-size: 20px; line-height: 22px; text-align: center; text-shadow: 0 0 2px #fff, 0 0 2px #fff, 0 0 3px #fff; }
+.lm-popup-title { font-weight: 600; margin-bottom: 4px; }
+.lm-popup table { border-collapse: collapse; font-size: var(--fs-xs); }
+.lm-popup th { text-align: left; padding: 1px 6px 1px 0; color: var(--text-muted); font-weight: 400; vertical-align: top; }
+.lm-popup td { padding: 1px 0; white-space: pre-wrap; }

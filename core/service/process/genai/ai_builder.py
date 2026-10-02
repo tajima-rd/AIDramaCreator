@@ -26,12 +26,20 @@ from core.model.agent.base_agent import BaseAgent
 from core.model.agent.factory import AGENT_ROLES
 from core.model.drama import Dramaturgy
 from core.project.project import Project
+from core.prompt.ai_build import casting as casting_prompts
 from core.prompt.ai_build import characters as world_prompts
 from core.prompt.ai_build import proposal as proposal_prompts
 from core.prompt.ai_build.common import BuildMode
 from core.prompt.ai_build.step import BuildStep, find_step
 from core.service.process.edit import drama_draft_editor
-from core.service.process.genai.ai_build_patch import PatchOutcome, proposal_patch, world_patch
+from core.service.process.genai import voice_catalog
+from core.service.process.genai.ai_build_patch import (
+    PatchOutcome,
+    audition_patch,
+    cast_patch,
+    proposal_patch,
+    world_patch,
+)
 from core.service.process.genai.generator_builder import build_task_text_generator
 
 # 応答の長さの上限。生成AIが同じ語を繰り返す状態に陥っても、上限で止めて「途中で切れた」と知らせる(上限が無いと、
@@ -81,7 +89,7 @@ def send_message(
     ]
     reference_text = _reference_text(references, generator)
 
-    request = _request_text(handler.context(model, dramaturgy), reference_text, mode, text)
+    request = _request_text(handler.context(project, model, dramaturgy), reference_text, mode, text)
     messages = [*_history_messages(step.key, history), Message(role="user", text=request)]
     reply = generator.generate_structured(
         messages,
@@ -90,7 +98,7 @@ def send_message(
         attachments=attachments,
     )
     content = _draft_content(db_path, draft_id)
-    outcome = handler.patch(content, dramaturgy, step.task_code, reply, mode)
+    outcome = handler.patch(project, content, dramaturgy, step.task_code, reply, mode)
     stored_reply: dict[str, Any] = {
         "proposal": handler.display(reply) if outcome.patch else None,
         "changed_fields": outcome.changes,
@@ -228,12 +236,12 @@ class _StepHandler:
     def __init__(self, schema, prompt, context, patch, display):
         self.schema = schema
         self.prompt = prompt  # (agent, task_code, mode) -> Prompt
-        self.context = context  # (model, dramaturgy) -> str
-        self.patch = patch  # (content, dramaturgy, task_code, reply, mode) -> PatchOutcome
+        self.context = context  # (project, model, dramaturgy) -> str
+        self.patch = patch  # (project, content, dramaturgy, task_code, reply, mode) -> PatchOutcome
         self.display = display  # (reply) -> 画面に出す提案の対応表
 
 
-def _world_patch(content, dramaturgy, task_code, reply, mode) -> PatchOutcome:
+def _world_patch(project, content, dramaturgy, task_code, reply, mode) -> PatchOutcome:
     if mode is BuildMode.DIALOGUE and not reply.has_proposal:
         return PatchOutcome(None, [], [])
     return world_patch(
@@ -255,7 +263,7 @@ def _world_handler(task_code: str) -> _StepHandler:
     return _StepHandler(
         world_prompts.REPLIES[task_code],
         world_prompts.world_prompt,
-        world_prompts.world_context,
+        lambda project, model, dramaturgy: world_prompts.world_context(model, dramaturgy),
         _world_patch,
         _world_display,
     )
@@ -265,11 +273,55 @@ _HANDLERS: dict[str, _StepHandler] = {
     "proposal": _StepHandler(
         proposal_prompts.ProposalReply,
         lambda agent, code, mode: proposal_prompts.proposal_prompt(agent, mode),
-        lambda model, dramaturgy: proposal_prompts.proposal_context(dramaturgy.proposal, dramaturgy.input_language),
-        lambda content, dramaturgy, code, reply, mode: proposal_patch(dramaturgy, reply, mode),
+        lambda project, model, dramaturgy: proposal_prompts.proposal_context(dramaturgy.proposal, dramaturgy.input_language),
+        lambda project, content, dramaturgy, code, reply, mode: proposal_patch(dramaturgy, reply, mode),
         lambda reply: reply.proposal.model_dump(),
     ),
     "characters": _world_handler(world_prompts.CHARACTERS_TASK),
     "groups": _world_handler(world_prompts.GROUPS_TASK),
     "relationships": _world_handler(world_prompts.RELATIONSHIPS_TASK),
+    "casting": _StepHandler(
+        casting_prompts.CastingReply,
+        casting_prompts.casting_prompt,
+        lambda project, model, dramaturgy: casting_prompts.casting_context(model, dramaturgy),
+        lambda project, content, dramaturgy, code, reply, mode: (
+            PatchOutcome(None, [], [])
+            if mode is BuildMode.DIALOGUE and not reply.has_proposal
+            else cast_patch(content, dramaturgy.id, reply.casts)
+        ),
+        lambda reply: {"casts": [c.model_dump() for c in reply.casts]},
+    ),
+    "audition": _StepHandler(
+        casting_prompts.AuditionReply,
+        casting_prompts.casting_prompt,
+        lambda project, model, dramaturgy: casting_prompts.audition_context(
+            dramaturgy, _audition_voices(project, dramaturgy), _audition_language(dramaturgy)
+        ),
+        lambda project, content, dramaturgy, code, reply, mode: (
+            PatchOutcome(None, [], [])
+            if mode is BuildMode.DIALOGUE and not reply.has_proposal
+            else audition_patch(
+                content,
+                dramaturgy.id,
+                reply.auditions,
+                _audition_voices(project, dramaturgy),
+                project.tts.client,
+                project.tts.model,
+            )
+        ),
+        lambda reply: {"auditions": [a.model_dump() for a in reply.auditions]},
+    ),
 }
+
+
+def _audition_language(dramaturgy: Dramaturgy) -> str:
+    """Auditionで声を選ぶ言語(作品の音声にする言語。無ければ制作に使う言語)。"""
+    language = dramaturgy.output_language or dramaturgy.input_language
+    if not language:
+        raise ValueError("作品の言語(Output Language)を、Dramaturgy EditorのPropertiesタブで設定してください。")
+    return language
+
+
+def _audition_voices(project: Project, dramaturgy: Dramaturgy):
+    """Auditionで選べる声(プロジェクトの音声合成の提供元の、作品の言語の声)。"""
+    return voice_catalog.list_voices(project, _audition_language(dramaturgy))

@@ -15,6 +15,8 @@ from typing import Any, Optional, Union
 
 import yaml
 
+from core.gis.analysis.containment import covers_point, line_endpoints
+from core.gis.geometry import is_areal, normalize_wkt, parse_wkt
 from core.infra.io.agent_default_reader import complete_agent_spec
 from core.model.agent import AgentTask, BaseAgent
 from core.model.agent.factory import AGENT_ROLES, build_actor, build_agent
@@ -34,6 +36,7 @@ from core.model.drama import (
     Scene,
     Script,
     SentenceEnding,
+    SiteFlow,
     Situation,
     SpeechStyle,
     TemporalNode,
@@ -51,6 +54,7 @@ from core.model.drama.factory import (
     build_plain_element,
     build_relationship,
     build_scene,
+    build_site_flow,
     build_temporal_edge,
     build_temporal_node,
 )
@@ -159,7 +163,7 @@ class ModelDefinition:
     """
     モデル定義YAMLから組み立てたもの。作品(Dramaturgy。複数あり得る。エージェントは作品が所有する)、人物と人物関係、
     所有者を持たない時点・場所。
-    人物・人物のまとまり・人物関係・時点・場所の持ち主はProjectだが、Projectの作り直しまでは、ここに仮置きする
+    人物・人物のまとまり・人物関係・時点・場所・移動の持ち主はProjectだが、Projectの作り直しまでは、ここに仮置きする
     (作品は参照で持つ。2026-10-01ユーザー)。プロジェクトの作品モデル全体(DBの正本。core.infra.store.drama_model_store)もこの形で扱う。
     """
 
@@ -171,6 +175,7 @@ class ModelDefinition:
         character_groups: Optional[list[CharacterGroup]] = None,
         temporal_nodes: Optional[list[TemporalNode]] = None,
         locations: Optional[list[Location]] = None,
+        site_flows: Optional[list[SiteFlow]] = None,
     ):
         self.dramaturgies: list[Dramaturgy] = list(dramaturgies or [])
         self.characters: list[Character] = list(characters or [])
@@ -178,6 +183,7 @@ class ModelDefinition:
         self.character_groups: list[CharacterGroup] = list(character_groups or [])
         self.temporal_nodes: list[TemporalNode] = list(temporal_nodes or [])
         self.locations: list[Location] = list(locations or [])
+        self.site_flows: list[SiteFlow] = list(site_flows or [])
 
     @property
     def dramaturgy(self) -> Dramaturgy:
@@ -248,7 +254,7 @@ class _References:
 def build_model_definition_from_spec(spec: dict[str, Any]) -> ModelDefinition:
     """
     重ね合わせた後の定義(対応表)の形を検証し、作品とエージェントを組み立てる。参照先の多いものから順に組み立てる:
-    時点・場所 → 人物 → 人物関係 → 経歴 → 作品ごとに(時間の位相 → 配役 → 幕・シーン・台詞 → 演出付きの原稿 → 作品。
+    時点・場所・移動 → 人物 → 人物関係 → 経歴 → 作品ごとに(時間の位相 → 配役 → 幕・シーン・台詞 → 演出付きの原稿 → 作品。
     人物・人物関係は参照) → エージェント。作品はdramaturgy、dramaturgiesの順。
     """
     definition = DramaturgyDefinition.model_validate(spec)
@@ -266,8 +272,7 @@ def build_model_definition_from_spec(spec: dict[str, Any]) -> ModelDefinition:
     for location_spec in definition.locations:
         location = build_location(
             location_spec.name,
-            location_spec.latitude,
-            location_spec.longitude,
+            normalize_wkt(location_spec.geometry, f"場所 '{location_spec.name}'"),
             location_spec.address,
             location_spec.instruction,
             location_spec.description,
@@ -275,6 +280,23 @@ def build_model_definition_from_spec(spec: dict[str, Any]) -> ModelDefinition:
         )
         refs.register("Location", location_spec.key, location)
         locations.append(location)
+
+    site_flows: list[SiteFlow] = []
+    for flow_spec in definition.site_flows:
+        where = f"移動 '{flow_spec.name or flow_spec.key or flow_spec.id}'"
+        flow = build_site_flow(
+            refs.resolve("Location", flow_spec.origin, where),
+            refs.resolve("Location", flow_spec.destination, where),
+            flow_spec.direction,
+            normalize_wkt(flow_spec.geometry, where, ("LineString",)),
+            flow_spec.name,
+            id=flow_spec.id,
+        )
+        _check_site_flow_endpoints(
+            flow.geometry, flow.origin.geometry, flow.destination.geometry, where
+        )
+        refs.register("SiteFlow", flow_spec.key, flow)
+        site_flows.append(flow)
 
     characters: list[Character] = []
     for character_spec in definition.characters:
@@ -348,7 +370,31 @@ def build_model_definition_from_spec(spec: dict[str, Any]) -> ModelDefinition:
         character_groups,
         temporal_nodes,
         locations,
+        site_flows,
     )
+
+
+def _check_site_flow_endpoints(
+    line_wkt: Optional[str],
+    origin_wkt: Optional[str],
+    destination_wkt: Optional[str],
+    where: str,
+) -> None:
+    """
+    移動の線の始点がoriginの面に、終点がdestinationの面に入っているかを確かめる(境界の上も入っているとみなす)。
+    線か面が無い、または面でないLocation(点等)は確かめない。入っていなければValueError。
+    """
+    if line_wkt is None:
+        return
+    for label, point, area_wkt in zip(
+        ("始点", "終点"), line_endpoints(parse_wkt(line_wkt, where)), (origin_wkt, destination_wkt), strict=True
+    ):
+        if area_wkt is None:
+            continue
+        area = parse_wkt(area_wkt, where)
+        if is_areal(area) and not covers_point(area, point):
+            target = "origin" if label == "始点" else "destination"
+            raise ValueError(f"{where}の線の{label}が、{target}の場所の面に入っていません")
 
 
 def _dramaturgy(dramaturgy_spec: DramaturgySpec, refs: "_References") -> Dramaturgy:
@@ -382,6 +428,7 @@ def _dramaturgy(dramaturgy_spec: DramaturgySpec, refs: "_References") -> Dramatu
             cast_spec.voice_gender,
             cast_spec.language,
             cast_spec.accent,
+            cast_spec.billing,
             id=cast_spec.id,
         )
         refs.register("Cast", cast_spec.key, cast)
@@ -475,6 +522,8 @@ def _dramaturgy(dramaturgy_spec: DramaturgySpec, refs: "_References") -> Dramatu
         history,
         _proposal(dramaturgy_spec.proposal),
         _agents(dramaturgy_spec.agents, refs),
+        [refs.resolve("Location", ref, "作品の場所") for ref in dramaturgy_spec.locations],
+        [refs.resolve("SiteFlow", ref, "作品の移動") for ref in dramaturgy_spec.site_flows],
         id=dramaturgy_spec.id,
     )
     refs.register("Dramaturgy", dramaturgy_spec.key, dramaturgy)
@@ -509,6 +558,8 @@ def _agents(spec: Optional[AgentsSpec], refs: "_References") -> list[BaseAgent]:
             cast.id,
             full.name,
             full.voice_name,
+            full.tts_provider,
+            full.tts_model,
             full.role,
             full.persona,
             full.rules,

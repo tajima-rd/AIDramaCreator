@@ -15,7 +15,9 @@ from api.yaml_io import parse_yaml_body, read_text_body, yaml_response
 from core.schema import (
     DramaDraftConfirmRequest,
     DramaDraftCreateRequest,
+    DramaDraftGeodataImportRequest,
     DramaDraftImportPathRequest,
+    DramaDraftMapSaveRequest,
 )
 from core.service.api import drama_draft as drama_draft_api
 
@@ -85,6 +87,32 @@ async def import_path(project_id: str, draft_id: str, request: Request):
         return yaml_response(drama_draft_api.import_path(project_id, draft_id, body))
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except _INVALID as exc:
+        raise _bad_request(exc) from exc
+
+
+@router.post("/projects/{project_id}/drama-drafts/{draft_id}/import-geodata")
+async def import_geodata(project_id: str, draft_id: str, request: Request):
+    body = await parse_yaml_body(request, DramaDraftGeodataImportRequest)
+    try:
+        return yaml_response(drama_draft_api.import_geodata(project_id, draft_id, body))
+    except _INVALID as exc:
+        raise _bad_request(exc) from exc
+
+
+@router.get("/projects/{project_id}/drama-drafts/{draft_id}/map")
+async def get_map(project_id: str, draft_id: str, dramaturgy_id: str):
+    try:
+        return yaml_response(drama_draft_api.get_map(project_id, draft_id, dramaturgy_id))
+    except ValueError as exc:
+        raise _bad_request(exc) from exc
+
+
+@router.post("/projects/{project_id}/drama-drafts/{draft_id}/map")
+async def save_map(project_id: str, draft_id: str, request: Request):
+    body = await parse_yaml_body(request, DramaDraftMapSaveRequest)
+    try:
+        return yaml_response(drama_draft_api.save_map(project_id, draft_id, body))
     except _INVALID as exc:
         raise _bad_request(exc) from exc
 

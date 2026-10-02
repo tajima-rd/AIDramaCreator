@@ -23,7 +23,8 @@ BUILD_STEPS: list[BuildStep] = [
     BuildStep("characters", "Characters", "scriptwriter", "create_character", True),
     BuildStep("groups", "Groups", "scriptwriter", "create_character_group", True),
     BuildStep("relationships", "Relationships", "scriptwriter", "create_relationship", True),
-    BuildStep("casting", "Casting", "casting_director", "assign_voice", False),
+    BuildStep("casting", "Casting", "casting_director", "cast_character", True),
+    BuildStep("audition", "Audition", "casting_director", "assign_voice", True),
 ]
 
 

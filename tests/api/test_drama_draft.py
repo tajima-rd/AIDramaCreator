@@ -52,7 +52,7 @@ def test_draft_lifecycle_creates_version_and_canonical_model(client, project):
     model = parse_yaml(client.get(f"/projects/{project.project_id}/drama-model"))
     assert [d["title"] for d in model["dramaturgies"]] == ["港町の灯", "提案された題"]
     # 値の無い属性は書かない(モデル定義YAMLの形)
-    assert "latitude" not in model["locations"][1]
+    assert "geometry" not in model["locations"][1]
 
     versions = parse_yaml(client.get(f"/projects/{project.project_id}/drama-model/versions"))
     assert versions["current_version"] == 1

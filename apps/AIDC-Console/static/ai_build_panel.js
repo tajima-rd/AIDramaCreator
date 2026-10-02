@@ -5,7 +5,7 @@
  * - 左側: 参照する資料(Dataset)と、チャット。チャットは右側で開いている工程(タブ)に結び付き、相談相手のエージェントと
  *   タスクは工程で決まる(サーバーの対応表 GET .../ai-build/steps)。モードは「対話」と「ワンショット下書き」
  * - 右側: 工程のタブ(まだ用意していない工程は選べない)と、その工程の内容(Proposalは企画書のフォーム、Characters・Groups・
- *   Relationshipsは人物パネルの該当タブを埋め込む。どれも直接直してSaveできる)
+ *   Relationshipsは人物パネルの該当タブ、Casting・AuditionはDramaturgy EditorのCastsタブを埋め込む。どれも直接直してSaveできる)
  * - 生成AIの提案は会話の中に出し、Applyで編集用の下書きに重ねる(Undoで戻す)。確定はヘッダーのSave Version
  * 編集用の下書きは、Dramaturgy Editor・人物パネルと共通(editor_draft.jsのEditorDraft)。
  * apiFetch/showToast/showApiError/escapeHtml/escapeAttr/EditorDraft/ProposalForm/PROPOSAL_FIELD_LABELSをグローバル利用する。
@@ -17,6 +17,8 @@ const AI_BUILD_MODES = [
 ];
 // 人物パネル(character_editor_panel.js)のタブをそのまま右側に埋め込む工程(工程のkey=人物パネルのタブ)
 const AI_BUILD_WORLD_STEPS = ["characters", "groups", "relationships"];
+// Dramaturgy EditorのCastsタブを右側に埋め込む工程
+const AI_BUILD_CAST_STEPS = ["casting", "audition"];
 const AI_BUILD_STATUS_LABELS = { pending: "未反映", applied: "反映済み", undone: "取り消し済み" };
 
 customElements.define(
@@ -131,7 +133,7 @@ customElements.define(
           `<label class="ab-mode"><input type="radio" name="ab_mode" value="${key}" ${this.mode === key ? "checked" : ""} ${busy ? "disabled" : ""}> ${label}</label>`
       ).join("");
       const modeHint =
-        this.mode === "one_shot" && AI_BUILD_WORLD_STEPS.includes(this.activeStep)
+        this.mode === "one_shot" && [...AI_BUILD_WORLD_STEPS, ...AI_BUILD_CAST_STEPS].includes(this.activeStep)
           ? "要望・資料・今の内容から、この工程の内容を1回で提案します(追加と更新だけで、削除はしません)"
           : (AI_BUILD_MODES.find(([key]) => key === this.mode) || [])[2] || "";
       const placeholder =
@@ -191,7 +193,14 @@ customElements.define(
 
     // 右側: 今の工程の内容(Proposalは企画書のフォーム、人物の工程は人物パネルの該当タブを埋め込む)
     renderView(view) {
-      view.classList.toggle("ab-view--embed", AI_BUILD_WORLD_STEPS.includes(this.activeStep));
+      view.classList.toggle("ab-view--embed", [...AI_BUILD_WORLD_STEPS, ...AI_BUILD_CAST_STEPS].includes(this.activeStep));
+      if (AI_BUILD_CAST_STEPS.includes(this.activeStep)) {
+        const panel = document.createElement("dramaturgy-editor-panel");
+        panel.addEventListener("dramaturgy-editor-edited", () => this.renderHeader()); // 未確定の変更の数
+        view.appendChild(panel);
+        panel.loadEmbedded(this.projectId, this.dramaturgyId, this.draft, "casts");
+        return;
+      }
       if (AI_BUILD_WORLD_STEPS.includes(this.activeStep)) {
         const panel = document.createElement("character-editor-panel");
         panel.addEventListener("character-editor-edited", async () => {
@@ -300,6 +309,14 @@ customElements.define(
       for (const r of proposal.relationships || []) {
         const extra = [r.form_of_address && `呼び方: ${r.form_of_address}`, r.tone && `口調: ${r.tone}`].filter(Boolean).join("・");
         rows.push(`<li>${escapeHtml(r.source)} → ${escapeHtml(r.target)}: <b>${escapeHtml(r.label)}</b> ${escapeHtml(extra)}</li>`);
+      }
+      const billing = { lead: "主役", supporting: "脇役", minor: "端役" };
+      for (const c of proposal.casts || []) {
+        const facts = [billing[c.billing] || c.billing, c.performance_title, c.voice_gender, c.language, c.accent, c.pace && `速さ: ${c.pace}`].filter(Boolean);
+        rows.push(`<li><b>${escapeHtml(c.character)}</b> ${escapeHtml(facts.join("・"))}${c.performance_description ? `<div class="field-hint">${escapeHtml(c.performance_description)}</div>` : ""}</li>`);
+      }
+      for (const a of proposal.auditions || []) {
+        rows.push(`<li><b>${escapeHtml(a.character)}</b>: ${escapeHtml(a.voice_id)}${a.reason ? `<div class="field-hint">${escapeHtml(a.reason)}</div>` : ""}</li>`);
       }
       return rows.length ? `<details><summary>提案の中身</summary><ul>${rows.join("")}</ul></details>` : "";
     }

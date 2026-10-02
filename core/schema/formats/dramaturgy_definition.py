@@ -5,13 +5,15 @@ DBの版・下書きの写し。docs/architecture.md 7節)ならdramaturgiesの�
 model_definition_reader・model_definition_writer。準備の各項目(前提・人物・配役・プロット)の取り込みと、
 生成AIとの受け渡しに使う(docs/model_design.md)。
 
-【区画】モデルのコンポジション(所有)は、YAMLでも入れ子にする。作品が所有しない要素(TemporalNode・Location・
-Character・CharacterGroup・Relationship)は、dramaturgyと並ぶ最上位の区画に書き、参照する(人物・人物関係の持ち主はProjectで、作品は参照で持つ)。作品作りに参加するエージェント(core.model.agent)は、
+【区画】モデルのコンポジション(所有)は、YAMLでも入れ子にする。作品が所有しない要素(TemporalNode・Location・SiteFlow・
+Character・CharacterGroup・Relationship)は、dramaturgyと並ぶ最上位の区画に書き、参照する(人物・人物関係・場所・移動の持ち主はProjectで、作品は参照で持つ)。作品作りに参加するエージェント(core.model.agent)は、
 作品が所有するので、dramaturgyの中のagentsに職能ごとに書く(作品ごとに役割・厳守事項等を書き換えられる。2026-10-01)。
 
     protocol_version: "0.1.0"   # 省略可
     temporal_nodes: [{id, key, label, date_type, string_date}]
-    locations: [{id, key, name, latitude, longitude, address, instruction, description}]
+    locations: [{id, key, name, geometry, address, instruction, description}]   # geometryはWKT(WGS84、経度・緯度の順)
+    site_flows: [{id, key, name, geometry, direction, origin, destination}]   # 場所の間の移動。origin/destinationはLocationへの参照、
+                                                                             # geometryはWKTのLINESTRING、directionはforward・backward・both
     characters: [{id, key, name, reading, gender, age,
                   speech_style: {first_person, tone, description,
                                  endings: [{kind, examples: [...], description}]},   # kindはnormal・conjecture等
@@ -27,7 +29,10 @@ Character・CharacterGroup・Relationship)は、dramaturgyと並ぶ最上位の�
                  characters: [{name, description}]}                          # 企画書の登場人物(仮の設定。Characterとは別)
       characters: [{ref}]             # この作品に関わる人物(参照。人物はdramaturgyの外にある)
       relationships: [{ref}]          # この作品に関わる人物関係(参照)
-      casts: [{id, key, character, performance: {title, description, pace}, voice_gender, language, accent}]   # voice_genderはmale・female・neutral
+      locations: [{ref}]              # この作品で使う場所(参照)
+      site_flows: [{ref}]             # この作品で使う移動(参照)
+      casts: [{id, key, character, performance: {title, description, pace}, voice_gender, language, accent, billing}]   # voice_genderはmale・female・neutral、
+                                                                                                                # billingはlead(主役)・supporting(脇役)・minor(端役)
       acts: [{id, key, order, title, synopsis,
               scenes: [{id, key, order, title, synopsis, period, location,
                         situation: {location, description, time_of_day, environment},
@@ -40,7 +45,7 @@ Character・CharacterGroup・Relationship)は、dramaturgyと並ぶ最上位の�
         researchers | casting_directors | scriptwriters | directors | stage_managers | sound_engineers:
           [{id, key, name, role, persona, rules: [...], prohibitions: [...],
             tasks: [{code, title, description, rules: [...], prohibitions: [...]}]}]
-        actors: [{同上, cast, voice_name}]   # castはCastへの参照(モデルではActor.casting_id)
+        actors: [{同上, cast, voice_name, tts_provider, tts_model}]   # castはCastへの参照(モデルではActor.casting_id)。音声合成の提供元・モデル・話者
     dramaturgies: [{dramaturgyと同じ形}]   # 作品が複数のとき
 
 【エージェントの既定値】role・rules・prohibitionsを省略すれば職能の既定(core.model.agentの各クラス)。書けば(空の一覧[]も)
@@ -68,9 +73,9 @@ Character・CharacterGroup・Relationship)は、dramaturgyと並ぶ最上位の�
   無ければ読むときにシステムが振る(core.model.identifier)。書き出しでは常に書く。
 - key: このYAML一式の中だけで使う呼び名。参照の受け口で、モデルには残らない。書き出しでは種類と通し番号
   (character_001・cast_001・scene_001_line_001等)を付ける。
-- 参照(source・target・period・location・character・cast・line・involved_relationshipsの各要素)は、常に {ref: 参照先のkey}。
-  idでは参照しない。参照先は同じYAML一式の中になければならず、種類ごとに探す
-  (TemporalNode・Location・Character・Relationship・Cast・Line)。
+- 参照(source・target・period・location・origin・destination・character・cast・line・involved_relationshipsの各要素)は、
+  常に {ref: 参照先のkey}。idでは参照しない。参照先は同じYAML一式の中になければならず、種類ごとに探す
+  (TemporalNode・Location・SiteFlow・Character・Relationship・Cast・Line)。
 - order: 省略すれば、並びの中の位置(0から)。
 """
 
@@ -78,7 +83,8 @@ from typing import Annotated, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from core.model.drama.cast import VoiceGender
+from core.model.drama.cast import CastBilling, VoiceGender
+from core.model.drama.site_flow import SiteFlowDirection
 from core.model.drama.speech_style import SentenceEndingKind
 from core.model.drama.temporal import StringDateType, TemporalRelationKind
 
@@ -142,11 +148,20 @@ class LocationSpec(_Spec):
     id: Optional[str] = None
     key: Optional[str] = None
     name: str
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
+    geometry: Optional[str] = None  # WKT(WGS84、経度・緯度の順)
     address: Optional[str] = None
     instruction: Optional[str] = None
     description: Optional[str] = None
+
+
+class SiteFlowSpec(_Spec):
+    id: Optional[str] = None
+    key: Optional[str] = None
+    name: Optional[str] = None
+    geometry: Optional[str] = None  # WKTのLINESTRING。始点はoriginの面、終点はdestinationの面の中
+    direction: Optional[SiteFlowDirection] = None  # 線を引いた向き(origin→destination)に対する移動の向き
+    origin: Ref  # Locationへの参照
+    destination: Ref  # Locationへの参照
 
 
 class AdditionalFeatureSpec(_Spec):
@@ -231,6 +246,7 @@ class CastSpec(_Spec):
     voice_gender: Optional[VoiceGender] = None
     language: Optional[str] = None
     accent: Optional[str] = None
+    billing: Optional[CastBilling] = None  # 役の重さ(lead=主役・supporting=脇役・minor=端役)
 
 
 class LineSpec(_Spec):
@@ -348,7 +364,9 @@ class AgentSpec(_Spec):
 
 class ActorSpec(AgentSpec):
     cast: Ref  # Castへの参照(モデルではActor.casting_id)
-    voice_name: Optional[str] = None
+    voice_name: Optional[str] = None  # 話者(音声合成の提供元の声の識別子)
+    tts_provider: Optional[str] = None  # 音声合成の提供元(例: Gemini)。空ならproject.yamlのgenai.tts
+    tts_model: Optional[str] = None  # 音声合成のモデル。空ならproject.yamlのgenai.tts
 
 
 class AgentsSpec(_Spec):
@@ -374,6 +392,8 @@ class DramaturgySpec(_Spec):
     proposal: Optional[ProposalSpec] = None  # 企画書
     characters: list[Ref] = []  # 人物への参照
     relationships: list[Ref] = []  # 人物関係への参照
+    locations: list[Ref] = []  # 場所への参照
+    site_flows: list[Ref] = []  # 移動への参照
     casts: list[CastSpec] = []
     acts: list[ActSpec] = []
     history: Optional[HistorySpec] = None
@@ -386,6 +406,7 @@ class DramaturgyDefinition(_Spec):
     protocol_version: Literal["0.1.0"] = PROTOCOL_VERSION
     temporal_nodes: list[TemporalNodeSpec] = []
     locations: list[LocationSpec] = []
+    site_flows: list[SiteFlowSpec] = []
     characters: list[CharacterSpec] = []
     character_groups: list[CharacterGroupSpec] = []
     relationships: list[RelationshipSpec] = []

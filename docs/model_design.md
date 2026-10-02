@@ -42,8 +42,9 @@ Project(core/project。今はモデル定義の読み込み結果 ModelDefinitio
                  ├ Atmosphere(空)
                  └ Music(空)
 
-所有者を持たない: TemporalNode(TemporalEdgeの両端)、Location
+所有者を持たない: TemporalNode(TemporalEdgeの両端)、Location、SiteFlow(Locationの間の移動)
 人物・人物関係の持ち主はProject(2026-10-01ユーザー決定。作品は参照で持つ。Projectの作り直しまでは ModelDefinition に仮置き)
+場所・移動の持ち主もProjectで、作品は使うものを参照で持つ(2026-10-02ユーザー決定。シリーズの別の作品の場所まで並ばないよう、作品ごとに取り込む)
 ```
 
 `core/model/`には純粋なモデルだけを置く(2026-09-30ユーザー決定)。API・生成AI・ファイル・DBに関わるもの(ファイルのパス、
@@ -54,7 +55,7 @@ store(台帳)の側で持つ。
 
 | ファイル | クラス | 属性 |
 | --- | --- | --- |
-| `dramaturgy.py` | `Dramaturgy` | `id`・`title`・`synopsis`(メタメタストーリー)・`input_language`・`output_language`・`premise`・`proposal`(企画書)・`characters`(参照)・`relationships`(参照)・`casts`・`acts`・`history`。人物・人物関係は所有しない(2026-10-01) |
+| `dramaturgy.py` | `Dramaturgy` | `id`・`title`・`synopsis`(メタメタストーリー)・`input_language`・`output_language`・`premise`・`proposal`(企画書)・`characters`(参照)・`relationships`(参照)・`locations`(参照)・`site_flows`(参照)・`casts`・`acts`・`history`。人物・人物関係・場所・移動は所有しない(2026-10-01、場所・移動は2026-10-02) |
 | `premise.py` | `Premise` | `text` |
 | `proposal.py` | `Proposal` | `title`・`catchphrase`(キャッチコピー)・`logline`(ログライン)・`intent`(企画意図)・`target_area`(対象地域。文字列、暫定)・`synopsis`(企画書のあらすじ)・`characters`。作品制作の初期シードで、仮の設定が多いため、題・あらすじ・登場人物を作品と共有しない。`Dramaturgy.synopsis`は作品を確定する段階で(生成AIの力を借りて)作るもので別。後から修正できる(すべて省略可)(2026-10-01ユーザー決定。UMLへの反映はユーザー) |
 | | `ProposalCharacter` | `name`・`description`(企画書の登場人物。仮の設定で、`Character`とは別) |
@@ -67,7 +68,7 @@ store(台帳)の側で持つ。
 | | `Dialogue` | `line_id`・`cast_id`(ID参照)・`text`・`action`(ト書き)・`direction`・`translated_text`(output_languageへの訳文)・`situation`(場面の途中で状況が変わるときだけ。無ければシーンの状況) |
 | | `Direction` | `style`・`pace`・`dynamics`・`emotion`・`pause_after`(言葉で表す間。ミリ秒にしない) |
 | | `SoundEffect`・`Atmosphere`・`Music` | 空 |
-| `cast.py` | `Cast` | `id`・`character: Character`(演じる人物。関連)・`performance: Performance`(演じ方)・`voice_gender: VoiceGender`(声を当てるときの性別)・`language`・`accent`。声は演者(`Actor`)が持つ(2026-10-01) |
+| `cast.py` | `Cast`・`CastBilling` | `id`・`character: Character`(演じる人物。関連)・`performance: Performance`(演じ方)・`voice_gender: VoiceGender`(声を当てるときの性別)・`language`・`accent`・`billing: CastBilling`(役の重さ。lead=主役・supporting=脇役・minor=端役。未設定可。2026-10-02)。声は演者(`Actor`)が持つ(2026-10-01) |
 | | `Performance` | `title`(見出し。例: Strict Guy)・`description`・`pace`(話す速さ。2026-10-01) |
 | | `VoiceGender` | male・female・neutral(中性的)。人物の性別(`Character.gender`。不明・両性もあり得る)とは別に、配役で決める(2026-10-01ユーザー) |
 | `character.py` | `Character` | `id`・`name`・`reading`・`gender`・`age`・`speech_style: SpeechStyle`(話し方)・`characteristics: list[Characteristic]`・`biographies`・`relationships`(関わる人物関係。sourceでもtargetでも。所有はしない) |
@@ -79,7 +80,8 @@ store(台帳)の側で持つ。
 | | `Biography` | `id`・`period: TemporalNode`・`episode`・`involved_relationships: list[Relationship]`(関わる人物関係。複数でもよい。2026-10-01) |
 | `character_group.py` | `CharacterGroup` | `id`・`name`・`kind`(自由に書く。例: 家族・職場)・`members: list[Character]`(参照)・`description`。持ち主はProject(2026-10-01) |
 | `relationship.py` | `Relationship` | `id`・`source: Character`・`target: Character`・`label`・`period: TemporalNode`・`description`・`form_of_address`(sourceがtargetをどう呼ぶか。場面による使い分けは扱わない)・`tone`(sourceがtargetに対して話す口調)(2026-10-01)。作ると両端の人物の`relationships`に加わる(2026-09-30、人物から人物関係を引けるように) |
-| `location.py` | `Location` | `id`・`name`・`latitude`・`longitude`・`address`・`instruction`・`description` |
+| `location.py` | `Location` | `id`・`name`・`geometry`(形。WKTの文字列、WGS84で経度・緯度の順。2026-10-02に`latitude`・`longitude`から替えた)・`address`・`instruction`(その場所で案内すること)・`description`(その場所の事実)。位置連動の音声(Locatone等)では、シーンの場所は面で、再生エリアに当たる |
+| `site_flow.py` | `SiteFlow`・`SiteFlowDirection` | `id`・`name`・`geometry`(道筋の線。WKTのLINESTRING)・`direction`(forward・backward・both。線を引いた向き(origin→destination)に対する移動の向き。未設定可)・`origin: Location`・`destination: Location`(参照。線の始点・終点を含む場所)。2026-10-02ユーザー決定 |
 | `temporal.py` | `TemporalNode` | `id`・`label`(言葉としての時期)・`date_type: StringDateType`・`string_date` |
 | | `TemporalEdge` | `id`・`label`・`kind: TemporalRelationKind`・`source: TemporalNode`・`target: TemporalNode` |
 | | `TemporalRelationKind` | before・meets・overlaps・during・starts・finishes・equals(Allenの区間代数) |
@@ -104,7 +106,8 @@ UMLからの変更(2026-09-30ユーザー承認): `Profile`をなくし、`Chara
 (作品ごとに文面を書き換えられる。下書き・版・DBにも入る。2026-10-01ユーザー決定)。**Producerは利用者本人なので、モデルに置かない**
 (2026-10-01ユーザー決定)。チャットで対話するかどうかに関わらず、生成AIを使う職能(文章生成・音声合成)はすべてエージェント。
 どの生成AI(提供元・モデル)で動かすかはモデルに持たず、処理の側(`service/process`)が決める(仮に`project.yaml`の`genai`)。
-演者(`Actor`)は、どの声で演じるか(`voice_name`)を自分で持つ(2026-10-01ユーザー決定)。
+演者(`Actor`)は、どの声で演じるか(`voice_name`)を自分で持つ(2026-10-01ユーザー決定)。2026-10-02からは音声合成の提供元(`tts_provider`)・モデル(`tts_model`)も1組持つ
+(空ならproject.yamlの`genai.tts`)。`voice_name`は提供元の声の識別子(Geminiは声の一覧の`id`。例: `ja-jp-advisor-1`)。
 
 **生成AIへのプロンプトを組み立てるための情報を属性として持つ**(プロンプトの文そのもの・応答の型・渡す情報の範囲は持たない。組み立ては
 `core/prompt`、実行は`service/process`。2026-10-01ユーザー決定。ai_drama_creator_2のプロンプトの節(Role・Tasks・厳守事項・禁止事項)を参考にした):
@@ -126,7 +129,7 @@ UMLからの変更(2026-09-30ユーザー承認): `Profile`をなくし、`Chara
   タスクごとの応答の型・渡す情報・反映の処理は、codeで`core/prompt`・`service/process`の側と結び付ける。
 - `AgentTask.code`は、モデル定義YAMLの`key`(書き出すたびに振り直す呼び名)と区別するため`key`にしなかった。
 - システム既定の文面(役割・厳守事項・禁止事項・タスク)は**暫定**(2026-10-01。ユーザーの見直しを待つ)。
-- **Actor(演者)は配役ごとに置く**ので、ユーザー既定とAgentsタブには出さない。設定の置き場所は保留(future_design.md)。
+- **Actor(演者)は配役ごとに置く**ので、ユーザー既定とAgentsタブには出さない。声の設定はDramaturgy EditorのCastsタブで行う(2026-10-02)。
 
 | ファイル | クラス | 生成AI | 固有の属性 | タスク(code。システム既定) |
 | --- | --- | --- | --- | --- |
@@ -136,7 +139,7 @@ UMLからの変更(2026-09-30ユーザー承認): `Profile`をなくし、`Chara
 | `director.py` | `Director` | text | なし | `direct_scene` |
 | `stage_manager.py` | `StageManager` | text(翻訳) | なし | `translate`(キューシートの組み立てはプログラムで、タスクにしない) |
 | `sound_engineer.py` | `SoundEngineer` | (将来) | なし | `design_sound`(結合はプログラム) |
-| `actor.py` | `Actor` | speech | `casting_id`(Castごとに1つ。ID参照)・`voice_name`(使う声) | `perform_dialogue` |
+| `actor.py` | `Actor` | speech | `casting_id`(Castごとに1つ。ID参照)・`voice_name`(使う声)・`tts_provider`・`tts_model`(音声合成の提供元・モデル) | `perform_dialogue` |
 
 エージェントどうしのやり取り(発注・提案と反映・利用者との相談)はエージェントのモデルではないので、ここには置かない
 (公開API・処理の側で設計する。QIDMのdraftsに相当)。
@@ -168,7 +171,9 @@ QIDMに準じる(`core/model/factory.py`・`core/schema/formats/domain_definitio
   所有者の無い`temporal_nodes`・`locations`をすべて持つ。
 - 1つのYAMLが1つのDramaturgy(`dramaturgy:`のとき)。**コンポジション(所有)はYAMLでも入れ子にする**(2026-09-30ユーザー): `dramaturgy`の中に
   `premise`・`characters`(`characteristics`→`features`・`biographies`)・`casts`・`acts`(`scenes`→`script.lines`・`elements`→`direction`)・`history.edges`。
-  所有者を持たない要素(`temporal_nodes`・`locations`・`relationships`)は、`dramaturgy`と並ぶ最上位に書いて参照する。
+  所有者を持たない要素(`temporal_nodes`・`locations`・`site_flows`・`relationships`)は、`dramaturgy`と並ぶ最上位に書いて参照する。
+  形(`geometry`)はWKTで書き、読むときに検査して正規化する(`core/gis/geometry.py`。Z座標は捨てる)。移動の線の始点・終点が
+  origin・destinationの面に入っていなければエラー(面でない場所と、形の無いものは確かめない)。
 - 分割: 分けた文書も同じ入れ子の形で、その一部だけを持つ(例: `dramaturgy: {casts: [...]}`)。読むときはすべての文書(ファイル・`---`区切り)を
   重ね合わせる(対応表は同じキーどうしを重ね、一覧は`id`か`key`が同じ要素どうしを重ね、それ以外は読んだ順につなげ、同じ場所の異なる値はエラー)。
   これにより、**シーンと台詞(Script)も別のファイルに書ける**(2026-09-30ユーザー): 属する幕・シーンを`id`か`key`で示す

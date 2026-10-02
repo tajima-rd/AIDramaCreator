@@ -4,7 +4,7 @@
 """
 
 from core.model.drama.act import Act
-from core.model.drama.cast import Cast, Performance, VoiceGender
+from core.model.drama.cast import Cast, CastBilling, Performance, VoiceGender
 from core.model.drama.character import Biography, Character
 from core.model.drama.character_group import CharacterGroup
 from core.model.drama.dramaturgy import Dramaturgy
@@ -24,6 +24,7 @@ from core.model.drama.script_element import (
     ScriptElement,
     SoundEffect,
 )
+from core.model.drama.site_flow import SiteFlow, SiteFlowDirection
 from core.model.drama.situation import Situation
 from core.model.drama.speech_style import SentenceEnding, SentenceEndingKind, SpeechStyle
 from core.model.drama.temporal import (
@@ -39,6 +40,7 @@ __all__ = [
     "Atmosphere",
     "Biography",
     "Cast",
+    "CastBilling",
     "Character",
     "CharacterGroup",
     "Characteristic",
@@ -59,6 +61,8 @@ __all__ = [
     "ScriptElement",
     "SentenceEnding",
     "SentenceEndingKind",
+    "SiteFlow",
+    "SiteFlowDirection",
     "Situation",
     "SoundEffect",
     "SpeechStyle",

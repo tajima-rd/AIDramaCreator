@@ -6,6 +6,8 @@ Google Geminiによる文章生成・音声合成・埋め込み(genai.generator
 import json
 from typing import Optional, Union
 
+import requests
+
 from google import genai
 from google.genai import types
 
@@ -23,6 +25,7 @@ from ..generator import (
     StructuredT,
     TextConfig,
     TextGenerator,
+    VoiceInfo,
     instruction_text,
     parse_structured,
     to_messages,
@@ -32,6 +35,9 @@ from ..prompt import Prompt
 DEFAULT_TEXT_MODEL = "gemma-4-31b-it"
 DEFAULT_SPEECH_MODEL = "gemini-3.8-flash-lite-tts"
 DEFAULT_EMBEDDING_MODEL = "gemini-embedding-2"
+# 声の一覧(2026-10-02に、言語ごとの声を含めて約2,000件をページに分けて返すことを確かめた)
+VOICES_URL = "https://generativelanguage.googleapis.com/v1beta/voices"
+_VOICES_PAGE_SIZE = 1000
 
 # 埋め込む文章の役割 → GeminiのtaskType
 EMBEDDING_TASK_TYPES = {"document": "RETRIEVAL_DOCUMENT", "query": "RETRIEVAL_QUERY"}
@@ -143,6 +149,41 @@ class GeminiSpeechGenerator(SpeechGenerator):
     def __init__(self, api_key: str, model_name: str = DEFAULT_SPEECH_MODEL, config: Optional[SpeechConfig] = None):
         super().__init__(model_name, config)
         self.client = genai.Client(api_key=api_key)
+        self._api_key = api_key
+
+    def list_voices(self, language_code: Optional[str] = None) -> list[VoiceInfo]:
+        """GET /v1beta/voices(ページを辿ってすべて)。language_codeを渡すと、その言語の声だけ。"""
+        voices: list[VoiceInfo] = []
+        token: Optional[str] = None
+        while True:
+            params: dict[str, object] = {"page_size": _VOICES_PAGE_SIZE}
+            if language_code:
+                params["language_code"] = language_code
+            if token:
+                params["page_token"] = token
+            response = requests.get(
+                VOICES_URL, headers={"x-goog-api-key": self._api_key}, params=params, timeout=60
+            )
+            response.raise_for_status()
+            body = response.json()
+            voices.extend(
+                VoiceInfo(
+                    item["id"],
+                    item.get("display_name"),
+                    item.get("language_code"),
+                    item.get("gender"),
+                    item.get("pitch"),
+                    item.get("accent"),
+                    item.get("persona"),
+                    item.get("context"),
+                    item.get("description"),
+                )
+                for item in body.get("voices", [])
+                if item.get("id")
+            )
+            token = body.get("next_page_token") or body.get("nextPageToken")
+            if not token:
+                return voices
 
     def build_config(self, voice: str) -> types.GenerateContentConfig:
         return types.GenerateContentConfig(

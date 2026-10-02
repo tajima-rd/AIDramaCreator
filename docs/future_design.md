@@ -129,9 +129,19 @@
 - 提供元に依存する声の一覧(`GeminiVoice`)と音声タグ(`AudioTag`)の置き場所。
 - 翻訳(サンプルの`scene_000_ch.yaml`は中国語)を工程として扱うか。
 
+## LocationとSiteFlow(2026-10-02ユーザー)
+
+モデル・YAML・project.db(GeoPackage)・Dramaturgy EditorのLocations・Scenesタブは決まって実装した
+([model_design.md](model_design.md)・[database_design.md](database_design.md)「GeoPackage」・[architecture.md](architecture.md) 7・8節)。
+KML・GeoPackageの雛形は`apps/AIDC-Console/templates/`(Location・SiteFlowのフォルダ/層、それ以外はすべて補助情報。補助情報の仕様は決めない)。
+
+- 取り込み(Import)は実装した([architecture.md](architecture.md) 7節「場所の地図の取り込み」)。保留: **書き出し(Export)**。
+- 地図の上での編集(Edit Location on Map)は決めて実装した([architecture.md](architecture.md) 8節)。保留: **補助情報の地図の上での編集**(今は表示だけ)。
+- 未決定: 1つのLocationを複数のシーン(時刻等の条件違い)が使う場合、SiteFlowに方向以外の属性(手段・条件等)を持たせるか、
+  補助情報(リフト・施設等。作品のDatasetのGeoPackage)を生成AIに渡す方法、補助情報のDatasetの分類(今はunspecified)。
+
 ## エージェントの将来構想(2026-10-02ユーザー)
 
 - **利用者が自分で新しいエージェントを定義し、生成AIでそのエージェントと相談できる**ようにする構想。面白いがスコープの外なので保留。
   今はエージェントは職能ごとに決まっていて(システム既定)、利用者は足さない。
-- **Actor(演者)の設定の置き場所**: Agentsタブではなく別の場所がよい(ユーザー)。配役(CastingDirectorの仕事)と合わせて検討する。保留。
 

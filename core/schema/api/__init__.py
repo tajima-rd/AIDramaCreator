@@ -37,9 +37,18 @@ from .drama_draft import (
     DramaDraftConfirmRequest,
     DramaDraftConfirmResult,
     DramaDraftCreateRequest,
+    DramaDraftGeodataImportRequest,
+    DramaDraftGeodataImportResult,
     DramaDraftImportPathRequest,
     DramaDraftInfo,
     DramaDraftListResult,
+    DramaDraftMapAuxiliaryFeature,
+    DramaDraftMapAuxiliaryLayer,
+    DramaDraftMapLocation,
+    DramaDraftMapResult,
+    DramaDraftMapSaveRequest,
+    DramaDraftMapSaveResult,
+    DramaDraftMapSiteFlow,
     DramaDraftRevisionListResult,
     DramaDraftRevisionSummary,
 )
@@ -69,6 +78,7 @@ from .project import (
     ProjectSaveAsRequest,
     ProjectUpdatePathRequest,
 )
+from .voice import VoiceListResult, VoiceSummary
 
 __all__ = [
     "AgentDefaultListResult",
@@ -87,9 +97,18 @@ __all__ = [
     "DramaDraftConfirmRequest",
     "DramaDraftConfirmResult",
     "DramaDraftCreateRequest",
+    "DramaDraftGeodataImportRequest",
+    "DramaDraftGeodataImportResult",
     "DramaDraftImportPathRequest",
     "DramaDraftInfo",
     "DramaDraftListResult",
+    "DramaDraftMapAuxiliaryFeature",
+    "DramaDraftMapAuxiliaryLayer",
+    "DramaDraftMapLocation",
+    "DramaDraftMapResult",
+    "DramaDraftMapSaveRequest",
+    "DramaDraftMapSaveResult",
+    "DramaDraftMapSiteFlow",
     "DramaDraftRevisionListResult",
     "DramaDraftRevisionSummary",
     "DramaModelVersionListResult",
@@ -122,4 +141,6 @@ __all__ = [
     "ProjectPropertiesUpdateRequest",
     "ProjectSaveAsRequest",
     "ProjectUpdatePathRequest",
+    "VoiceListResult",
+    "VoiceSummary",
 ]

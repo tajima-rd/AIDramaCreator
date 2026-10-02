@@ -8,8 +8,8 @@ Dramaturgy(core.model.drama)を、model_definition_readerが読めるモデル�
 - すべてのエンティティにid(識別子。読み直しても変わらない)とkey(種類と通し番号。書き出すたびに振る)を書き、
   参照は{ref: key}で書く(core.schema.formats.dramaturgy_definition「識別子と参照」)。
 - 値の無い属性(None)と空の一覧は書かない。
-- 所有者を持たない要素(TemporalNode・Location・Relationship)は、作品から辿れるものを書く
-  (人物関係は人物から、時期・場所は経歴・人物関係・時間の位相・シーンから)。
+- 所有者を持たない要素(TemporalNode・Location・SiteFlow・Relationship)は、作品から辿れるものを書く
+  (人物関係は人物から、時期・場所は経歴・人物関係・時間の位相・シーン・作品の場所と移動から)。
 """
 
 import re
@@ -34,6 +34,7 @@ from core.model.drama import (
     Relationship,
     Scene,
     ScriptElement,
+    SiteFlow,
     Situation,
     SoundEffect,
     TemporalNode,
@@ -45,7 +46,7 @@ from core.schema.formats.dramaturgy_definition import PROTOCOL_VERSION
 SPLIT_FILES: dict[str, tuple[str, ...]] = {
     "dramaturgy.yaml": (),
     "temporal.yaml": ("temporal_nodes", "dramaturgy.history"),
-    "locations.yaml": ("locations",),
+    "locations.yaml": ("locations", "site_flows"),
     "characters.yaml": ("characters", "character_groups", "relationships"),
     "casts.yaml": ("dramaturgy.casts",),
     "acts.yaml": ("dramaturgy.acts",),
@@ -124,13 +125,15 @@ def dramaturgy_to_spec(
     (ModelDefinitionの同名の属性)。
     省略すれば、作品から辿れるもの(作品・配役の人物、人物と経歴の人物関係)を書く。作品の側には参照の一覧を書く。
     """
-    return _to_spec([dramaturgy], characters, relationships, character_groups, (), (), "dramaturgy")
+    return _to_spec(
+        [dramaturgy], characters, relationships, character_groups, (), (), (), "dramaturgy"
+    )
 
 
 def model_definition_to_spec(definition: ModelDefinition) -> dict[str, Any]:
     """
     ModelDefinition(プロジェクトの作品モデル全体)を、モデル定義YAMLの形の対応表にする。作品はdramaturgiesの一覧に書き
-    (作品が1つでも)、時点・場所は辿れないものも含めてすべて書く。DBの版・下書きの写しに使う(docs/architecture.md 7節)。
+    (作品が1つでも)、時点・場所・移動は辿れないものも含めてすべて書く。DBの版・下書きの写しに使う(docs/architecture.md 7節)。
     """
     return _to_spec(
         definition.dramaturgies,
@@ -139,6 +142,7 @@ def model_definition_to_spec(definition: ModelDefinition) -> dict[str, Any]:
         definition.character_groups,
         definition.temporal_nodes,
         definition.locations,
+        definition.site_flows,
         "dramaturgies",
     )
 
@@ -150,20 +154,32 @@ def _to_spec(
     character_groups: Sequence[CharacterGroup],
     temporal_nodes: Sequence[TemporalNode],
     locations: Sequence[Location],
+    site_flows: Sequence[SiteFlow],
     section: str,
 ) -> dict[str, Any]:
     """
     作品の一覧をモデル定義YAMLの形にする。sectionが"dramaturgy"なら1つの作品をdramaturgyに、"dramaturgies"なら一覧で書く。
-    temporal_nodes・locationsは、作品から辿れなくても書く時点・場所(辿れるものはその後に足す)。
+    temporal_nodes・locations・site_flowsは、作品から辿れなくても書く時点・場所・移動(辿れるものはその後に足す)。
     """
     nodes = _Unowned()
     places = _Unowned()
+    flows = _Unowned()
     owned_characters = _Unowned()
     owned_relationships = _Unowned()
     for node in temporal_nodes:
         nodes.add(node)
     for location in locations:
         places.add(location)
+    for flow in site_flows:
+        flows.add(flow)
+    for dramaturgy in dramaturgies:
+        for location in dramaturgy.locations:
+            places.add(location)
+        for flow in dramaturgy.site_flows:
+            flows.add(flow)
+    for flow in flows.items.values():
+        places.add(flow.origin)
+        places.add(flow.destination)
     for dramaturgy in dramaturgies:
         for character in characters if characters is not None else dramaturgy.characters:
             owned_characters.add(character)
@@ -218,6 +234,8 @@ def _to_spec(
         keys.assign("temporal_node", node)
     for location in places.items.values():
         keys.assign("location", location)
+    for flow in flows.items.values():
+        keys.assign("site_flow", flow)
     for character in owned_characters.items.values():
         keys.assign("character", character)
     for group in character_groups:
@@ -240,6 +258,7 @@ def _to_spec(
         "protocol_version": PROTOCOL_VERSION,
         "temporal_nodes": [_temporal_node(node, keys) for node in nodes.items.values()],
         "locations": [_location(location, keys) for location in places.items.values()],
+        "site_flows": [_site_flow(flow, keys) for flow in flows.items.values()],
         "characters": [
             _character(character, keys) for character in owned_characters.items.values()
         ],
@@ -295,6 +314,8 @@ def _dramaturgy(dramaturgy: Dramaturgy, keys: _Keys) -> dict[str, Any]:
             "proposal": _proposal(dramaturgy.proposal),
             "characters": [keys.ref(character) for character in dramaturgy.characters],
             "relationships": [keys.ref(relationship) for relationship in dramaturgy.relationships],
+            "locations": [keys.ref(location) for location in dramaturgy.locations],
+            "site_flows": [keys.ref(flow) for flow in dramaturgy.site_flows],
             "casts": [
                 _compact(
                     {
@@ -311,6 +332,7 @@ def _dramaturgy(dramaturgy: Dramaturgy, keys: _Keys) -> dict[str, Any]:
                         "voice_gender": cast.voice_gender.value if cast.voice_gender else None,
                         "language": cast.language,
                         "accent": cast.accent,
+                        "billing": cast.billing.value if cast.billing else None,
                     }
                 )
                 for cast in dramaturgy.casts
@@ -387,7 +409,14 @@ def _agents(agents: Sequence[BaseAgent], keys: _Keys) -> dict[str, Any]:
         ]
         if isinstance(agent, Actor):
             values.update(
-                _compact({"cast": keys.ref(agent.casting_id), "voice_name": agent.voice_name})
+                _compact(
+                    {
+                        "cast": keys.ref(agent.casting_id),
+                        "voice_name": agent.voice_name,
+                        "tts_provider": agent.tts_provider,
+                        "tts_model": agent.tts_model,
+                    }
+                )
             )
         sections.setdefault(f"{role}s", []).append(values)
     return sections
@@ -411,11 +440,24 @@ def _location(location: Location, keys: _Keys) -> dict[str, Any]:
             "id": location.id,
             "key": keys.assign("location", location),
             "name": location.name,
-            "latitude": location.latitude,
-            "longitude": location.longitude,
+            "geometry": location.geometry,
             "address": location.address,
             "instruction": location.instruction,
             "description": location.description,
+        }
+    )
+
+
+def _site_flow(flow: SiteFlow, keys: _Keys) -> dict[str, Any]:
+    return _compact(
+        {
+            "id": flow.id,
+            "key": keys.assign("site_flow", flow),
+            "name": flow.name,
+            "geometry": flow.geometry,
+            "direction": flow.direction.value if flow.direction else None,
+            "origin": keys.ref(flow.origin),
+            "destination": keys.ref(flow.destination),
         }
     )
 

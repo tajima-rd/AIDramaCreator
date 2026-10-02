@@ -33,9 +33,18 @@ class VoiceGender(StrEnum):
     NEUTRAL = "neutral"  # 中性的
 
 
+class CastBilling(StrEnum):
+    """役の重さ(2026-10-02ユーザー決定)。台詞の無い人物には配役が無い。"""
+
+    LEAD = "lead"  # 主役
+    SUPPORTING = "supporting"  # 脇役
+    MINOR = "minor"  # 端役(通行人A等)
+
+
 class Cast:
     """characterは演じる人物、performanceは演じ方、voice_genderは声を当てるときの性別。languageは話す言語、
-    accentは訛り・話しぶり。"""
+    accentは訛り・話しぶり、billingは役の重さ(主役・脇役・端役。未設定可)。演じ方・声の性別・言語・訛りが、
+    声を選ぶ(Audition)ときの条件になる。"""
 
     def __init__(
         self,
@@ -44,6 +53,7 @@ class Cast:
         voice_gender: Optional[VoiceGender] = None,
         language: Optional[str] = None,
         accent: Optional[str] = None,
+        billing: Optional[CastBilling] = None,
     ):
         self.id: str = new_id()  # 識別子(不変)
         self.character: Character = character
@@ -51,3 +61,4 @@ class Cast:
         self.voice_gender: Optional[VoiceGender] = voice_gender
         self.language: Optional[str] = language
         self.accent: Optional[str] = accent
+        self.billing: Optional[CastBilling] = billing

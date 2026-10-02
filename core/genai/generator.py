@@ -169,6 +169,34 @@ class TextGenerator(abc.ABC):
         """
 
 
+class VoiceInfo:
+    """音声合成の声(話者)。voice_idは提供元の声の識別子(synthesizeのvoiceに渡す値)、display_nameは表示名(言語をまたいで
+    同じ名前があり得る)。ほかは提供元が返す特徴(無ければNone): language_code(BCP 47。例: ja-JP)・gender・pitch・
+    accent(訛り)・persona(人物像)・context(向いている場面)・description(説明)。"""
+
+    def __init__(
+        self,
+        voice_id: str,
+        display_name: Optional[str] = None,
+        language_code: Optional[str] = None,
+        gender: Optional[str] = None,
+        pitch: Optional[str] = None,
+        accent: Optional[str] = None,
+        persona: Optional[str] = None,
+        context: Optional[str] = None,
+        description: Optional[str] = None,
+    ):
+        self.voice_id: str = voice_id
+        self.display_name: Optional[str] = display_name
+        self.language_code: Optional[str] = language_code
+        self.gender: Optional[str] = gender
+        self.pitch: Optional[str] = pitch
+        self.accent: Optional[str] = accent
+        self.persona: Optional[str] = persona
+        self.context: Optional[str] = context
+        self.description: Optional[str] = description
+
+
 class SpeechGenerator(abc.ABC):
     """音声合成の抽象。"""
 
@@ -179,6 +207,10 @@ class SpeechGenerator(abc.ABC):
     @abc.abstractmethod
     def synthesize(self, text: Union[str, Prompt], voice: str) -> bytes:
         """textをvoice(提供元の声の名前)で読み上げ、WAVのバイト列を返す。"""
+
+    def list_voices(self, language_code: Optional[str] = None) -> list[VoiceInfo]:
+        """提供元の声の一覧(language_codeを渡すと、その言語の声だけ)。取得の手段が無い提供元はNotImplementedError。"""
+        raise NotImplementedError(f"{type(self).__name__}は声の一覧を取得できません")
 
 
 class EmbeddingGenerator(abc.ABC):

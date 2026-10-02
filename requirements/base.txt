@@ -1,5 +1,6 @@
 # AIDC本体(core/・main.py)の依存。版は.venv(2026-09-29時点)に合わせて固定。
 # numpy・pypdf・python-dotenvは.venvに無かったため、QIDMと同じ版にしている。
+# shapelyは場所の形(WKT)とproject.db(GeoPackage)の形の列の変換に使う(2026-10-02)。
 #   pip install -r requirements/base.txt
 # 音声の連結(pydub)にffmpegが必要(OSのパッケージで入れる)。
 google-genai==2.8.0
@@ -10,3 +11,4 @@ pypdf==6.19.0
 python-dotenv==1.2.3
 PyYAML==6.0.3
 requests==2.34.2
+shapely==2.1.2

@@ -736,6 +736,7 @@ async function mountOrUpdateDramaturgyEditor(projectId, dramaturgyId) {
   mainArea.innerHTML = "";
   panel = document.createElement("dramaturgy-editor-panel");
   panel.addEventListener("dramaturgy-editor-saved", () => reloadGroupNode("dramaturgies"));
+  panel.addEventListener("dramaturgy-editor-datasets-changed", () => reloadGroupNode("datasets"));
   panel.addEventListener("dramaturgy-editor-closed", () => {
     if (state.selectedDramaturgyId === panel.dramaturgyId) state.selectedDramaturgyId = null;
     mainArea.innerHTML = "";
@@ -837,6 +838,8 @@ function actionNewDramaturgy() {
             if (panel) await panel.load(projectId, panel.dramaturgyId);
             const characterPanel = mainArea.querySelector("character-editor-panel");
             if (characterPanel) await characterPanel.load(projectId);
+            const mapPanel = mainArea.querySelector("location-map-panel");
+            if (mapPanel) await mapPanel.load(projectId, mapPanel.dramaturgyId);
           } catch (e) {
             showApiError(e);
           }
@@ -889,6 +892,31 @@ function actionOpenDramaturgyEditor() {
   mountOrUpdateDramaturgyEditor(state.project.project_id, state.selectedDramaturgyId);
 }
 
+// Edit > Edit Location on Map: Treeで選んだ作品の場所・移動を地図の上で編集する(location_map_panel.js)。
+// 既に同じ作品の地図が開いていれば、そのまま(保存していない変更を保つ)。
+async function actionOpenLocationMap() {
+  if (!state.project) {
+    showToast("先にプロジェクトを開いてください", "error");
+    return;
+  }
+  if (!state.selectedDramaturgyId) {
+    showToast("先にTreeのDramaturgiesで作品を選択してください", "error");
+    return;
+  }
+  const projectId = state.project.project_id;
+  const mainArea = document.getElementById("main-area");
+  const opened = mainArea.querySelector("location-map-panel");
+  if (opened && opened.projectId === projectId && opened.dramaturgyId === state.selectedDramaturgyId) return;
+  mainArea.innerHTML = "";
+  const panel = document.createElement("location-map-panel");
+  panel.addEventListener("location-map-saved", () => reloadGroupNode("dramaturgies"));
+  panel.addEventListener("location-map-closed", () => {
+    mainArea.innerHTML = "";
+  });
+  mainArea.appendChild(panel);
+  await panel.load(projectId, state.selectedDramaturgyId);
+}
+
 // ---------------------------------------------------------------------------
 // Menu bar
 // ---------------------------------------------------------------------------
@@ -921,6 +949,7 @@ function buildMenus() {
       items: [
         { label: "New Dramaturgy...", action: actionNewDramaturgy },
         { label: "Dramaturgy Editor", action: actionOpenDramaturgyEditor },
+        { label: "Edit Location on Map", action: actionOpenLocationMap },
         { label: "Character Editor", action: actionOpenCharacterEditor },
         { separator: true },
         { label: "Build with AI...", action: actionOpenAiBuild },
