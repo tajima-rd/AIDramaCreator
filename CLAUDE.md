@@ -34,7 +34,7 @@
 | `core/infra/io/` | 外部とやり取りするファイル形式との変換(`model_definition_*`=モデル定義YAML、`geodata_reader.py`=場所の地図(KML・KMZ・GeoPackage)をLocation・SiteFlow・補助情報の層に分ける。形式の読み書きそのものは`core/gis`) |
 | `core/infra/store/` | 内部状態の永続化(`*_store`): project.yaml・プロジェクトのレジストリ(`~/.aidc/projects.yaml`)・APIキー(`~/.aidc/secrets.env`)・Datasetのファイルと台帳(`project.db`)・作品モデルの正本・版・下書き(`project.db`。場所・移動の表を持つGeoPackageとしても読める。[docs/database_design.md](docs/database_design.md)) |
 | `core/service/process/` | 内部の処理(フォルダは分野、ファイル名は「対象_役割」): `production/`=制作の流れの各工程、`edit/`=プロジェクト・設定・Datasetの手順、`genai/`=生成AIを使う処理 |
-| `core/service/api/` | システムの公開API。識別子(project_id・file_id)とschemaの型でやり取りし、`schema/api`・`api/routers`と同名のリソース単位(`project`・`preference`・`dataset`・`drama_model`・`drama_draft`・`agent_default`・`character_import`・`ai_build`・`voice`)で構成する |
+| `core/service/api/` | システムの公開API。識別子(project_id・file_id)とschemaの型でやり取りし、`schema/api`・`api/routers`と同名のリソース単位(`project`・`preference`・`dataset`・`drama_model`・`drama_draft`・`agent_default`・`character_import`・`ai_build`・`voice`・`recording`・`scene_translation`)で構成する |
 | `core/schema/` | 契約(pydantic)。`api/`=公開APIのDTO、`formats/`=ディスクに残るファイル形式 |
 | `api/` | インターフェース: HTTP(FastAPI、要`requirements/api.txt`)。`main.py`はinclude_routerと共通の例外ハンドラ(Project/Datasetの不在→404)のみ、`routers/`はHTTPとschemaを橋渡しするだけ |
 | `apps/AIDC-Console/` | インターフェース: Web GUI(素のHTML/CSS/JS。APIサーバーが`/app/`で配信。[docs/architecture.md](docs/architecture.md) 8節) |

@@ -162,8 +162,12 @@ def test_steps_are_listed_with_availability(client, ctx):
         ("characters", True),
         ("groups", True),
         ("relationships", True),
+        ("synopsis", True),
+        ("scenes", True),
         ("casting", True),
         ("audition", True),
+        ("script", True),
+        ("direction", True),
     ]
     assert steps[0]["role_name"] == "scriptwriter" and steps[0]["task_code"] == "draft_proposal"
 

@@ -8,11 +8,18 @@
   idが無ければ`key`で同じ要素を探すため、別の作品の幕と取り違えるか、重複として断られる(`core/infra/io/model_definition_patch.py`)。
   取り込む側のYAMLの`key`を、重ねる先と衝突しない形に扱う必要がある。
 
+- **2026-10-05より前に作った`project.db`では、Build with AIが動かない**(2026-10-05)。会話の表`ai_build_message`に`scene_id`の列を足したが、
+  旧来の形との互換性は考えない方針(CLAUDE.md)なので、既存の表を作り直す処理は置いていない(列の無い表に索引を作れずエラーになる)。
+  既存のプロジェクトで使うには、その`project.db`で`ALTER TABLE ai_build_message ADD COLUMN scene_id TEXT`と
+  `DROP INDEX ai_build_message_by_step`を行う(索引は次に開いたとき作り直される。会話は残り、既存の発言はScript以外の工程のものなのでscene_idは空でよい)。
+  2026-10-05に、レジストリにあるTEST_PROJECT_00・02はこの方法で直した。
+
 ## 技術的負債
 
 - **制作の流れ(`main.py`→`core/service/process/production/`)は、演者の声を旧来の30声の表(`GeminiVoice`)で引く**(2026-10-02)。Castsタブ・Auditionで
   新しい声の一覧から選んだ声(例: `ja-jp-advisor-1`)は「声にありません」のエラーになり、演者の`tts_provider`・`tts_model`も使わない
   (常にproject.yamlの`genai.tts`)。制作の流れを新しいモデルへ移すときに直す(`_model_definition_project.py`の`_actor`)。
+  GUIのRecordingタブ(`scene_recorder`、2026-10-05)は作品のモデルの原稿と演者の声を使うので、この問題は無い。
 
 - **作業補助の生成AIに手元のllama.cppを使うと、企画書の登場人物の取り込み・矛盾の確認に1回約3分かかる**(2026-10-02、Ryzen AI 7 PRO 350の内蔵GPU、
   Gemma 4 26B-A4B Q8)。原因は2つ: llama.cppがGemma 4の推論(thinking)を既定で行うこと(要求に`chat_template_kwargs: {enable_thinking: false}`を

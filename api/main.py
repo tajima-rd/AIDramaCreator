@@ -43,6 +43,8 @@ from api.routers import (
     drama_model,
     preference,
     project,
+    recording,
+    scene_translation,
     voice,
 )
 from core.project.dataset import DatasetMetadataNotFoundError, DatasetNotFoundError
@@ -60,6 +62,8 @@ app.include_router(agent_default.router)
 app.include_router(ai_build.router)
 app.include_router(character_import.router)
 app.include_router(voice.router)
+app.include_router(recording.router)
+app.include_router(scene_translation.router)
 
 
 @app.exception_handler(ProjectNotFoundError)

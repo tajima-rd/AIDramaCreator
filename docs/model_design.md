@@ -137,7 +137,7 @@ UMLからの変更(2026-09-30ユーザー承認): `Profile`をなくし、`Chara
 | `casting_director.py` | `CastingDirector` | text | なし | `cast_character`・`assign_voice` |
 | `scriptwriter.py` | `Scriptwriter` | text | なし | `draft_proposal`・`create_character`・`create_character_group`・`create_relationship`(Build with AI、2026-10-02)・`import_proposal_character`・`check_character_conflict`(2026-10-02)・`write_synopsis`・`write_dialogue` |
 | `director.py` | `Director` | text | なし | `direct_scene` |
-| `stage_manager.py` | `StageManager` | text(翻訳) | なし | `translate`(キューシートの組み立てはプログラムで、タスクにしない) |
+| `stage_manager.py` | `StageManager` | text(翻訳) | なし | `translate`(ScenesタブのTranslation、2026-10-05。キューシートの組み立てはプログラムで、タスクにしない) |
 | `sound_engineer.py` | `SoundEngineer` | (将来) | なし | `design_sound`(結合はプログラム) |
 | `actor.py` | `Actor` | speech | `casting_id`(Castごとに1つ。ID参照)・`voice_name`(使う声)・`tts_provider`・`tts_model`(音声合成の提供元・モデル) | `perform_dialogue` |
 

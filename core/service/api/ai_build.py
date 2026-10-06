@@ -8,6 +8,8 @@ DatasetNotFoundError、発言が無ければKeyError、工程・作品・入力�
 失敗はその例外のまま。
 """
 
+from typing import Optional
+
 from core.infra.store.ai_build_store import StoredMessage
 from core.infra.store.project_file_store import read_project
 from core.infra.store.project_registry_store import resolve_layout
@@ -37,6 +39,7 @@ def _info(message: StoredMessage) -> AiBuildMessageInfo:
     return AiBuildMessageInfo(
         id=message.id,
         step=message.step,
+        scene_id=message.scene_id,
         role=message.role,
         mode=message.mode,
         text=message.text,
@@ -61,14 +64,17 @@ def list_steps(project_id: str) -> AiBuildStepListResult:
                 role_name=s.role_name,
                 task_code=s.task_code,
                 available=s.available,
+                per_scene=s.per_scene,
             )
             for s in BUILD_STEPS
         ]
     )
 
 
-def list_messages(project_id: str, step: str, dramaturgy_id: str) -> AiBuildMessageListResult:
-    messages = ai_builder.list_messages(_project(project_id), dramaturgy_id, step)
+def list_messages(
+    project_id: str, step: str, dramaturgy_id: str, scene_id: Optional[str] = None
+) -> AiBuildMessageListResult:
+    messages = ai_builder.list_messages(_project(project_id), dramaturgy_id, step, scene_id)
     return AiBuildMessageListResult(messages=[_info(m) for m in messages])
 
 
@@ -92,6 +98,7 @@ def send_message(project_id: str, step: str, request: AiBuildSendRequest) -> AiB
         request.draft_id,
         request.dramaturgy_id,
         step,
+        request.scene_id,
         BuildMode(request.mode),
         request.text,
         references,
@@ -111,7 +118,9 @@ def undo_proposal(
     return _info(ai_builder.undo_message(_project(project_id), request.draft_id, message_id))
 
 
-def clear_messages(project_id: str, step: str, dramaturgy_id: str) -> AiBuildClearResult:
+def clear_messages(
+    project_id: str, step: str, dramaturgy_id: str, scene_id: Optional[str] = None
+) -> AiBuildClearResult:
     return AiBuildClearResult(
-        deleted=ai_builder.clear_messages(_project(project_id), dramaturgy_id, step)
+        deleted=ai_builder.clear_messages(_project(project_id), dramaturgy_id, step, scene_id)
     )

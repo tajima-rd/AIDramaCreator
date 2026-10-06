@@ -5,6 +5,8 @@ Build with AIのエンドポイント(core.service.api.ai_build)。発言の送�
 プロジェクト・下書き・資料の不在はapi/main.pyの共通の例外ハンドラが404にする。
 """
 
+from typing import Optional
+
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
 
@@ -34,8 +36,8 @@ async def list_steps(project_id: str):
 
 
 @router.get("/projects/{project_id}/ai-build/{step}/messages")
-async def list_messages(project_id: str, step: str, dramaturgy_id: str):
-    return _call(ai_build_api.list_messages, project_id, step, dramaturgy_id)
+async def list_messages(project_id: str, step: str, dramaturgy_id: str, scene_id: Optional[str] = None):
+    return _call(ai_build_api.list_messages, project_id, step, dramaturgy_id, scene_id)
 
 
 @router.post("/projects/{project_id}/ai-build/{step}/messages")
@@ -56,8 +58,8 @@ async def send_message(project_id: str, step: str, request: Request):
 
 
 @router.delete("/projects/{project_id}/ai-build/{step}/messages")
-async def clear_messages(project_id: str, step: str, dramaturgy_id: str):
-    return _call(ai_build_api.clear_messages, project_id, step, dramaturgy_id)
+async def clear_messages(project_id: str, step: str, dramaturgy_id: str, scene_id: Optional[str] = None):
+    return _call(ai_build_api.clear_messages, project_id, step, dramaturgy_id, scene_id)
 
 
 @router.post("/projects/{project_id}/ai-build/messages/{message_id}/apply")

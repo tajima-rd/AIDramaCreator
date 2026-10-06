@@ -14,10 +14,16 @@
  * Casts(配役。人物ごとの役の重さ(主役・脇役・端役)・演じ方・声の条件と、演者(Actor)の声。声の一覧は音声合成の提供元から取る)・
  * Locations(作品で使う場所(Location)と、場所の間の移動(SiteFlow)。場所の実体はプロジェクトにあり、作品は参照で持つ。
  * Import Mapで地図(KML・KMZ・GeoPackage)を取り込み、Generate Scenesで、シーンの無い場所からシーンを機械的に作る)・Acts(幕の一覧と詳細。追加・削除)・
- * Scenes(すべての幕のシーンの一覧と詳細。追加・削除)。幕・シーンのorderは0から連番で、削除したら残りを詰める。
+ * Scenes(すべての幕のシーンの一覧と詳細。追加・削除。詳細はPlot(題・あらすじ・場所)・Script(台詞の行の編集。台詞を消すと
+ * その行の原稿も消す)・Translation(原稿の訳文。Translateで生成AIが訳した文を欄に入れ、確かめて直してからSave))・Recording(言語を選び、演出付きの原稿からシーンごとの音声を作る。
+ * Record Allは作れるシーンを順に作る。音声はプロジェクトのrecordings/に置き、生成し直すと上書き)。幕・シーンのorderは0から連番で、削除したら残りを詰める。
  *
  * 埋め込み(loadEmbedded): Build with AIの右側で、決まったタブだけを出す(ヘッダー・タブは隠し、編集用の下書きは埋め込む側の
  * EditorDraftを共有する)。下書きを読み直したら"dramaturgy-editor-edited"を出す(埋め込む側がSave Versionの表示を直すため)。
+ * 埋め込み専用のタブSynopsis(作品全体のあらすじと、幕ごとの題・あらすじをまとめて直す。幕の追加・削除はActsタブ)と
+ * scene_synopsis(すべてのシーンの題・あらすじをまとめて直す。場所の変更・シーンの追加・削除はScenesタブ)と、
+ * script(埋め込む側が選んだシーン(loadEmbeddedのsceneId)の台詞。話者は配役から選ぶ。行の追加・削除)と、
+ * direction(選んだシーンの演出付きの原稿。台詞ごとに音声にする文・ト書き・演出・訳文。Clear Directionで原稿を消す)もある。
  */
 
 // 役の重さ(core.model.drama.cast.CastBilling)と表示名。空は未設定
@@ -86,6 +92,11 @@ customElements.define(
       this.selectedCastId = null;
       this.embedded = false; // 他のパネルに埋め込んで、決まったタブだけを出す
       this.voiceLists = {}; // 言語→声の一覧の取得結果(VoiceListResult。失敗なら{error})
+      this.sceneDetailTab = "plot"; // Scenesタブの詳細のタブ(plot・script・translation)
+      this.recordingLanguage = ""; // Recordingタブで選んだ言語(空なら最初の言語)
+      this.recordingList = null; // RecordingListResult(読み込み中・失敗ならnull)
+      this.recordingBusy = null; // 音声の生成中の説明(null=生成していない)
+      this.recordingStop = false; // Record Allを止める
     }
 
     connectedCallback() {
@@ -118,8 +129,9 @@ customElements.define(
     }
 
     // Build with AIの右側に、決まったタブ(tab)だけを出す。編集用の下書き(draft)は埋め込む側と共有する
-    async loadEmbedded(projectId, dramaturgyId, draft, tab) {
+    async loadEmbedded(projectId, dramaturgyId, draft, tab, sceneId = null) {
       this.embedded = true;
+      this.selectedSceneId = sceneId; // scriptのタブの対象のシーン
       this.projectId = projectId;
       this.dramaturgyId = dramaturgyId;
       this.draft = draft;
@@ -224,6 +236,7 @@ customElements.define(
         ["locations", "Locations"],
         ["acts", "Acts"],
         ["scenes", "Scenes"],
+        ["recording", "Recording"],
       ];
       for (const [key, label] of defs) {
         const btn = document.createElement("button");
@@ -250,6 +263,635 @@ customElements.define(
       else if (this.activeTab === "locations") this.renderLocationsTab(body);
       else if (this.activeTab === "acts") this.renderActsTab(body);
       else if (this.activeTab === "scenes") this.renderScenesTab(body);
+      else if (this.activeTab === "recording") this.renderRecordingTab(body);
+      else if (this.activeTab === "synopsis") this.renderSynopsisTab(body);
+      else if (this.activeTab === "scene_synopsis") this.renderSceneSynopsisTab(body);
+      else if (this.activeTab === "script") this.renderScriptTab(body);
+      else if (this.activeTab === "direction") this.renderDirectionTab(body);
+    }
+
+    // -------------------------------------------------------------------
+    // Recording(言語を選び、シーンごとの音声を作る)
+    // -------------------------------------------------------------------
+
+    renderRecordingTab(body) {
+      body.innerHTML = `<div class="dr-root" id="dr-root"><p class="placeholder">読み込んでいます…</p></div>`;
+      this.reloadRecordings();
+    }
+
+    async reloadRecordings() {
+      try {
+        const params = new URLSearchParams({
+          draft_id: this.draft.draftId,
+          dramaturgy_id: this.dramaturgyId,
+          language: this.recordingLanguage,
+        });
+        this.recordingList = await apiFetch(`/projects/${this.projectId}/recordings?${params}`);
+        this.recordingLanguage = this.recordingList.language || "";
+      } catch (e) {
+        this.recordingList = null;
+        showApiError(e);
+      }
+      this.drawRecordings();
+    }
+
+    recordingUrl(scene) {
+      const path = `/projects/${this.projectId}/recordings/${this.dramaturgyId}/${this.recordingLanguage}/${scene.scene_id}.mp3`;
+      return `${state.serverBaseUrl.replace(/\/$/, "")}${path}?t=${encodeURIComponent(scene.recorded_at || "")}`;
+    }
+
+    drawRecordings() {
+      const root = this.querySelector("#dr-root");
+      if (!root || this.activeTab !== "recording") return;
+      const list = this.recordingList;
+      if (!list) {
+        root.innerHTML = `<p class="placeholder">音声の一覧を読み込めませんでした。</p>`;
+        return;
+      }
+      if (!list.languages.length) {
+        root.innerHTML = `<p class="placeholder">作品の言語(Input Language・Output Language)を、Propertiesタブで設定してください。</p>`;
+        return;
+      }
+      const busy = !!this.recordingBusy;
+      const sourceLabel = { text: "原稿の音声にする文", translated_text: "原稿の訳文" };
+      const options = list.languages
+        .map(
+          (l) =>
+            `<option value="${escapeAttr(l.code)}" ${l.code === list.language ? "selected" : ""}>${escapeHtml(l.code)}(${sourceLabel[l.source]}を読む)</option>`
+        )
+        .join("");
+      const ready = list.scenes.filter((s) => !s.problems.length);
+      const rows = list.scenes
+        .map((s) => {
+          const label = `Act ${s.act_number} · Scene ${s.scene_number}${s.title ? ` ${escapeHtml(s.title)}` : ""}`;
+          const status = s.problems.length
+            ? `<ul class="dr-problems">${s.problems.map((p) => `<li>${escapeHtml(p)}</li>`).join("")}</ul>`
+            : `<span class="field-hint">台詞 ${s.line_count}</span>`;
+          const audio = s.recorded
+            ? `<audio controls preload="none" src="${escapeAttr(this.recordingUrl(s))}"></audio>
+               <div class="field-hint">${escapeHtml(new Date(s.recorded_at).toLocaleString())} · <a href="${escapeAttr(this.recordingUrl(s))}" download="act_${s.act_number}_scene_${s.scene_number}.mp3">Download</a></div>`
+            : `<span class="field-hint">(まだ無い)</span>`;
+          return `
+            <div class="dr-row">
+              <div class="dr-scene"><b>${label}</b>${status}</div>
+              <div class="dr-audio">${audio}</div>
+              <div><button type="button" class="btn" data-record="${escapeAttr(s.scene_id)}" ${busy || s.problems.length ? "disabled" : ""}>
+                ${s.recorded ? "Re-record" : "Record"}</button></div>
+            </div>`;
+        })
+        .join("");
+      root.innerHTML = `
+        <div class="panel-form-row dr-head">
+          <div class="field">
+            <label for="dr_language">Language</label>
+            <select id="dr_language" ${busy ? "disabled" : ""}>${options}</select>
+          </div>
+          <div class="panel-actions">
+            ${busy ? `<button type="button" class="btn btn-danger" id="dr_stop">Stop</button>` : ""}
+            <button type="button" class="btn btn-primary" id="dr_all" ${busy || !ready.length ? "disabled" : ""}>Record All (${ready.length})</button>
+          </div>
+        </div>
+        <div class="field-hint">演出付きの原稿から、台詞ごとに演者の声で音声合成し、シーンごとに1つの音声にします(台詞1行ごとに音声合成を呼ぶので課金を伴います)。
+          原稿はこの画面の下書き(未確定の変更を含む)から読みます。作り直すと上書きします。</div>
+        ${busy ? `<div class="field-hint ab-busy">${escapeHtml(this.recordingBusy)}</div>` : ""}
+        <div class="dr-list">${rows || `<p class="placeholder">シーンがありません。</p>`}</div>
+      `;
+      root.querySelector("#dr_language").addEventListener("change", (ev) => {
+        this.recordingLanguage = ev.target.value;
+        this.reloadRecordings();
+      });
+      root.querySelectorAll("[data-record]").forEach((btn) =>
+        btn.addEventListener("click", () => {
+          const scene = list.scenes.find((s) => s.scene_id === btn.dataset.record);
+          if (!confirm(`${scene.line_count}行の台詞を音声合成します(課金を伴います)。よろしいですか?`)) return;
+          this.recordScenes([scene]);
+        })
+      );
+      root.querySelector("#dr_all").addEventListener("click", () => {
+        const lines = ready.reduce((n, s) => n + s.line_count, 0);
+        const skipped = list.scenes.length - ready.length;
+        const message =
+          `${ready.length}シーン・${lines}行の台詞を、順に音声合成します(課金を伴います。今ある音声は上書きします)。` +
+          (skipped ? `\n足りないもののある${skipped}シーンは飛ばします。` : "") +
+          "\nよろしいですか?";
+        if (!confirm(message)) return;
+        this.recordScenes(ready);
+      });
+      const stop = root.querySelector("#dr_stop");
+      if (stop) {
+        stop.addEventListener("click", () => {
+          this.recordingStop = true;
+          this.recordingBusy = "今のシーンが終わったら止めます…";
+          this.drawRecordings();
+        });
+      }
+    }
+
+    // シーンを順に音声にする(1シーンずつ要求する。失敗したら止める)
+    async recordScenes(scenes) {
+      this.recordingStop = false;
+      let done = 0;
+      try {
+        for (const [i, scene] of scenes.entries()) {
+          if (this.recordingStop) break;
+          this.recordingBusy = `音声を作っています… ${i + 1}/${scenes.length}: Act ${scene.act_number} · Scene ${scene.scene_number}(1シーンに数十秒〜数分かかります)`;
+          this.drawRecordings();
+          await apiFetch(`/projects/${this.projectId}/recordings`, {
+            method: "POST",
+            bodyObj: {
+              draft_id: this.draft.draftId,
+              dramaturgy_id: this.dramaturgyId,
+              scene_id: scene.scene_id,
+              language: this.recordingLanguage,
+            },
+          });
+          done += 1;
+        }
+        showToast(`${done}シーンの音声を作りました`, "ok");
+      } catch (e) {
+        showApiError(e);
+        if (done) showToast(`${done}シーンの音声を作ったところで止まりました`, "error");
+      } finally {
+        this.recordingBusy = null;
+        this.recordingStop = false;
+        await this.reloadRecordings();
+      }
+    }
+
+    // -------------------------------------------------------------------
+    // Synopsis(埋め込み専用。Build with AIのSynopsisの工程)
+    // -------------------------------------------------------------------
+
+    renderSynopsisTab(body) {
+      const d = this.dramaturgy;
+      const acts = this.acts();
+      const actFields = acts
+        .map(
+          (act, i) => `
+          <div class="panel-section-title">Act ${(act.order ?? 0) + 1}</div>
+          ${textField(`dy_act_title_${i}`, "Title", act.title || "")}
+          <div class="field">
+            <label for="dy_act_synopsis_${i}">Synopsis</label>
+            <textarea id="dy_act_synopsis_${i}">${escapeHtml(act.synopsis || "")}</textarea>
+          </div>`
+        )
+        .join("");
+      body.innerHTML = `
+        <div class="panel-form">
+          <div class="field">
+            <label for="dy_synopsis">Synopsis</label>
+            <textarea id="dy_synopsis">${escapeHtml(d.synopsis || "")}</textarea>
+            <div class="field-hint">作品全体のあらすじ(メタメタストーリー)。</div>
+          </div>
+          ${actFields || `<p class="field-hint">幕がありません(Dramaturgy EditorのActsタブで足せます)。</p>`}
+          <div class="panel-actions">
+            <button type="button" class="btn btn-primary" id="dy_save">Save</button>
+          </div>
+        </div>
+      `;
+      body.querySelector("#dy_save").addEventListener("click", (ev) =>
+        this.withButtonBusy(ev.currentTarget, "Saving...", () => this.saveSynopsis(acts))
+      );
+    }
+
+    // -------------------------------------------------------------------
+    // scene_synopsis(埋め込み専用。Build with AIのScenesの工程)
+    // -------------------------------------------------------------------
+
+    renderSceneSynopsisTab(body) {
+      const names = new Map((this.content.locations || []).map((l) => [l.key, l.name]));
+      const acts = this.acts();
+      const sections = acts
+        .map((act, a) => {
+          const scenes = [...(act.scenes || [])].sort((x, y) => (x.order ?? 0) - (y.order ?? 0));
+          const fields = scenes
+            .map((scene, i) => {
+              const place = scene.location ? names.get(scene.location.ref) : null;
+              return `
+              <div class="panel-section-title">Act ${a + 1} · Scene ${i + 1}${place ? ` <span class="field-hint">${escapeHtml(place)}</span>` : ""}</div>
+              ${textField(`dz_title_${a}_${i}`, "Title", scene.title || "")}
+              <div class="field">
+                <label for="dz_synopsis_${a}_${i}">Synopsis</label>
+                <textarea id="dz_synopsis_${a}_${i}">${escapeHtml(scene.synopsis || "")}</textarea>
+              </div>`;
+            })
+            .join("");
+          return fields;
+        })
+        .join("");
+      body.innerHTML = `
+        <div class="panel-form">
+          ${sections || `<p class="field-hint">シーンがありません(Dramaturgy EditorのScenesタブ・LocationsタブのGenerate Scenesで作れます)。</p>`}
+          <div class="panel-actions">
+            <button type="button" class="btn btn-primary" id="dz_save" ${sections ? "" : "disabled"}>Save</button>
+          </div>
+        </div>
+      `;
+      body.querySelector("#dz_save").addEventListener("click", (ev) =>
+        this.withButtonBusy(ev.currentTarget, "Saving...", () => this.saveSceneSynopsis(acts))
+      );
+    }
+
+    async saveSceneSynopsis(acts) {
+      const body = this.querySelector("#de-body");
+      const value = (id) => body.querySelector(`#${id}`).value.trim() || null; // nullはその属性を消す
+      try {
+        await this.editDramaturgy({
+          acts: acts
+            .filter((act) => (act.scenes || []).length)
+            .map((act) => {
+              const a = acts.indexOf(act);
+              const scenes = [...act.scenes].sort((x, y) => (x.order ?? 0) - (y.order ?? 0));
+              return {
+                id: act.id,
+                scenes: scenes.map((scene, i) => ({
+                  id: scene.id,
+                  title: value(`dz_title_${a}_${i}`),
+                  synopsis: value(`dz_synopsis_${a}_${i}`),
+                })),
+              };
+            }),
+        });
+        showToast("下書きに保存しました(Save Versionで確定)", "ok");
+      } catch (e) {
+        showApiError(e);
+      }
+    }
+
+    // -------------------------------------------------------------------
+    // script(埋め込み専用。Build with AIのScriptの工程。選んだシーンの台詞)
+    // -------------------------------------------------------------------
+
+    renderScriptTab(body) {
+      const entry = this.sceneEntries().find(({ scene }) => scene.id === this.selectedSceneId);
+      if (!entry) {
+        body.innerHTML = `<p class="placeholder">シーンを選んでください。</p>`;
+        return;
+      }
+      this.renderScriptEditor(body, entry);
+    }
+
+    // シーンの演出付きの台詞(原稿)を、台詞の行のkeyで引く
+    sceneDialogues(scene) {
+      return new Map((scene.elements || []).filter((e) => e.type === "dialogue" && e.line).map((e) => [e.line.ref, e]));
+    }
+
+    // 台詞の行の編集(Build with AIのScriptの工程・ScenesタブのScript)。原稿のある行は、文言が原稿と食い違えば示す
+    renderScriptEditor(body, entry) {
+      const casts = this.dramaturgy.casts || [];
+      const lines = [...((entry.scene.script || {}).lines || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+      const dialogues = this.sceneDialogues(entry.scene);
+      const bare = (text) => (text || "").replace(/\[[^\]]*\]/g, "").replace(/\s/g, "");
+      const rows = lines.map((line) => {
+        const dialogue = dialogues.get(line.key);
+        return {
+          id: line.id,
+          cast: line.cast ? line.cast.ref : "",
+          text: line.text || "",
+          directed: !!dialogue,
+          stale: !!dialogue && bare(dialogue.text) !== bare(line.text),
+        };
+      });
+      const castOptions = (selected) =>
+        `<option value="">(話者)</option>` +
+        casts
+          .map(
+            (c) =>
+              `<option value="${escapeAttr(c.key)}" ${c.key === selected ? "selected" : ""}>${escapeHtml(this.characterName(c.character.ref))}</option>`
+          )
+          .join("");
+      const draw = () => {
+        body.innerHTML = `
+          <div class="panel-form">
+            ${casts.length ? "" : `<p class="field-hint">配役がありません(Castingの工程かCastsタブで作れます)。</p>`}
+            ${dialogues.size ? `<p class="field-hint">このシーンには演出付きの原稿があります。台詞を消すとその行の原稿も消えます。文言を変えた行は原稿と食い違うので、Build with AIのDirectionで作り直してください(Recordingでは食い違う行のあるシーンを作りません)。</p>` : ""}
+            <div class="ab-script-lines">
+              ${rows
+                .map(
+                  (row, i) => `
+                <div class="ab-script-line">
+                  <select data-line-cast="${i}">${castOptions(row.cast)}</select>
+                  <div>
+                    <textarea data-line-text="${i}" rows="2">${escapeHtml(row.text)}</textarea>
+                    ${row.stale ? `<div class="field-error">原稿(演出・訳文)と食い違います</div>` : ""}
+                  </div>
+                  <button type="button" class="btn" data-line-delete="${i}" title="この行を消す">×</button>
+                </div>`
+                )
+                .join("") || `<p class="field-hint">台詞はまだありません。</p>`}
+            </div>
+            <div class="panel-actions">
+              <button type="button" class="btn" id="dt_add">+ Add Line</button>
+              <button type="button" class="btn btn-primary" id="dt_save">Save</button>
+            </div>
+          </div>
+        `;
+        const read = () =>
+          rows.forEach((row, i) => {
+            row.cast = body.querySelector(`[data-line-cast="${i}"]`).value;
+            row.text = body.querySelector(`[data-line-text="${i}"]`).value;
+          });
+        body.querySelectorAll("[data-line-delete]").forEach((btn) =>
+          btn.addEventListener("click", () => {
+            read();
+            rows.splice(Number(btn.dataset.lineDelete), 1);
+            draw();
+          })
+        );
+        body.querySelector("#dt_add").addEventListener("click", () => {
+          read();
+          rows.push({ id: null, cast: rows.length ? rows[rows.length - 1].cast : "", text: "", directed: false, stale: false });
+          draw();
+        });
+        body.querySelector("#dt_save").addEventListener("click", (ev) => {
+          read();
+          this.withButtonBusy(ev.currentTarget, "Saving...", () => this.saveScript(entry, lines, rows));
+        });
+      };
+      draw();
+    }
+
+    // -------------------------------------------------------------------
+    // direction(埋め込み専用。Build with AIのDirectionの工程。選んだシーンの演出付きの原稿)
+    // -------------------------------------------------------------------
+
+    renderDirectionTab(body) {
+      const entry = this.sceneEntries().find(({ scene }) => scene.id === this.selectedSceneId);
+      if (!entry) {
+        body.innerHTML = `<p class="placeholder">シーンを選んでください。</p>`;
+        return;
+      }
+      const d = this.dramaturgy;
+      const translates = !!(d.output_language && d.input_language && d.output_language !== d.input_language);
+      const lines = [...((entry.scene.script || {}).lines || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+      const castCharacter = new Map((d.casts || []).map((c) => [c.key, this.characterName(c.character.ref)]));
+      const dialogues = (entry.scene.elements || []).filter((e) => e.type === "dialogue" && e.line);
+      const elementOf = (line) => dialogues.find((e) => e.line.ref === line.key) || null;
+      const field = (id, label, value, rows = 0) =>
+        rows
+          ? `<div class="field"><label for="${id}">${label}</label><textarea id="${id}" rows="${rows}">${escapeHtml(value || "")}</textarea></div>`
+          : textField(id, label, value || "");
+      if (!lines.length) {
+        body.innerHTML = `<p class="placeholder">このシーンには台詞がありません(Scriptの工程で書けます)。</p>`;
+        return;
+      }
+      body.innerHTML = `
+        <div class="panel-form">
+          <p class="field-hint">音声はこの原稿から作ります。${translates ? `音声の言語(${escapeHtml(d.output_language)})への訳文で読み上げます。` : ""}
+            ト書き・演出は音声合成への指示なので英語で書きます。</p>
+          ${lines
+            .map((line, i) => {
+              const e = elementOf(line) || {};
+              const dir = e.direction || {};
+              return `
+            <div class="panel-section-title">${i + 1}. ${escapeHtml(castCharacter.get(line.cast && line.cast.ref) || "")}
+              <span class="field-hint">${escapeHtml(line.text)}</span>${e.id ? "" : ` <span class="dataset-badge">未演出</span>`}</div>
+            ${field(`dd_text_${i}`, "Text (音声にする文)", e.text || "", 2)}
+            ${translates ? field(`dd_translated_${i}`, "Translated Text", e.translated_text || "", 2) : ""}
+            ${field(`dd_action_${i}`, "Action", e.action)}
+            <div class="panel-form-row">
+              ${field(`dd_style_${i}`, "Style", dir.style)}
+              ${field(`dd_emotion_${i}`, "Emotion", dir.emotion)}
+            </div>
+            <div class="panel-form-row">
+              ${field(`dd_pace_${i}`, "Pace", dir.pace)}
+              ${field(`dd_dynamics_${i}`, "Dynamics", dir.dynamics)}
+              ${field(`dd_pause_${i}`, "Pause After", dir.pause_after)}
+            </div>`;
+            })
+            .join("")}
+          <div class="panel-actions">
+            <button type="button" class="btn btn-danger" id="dd_clear" ${dialogues.length ? "" : "disabled"}>Clear Direction</button>
+            <button type="button" class="btn btn-primary" id="dd_save">Save</button>
+          </div>
+        </div>
+      `;
+      body.querySelector("#dd_save").addEventListener("click", (ev) =>
+        this.withButtonBusy(ev.currentTarget, "Saving...", () => this.saveDirection(entry, lines, elementOf, translates))
+      );
+      body.querySelector("#dd_clear").addEventListener("click", () => this.clearDirection(entry, dialogues));
+    }
+
+    // 台詞ごとの原稿を保存する(原稿のある台詞は書き換え、無い台詞は何か書いたときだけ作る。音声にする文が空なら台詞のまま)
+    async saveDirection(entry, lines, elementOf, translates) {
+      const body = this.querySelector("#de-body");
+      const value = (id) => {
+        const el = body.querySelector(`#${id}`);
+        return el ? el.value.trim() || null : null; // nullはその属性を消す
+      };
+      const elements = [];
+      lines.forEach((line, i) => {
+        const current = elementOf(line);
+        const values = {
+          text: value(`dd_text_${i}`) || line.text,
+          action: value(`dd_action_${i}`),
+          direction: {
+            style: value(`dd_style_${i}`),
+            pace: value(`dd_pace_${i}`),
+            dynamics: value(`dd_dynamics_${i}`),
+            emotion: value(`dd_emotion_${i}`),
+            pause_after: value(`dd_pause_${i}`),
+          },
+          translated_text: translates ? value(`dd_translated_${i}`) : null,
+        };
+        if (current) {
+          elements.push({ id: current.id, ...values });
+          return;
+        }
+        const written = value(`dd_text_${i}`) || values.action || values.translated_text || Object.values(values.direction).some(Boolean);
+        if (!written) return;
+        const compact = (obj) => Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== null));
+        elements.push({
+          type: "dialogue",
+          order: line.order ?? i,
+          line: { ref: line.key },
+          cast: { ref: line.cast.ref },
+          ...compact({ ...values, direction: undefined }),
+          direction: compact(values.direction),
+        });
+      });
+      if (!elements.length) {
+        showToast("保存する原稿はありません", "info");
+        return;
+      }
+      try {
+        await this.editDramaturgy({ acts: [{ id: entry.act.id, scenes: [{ id: entry.scene.id, elements }] }] });
+        showToast("下書きに保存しました(Save Versionで確定)", "ok");
+      } catch (e) {
+        showApiError(e);
+      }
+    }
+
+    // シーンの演出付きの台詞を消す(台詞をScriptの工程で書き直せるようにする)
+    async clearDirection(entry, dialogues) {
+      if (!confirm("このシーンの演出付きの原稿(台詞ごとの演出・訳文)を消します。台詞はそのまま残ります。よろしいですか?")) return;
+      try {
+        await this.editDramaturgy({
+          acts: [{ id: entry.act.id, scenes: [{ id: entry.scene.id, elements: dialogues.map((e) => ({ id: e.id, delete: true })) }] }],
+        });
+        showToast("原稿を消しました(Save Versionで確定)", "ok");
+      } catch (e) {
+        showApiError(e);
+      }
+    }
+
+    // ScenesタブのTranslation: 台詞ごとの原稿の訳文。Translateは生成AIの訳を欄に入れるだけ(Saveで下書きへ)
+    renderTranslationEditor(body, entry) {
+      const d = this.dramaturgy;
+      const translates = !!(d.output_language && d.input_language && d.output_language !== d.input_language);
+      if (!translates) {
+        body.innerHTML = `<p class="placeholder">訳文は、PropertiesタブでInput LanguageとOutput Languageを違う言語に設定した作品で作れます。</p>`;
+        return;
+      }
+      const lines = [...((entry.scene.script || {}).lines || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+      if (!lines.length) {
+        body.innerHTML = `<p class="placeholder">このシーンには台詞がありません(Scriptで書けます)。</p>`;
+        return;
+      }
+      const dialogues = this.sceneDialogues(entry.scene);
+      const castCharacter = new Map((d.casts || []).map((c) => [c.key, this.characterName(c.character.ref)]));
+      const bare = (text) => (text || "").replace(/\[[^\]]*\]/g, "").replace(/\s/g, "");
+      body.innerHTML = `
+        <div class="panel-form">
+          <p class="field-hint">${escapeHtml(d.input_language)} → ${escapeHtml(d.output_language)}。訳文はRecordingで${escapeHtml(d.output_language)}の音声を作るときに読みます。
+            Translateは生成AIの訳を欄に入れるだけで、Saveするまで下書きには入りません。</p>
+          <div id="dt-warnings"></div>
+          ${lines
+            .map((line, i) => {
+              const dialogue = dialogues.get(line.key);
+              // 原稿の音声にする文(感情タグ入り)を訳す。原稿が今の台詞と食い違えば台詞を訳す
+              const stale = dialogue && bare(dialogue.text) !== bare(line.text);
+              const source = dialogue && !stale && dialogue.text !== line.text ? dialogue.text : null;
+              return `
+            <div class="field">
+              <label for="dtr_${i}">${i + 1}. ${escapeHtml(castCharacter.get(line.cast && line.cast.ref) || "")}: ${escapeHtml(line.text)}</label>
+              ${source ? `<div class="field-hint">音声にする文: ${escapeHtml(source)}</div>` : ""}
+              ${stale ? `<div class="field-error">原稿が今の台詞と食い違います(訳すのは今の台詞)</div>` : ""}
+              <textarea id="dtr_${i}" rows="2">${escapeHtml((dialogue && dialogue.translated_text) || "")}</textarea>
+            </div>`;
+            })
+            .join("")}
+          <div class="panel-actions">
+            <button type="button" class="btn" id="dtr_translate">Translate</button>
+            <button type="button" class="btn btn-primary" id="dtr_save">Save</button>
+          </div>
+        </div>
+      `;
+      body.querySelector("#dtr_translate").addEventListener("click", (ev) =>
+        this.withButtonBusy(ev.currentTarget, "Translating...", () => this.translateScene(body, entry, lines))
+      );
+      body.querySelector("#dtr_save").addEventListener("click", (ev) =>
+        this.withButtonBusy(ev.currentTarget, "Saving...", () => this.saveTranslation(body, entry, lines))
+      );
+    }
+
+    async translateScene(body, entry, lines) {
+      const filled = lines.some((_, i) => body.querySelector(`#dtr_${i}`).value.trim());
+      if (filled && !confirm("今の訳文の欄を、生成AIの訳で置き換えます(Saveするまで下書きは変わりません)。よろしいですか?")) return;
+      try {
+        const result = await apiFetch(`/projects/${this.projectId}/drama-drafts/${this.draft.draftId}/scene-translation`, {
+          method: "POST",
+          bodyObj: { dramaturgy_id: this.dramaturgyId, scene_id: entry.scene.id },
+        });
+        const byLine = new Map(result.lines.map((l) => [l.line_id, l.translated_text]));
+        lines.forEach((line, i) => {
+          const text = byLine.get(line.id);
+          if (text) body.querySelector(`#dtr_${i}`).value = text;
+        });
+        const warnings = result.warnings || [];
+        body.querySelector("#dt-warnings").innerHTML = warnings.length
+          ? `<div class="ab-msg-list"><b>注意</b><ul>${warnings.map((w) => `<li>${escapeHtml(w)}</li>`).join("")}</ul></div>`
+          : "";
+        showToast("訳文を入れました。確かめてSaveしてください", "ok");
+      } catch (e) {
+        showApiError(e);
+      }
+    }
+
+    // 訳文を保存する(原稿のある台詞は訳文だけを書き換え、原稿の無い台詞は訳文を書いたときだけ台詞のままの原稿を作る)
+    async saveTranslation(body, entry, lines) {
+      const dialogues = this.sceneDialogues(entry.scene);
+      const elements = [];
+      lines.forEach((line, i) => {
+        const text = body.querySelector(`#dtr_${i}`).value.trim() || null; // nullは訳文を消す
+        const dialogue = dialogues.get(line.key);
+        if (dialogue) {
+          if ((dialogue.translated_text || null) !== text) elements.push({ id: dialogue.id, translated_text: text });
+        } else if (text) {
+          elements.push({
+            type: "dialogue",
+            order: line.order ?? i,
+            line: { ref: line.key },
+            cast: { ref: line.cast.ref },
+            text: line.text,
+            translated_text: text,
+          });
+        }
+      });
+      if (!elements.length) {
+        showToast("変わった訳文はありません", "info");
+        return;
+      }
+      try {
+        await this.editDramaturgy({ acts: [{ id: entry.act.id, scenes: [{ id: entry.scene.id, elements }] }] });
+        showToast("訳文を下書きに保存しました(Save Versionで確定)", "ok");
+      } catch (e) {
+        showApiError(e);
+      }
+    }
+
+    // 台詞を並びごと保存する(残した行は識別子を保って書き換え、消した行は削除し、新しい行は足す)。消した行の原稿も消す
+    async saveScript(entry, lines, rows) {
+      const kept = rows.filter((row) => row.text.trim());
+      if (kept.some((row) => !row.cast)) {
+        showToast("話者を選んでください", "error");
+        return;
+      }
+      const keptIds = new Set(kept.map((row) => row.id).filter(Boolean));
+      const removed = lines.filter((line) => !keptIds.has(line.id));
+      const patchLines = [
+        ...kept.map((row, order) => ({ ...(row.id ? { id: row.id } : {}), order, cast: { ref: row.cast }, text: row.text.trim() })),
+        ...removed.map((line) => ({ id: line.id, delete: true })),
+      ];
+      const dialogues = this.sceneDialogues(entry.scene);
+      const removedElements = removed.filter((line) => dialogues.has(line.key)).map((line) => ({ id: dialogues.get(line.key).id, delete: true }));
+      try {
+        await this.editDramaturgy({
+          acts: [
+            {
+              id: entry.act.id,
+              scenes: [
+                {
+                  id: entry.scene.id,
+                  script: { lines: patchLines },
+                  ...(removedElements.length ? { elements: removedElements } : {}),
+                },
+              ],
+            },
+          ],
+        });
+        showToast("下書きに保存しました(Save Versionで確定)", "ok");
+      } catch (e) {
+        showApiError(e);
+      }
+    }
+
+    async saveSynopsis(acts) {
+      const body = this.querySelector("#de-body");
+      const value = (id) => body.querySelector(`#${id}`).value.trim() || null; // nullはその属性を消す
+      try {
+        await this.editDramaturgy({
+          synopsis: value("dy_synopsis"),
+          acts: acts.map((act, i) => ({
+            id: act.id,
+            title: value(`dy_act_title_${i}`),
+            synopsis: value(`dy_act_synopsis_${i}`),
+          })),
+        });
+        showToast("下書きに保存しました(Save Versionで確定)", "ok");
+      } catch (e) {
+        showApiError(e);
+      }
     }
 
     // -------------------------------------------------------------------
@@ -1159,6 +1801,32 @@ customElements.define(
         return;
       }
       const { act, scene } = entry;
+      const subTabs = [
+        ["plot", "Plot"],
+        ["script", "Script"],
+        ["translation", "Translation"],
+      ];
+      detail.innerHTML = `
+        <div class="panel-section-title">Act ${(act.order ?? 0) + 1} · Scene ${(scene.order ?? 0) + 1}${scene.title ? ` ${escapeHtml(scene.title)}` : ""}</div>
+        <div class="ds-subtabs">${subTabs
+          .map(([key, label]) => `<button type="button" class="panel-tab${this.sceneDetailTab === key ? " active" : ""}" data-scene-tab="${key}">${label}</button>`)
+          .join("")}</div>
+        <div id="ds-sub"></div>`;
+      detail.querySelectorAll("[data-scene-tab]").forEach((btn) =>
+        btn.addEventListener("click", () => {
+          this.sceneDetailTab = btn.dataset.sceneTab;
+          this.renderSceneDetail(detail);
+        })
+      );
+      const sub = detail.querySelector("#ds-sub");
+      if (this.sceneDetailTab === "script") this.renderScriptEditor(sub, entry);
+      else if (this.sceneDetailTab === "translation") this.renderTranslationEditor(sub, entry);
+      else this.renderScenePlot(sub, entry);
+    }
+
+    // Scenesタブの詳細のPlot(題・あらすじ・場所)
+    renderScenePlot(detail, entry) {
+      const { act, scene } = entry;
       const current = scene.location ? scene.location.ref : "";
       const locations = this.dramaturgyLocations();
       // 作品で使っていない場所を参照しているシーンも、その場所を選択肢に残す
@@ -1168,7 +1836,6 @@ customElements.define(
         options.push({ key: current, name: `${other ? other.name : current}(作品で使っていない場所)` });
       }
       detail.innerHTML = `
-        <div class="panel-section-title">Act ${(act.order ?? 0) + 1} · Scene ${(scene.order ?? 0) + 1}</div>
         <div class="panel-form">
           <div class="panel-readonly-id">ID: ${escapeHtml(scene.id)}</div>
           ${textField("ds_title", "Title", scene.title || "")}

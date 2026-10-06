@@ -2,19 +2,23 @@
 """
 Build with AIの工程(右側のタブ)と、相談相手のエージェント・タスクの対応表(QIDMのSTEP_PROMPTSにあたる)。
 チャットは今開いているタブの工程に結び付く。プロンプトの無い工程(available=False)は、タブを並べるが選べない。
+シーンごとの工程(per_scene=True。Script)は、右側で選んだシーンが対象で、会話もシーンごとに分ける。
 """
 
 
 class BuildStep:
     """keyは工程の識別子(会話の記録にも使う)、role_nameは相談相手の職能(モデル定義YAMLの区画名の単数形)、
-    task_codeはそのタスク(AgentTask.code)。"""
+    task_codeはそのタスク(AgentTask.code)。per_sceneはシーンごとの工程か。"""
 
-    def __init__(self, key: str, label: str, role_name: str, task_code: str, available: bool):
+    def __init__(
+        self, key: str, label: str, role_name: str, task_code: str, available: bool, per_scene: bool = False
+    ):
         self.key: str = key
         self.label: str = label
         self.role_name: str = role_name
         self.task_code: str = task_code
         self.available: bool = available
+        self.per_scene: bool = per_scene
 
 
 # 並びがタブの順。工程を足すときは、ここと、工程のプロンプト(このパッケージ)と、提案の反映(ai_builder)を足す
@@ -23,8 +27,12 @@ BUILD_STEPS: list[BuildStep] = [
     BuildStep("characters", "Characters", "scriptwriter", "create_character", True),
     BuildStep("groups", "Groups", "scriptwriter", "create_character_group", True),
     BuildStep("relationships", "Relationships", "scriptwriter", "create_relationship", True),
+    BuildStep("synopsis", "Synopsis", "scriptwriter", "write_synopsis", True),
+    BuildStep("scenes", "Scenes", "scriptwriter", "write_synopsis", True),
     BuildStep("casting", "Casting", "casting_director", "cast_character", True),
     BuildStep("audition", "Audition", "casting_director", "assign_voice", True),
+    BuildStep("script", "Script", "scriptwriter", "write_dialogue", True, per_scene=True),
+    BuildStep("direction", "Direction", "director", "direct_scene", True, per_scene=True),
 ]
 
 

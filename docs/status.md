@@ -122,14 +122,39 @@
   headless Chromeで、手元のllama.cpp(Gemma 4 26B-A4B)による取り込み・矛盾の確認・キャンセル、名前だけの人物の追加、同名の拒否、まとまり・人物関係の表示、
   使われている人物関係の削除の拒否、Save Versionを確かめた(手元の生成AIでは1回に約3分かかった。[known_issues.md](known_issues.md))。
 - Build with AI(`ai_build_panel.js`、Edit > Build with AI...、2026-10-02): 生成AIと相談しながら作品を作るパネル([architecture.md](architecture.md) 10節)。
-  左に参照する資料・チャット(Dialogue/One-shot Draft)、右に工程のタブ(Proposal・Characters・Groups・Relationships。Castingは選べない)と
-  その内容(企画書のフォーム、人物パネルの該当タブを埋め込んだもの)。人物の工程(2026-10-02)は追加と更新だけで削除しない。
+  左に参照する資料・チャット(Dialogue/One-shot Draft)、右に工程のタブ(Proposal・Characters・Groups・Relationships・Synopsis・Scenes・Casting・Audition・Script・Direction)と
+  その内容(企画書のフォーム、人物パネル・Dramaturgy Editorの該当タブを埋め込んだもの)。人物の工程(2026-10-02)は追加と更新だけで削除しない。
   Gemma(`gemma-4-31b-it`)で、企画書から人物4人・まとまり・向きのある関係6つを作れることを確かめた(約90秒)。
   提案は会話の中に変わる項目を出し、Apply・Undo。Clear・Save Version。会話は作品ごとに保存し、パネルを開き直すと続きから。
   処理は`core/service/process/genai/ai_builder.py`、プロンプトは`core/prompt/ai_build/`、会話は`core/infra/store/ai_build_store.py`、
   APIは`ai_build`(`GET /projects/{id}/ai-build/steps`、`GET|POST|DELETE .../ai-build/{工程}/messages`、`POST .../ai-build/messages/{id}/apply|undo`)。
   企画書のフォームはDramaturgy Editorと共通(`proposal_form.js`)。headless Chromeで、生成AIを決まった応答に差し替えたサーバーにより、
   対話・ワンショット・Apply・Undo・フォームの直接の保存・Save Version・開き直し・Clearを確かめた。
+- Build with AIのSynopsisの工程(2026-10-05): Scriptwriterの`write_synopsis`で、作品全体のあらすじと、今ある幕の題・あらすじを書く
+  (幕は番号で指し、増減しない。空の値では消さない)。右側はDramaturgy Editorの埋め込み専用のSynopsis([architecture.md](architecture.md) 10節)。
+  テストは`tests/api/test_ai_build_synopsis.py`。headless Chromeで、生成AIを決まった応答に差し替えたサーバーにより、タブの切り替え・ワンショット・
+  提案の表示・Apply(右側のフォームに反映)・フォームの直接の保存を確かめた。本物の生成AIではまだ確かめていない。
+- Build with AIのScenesの工程(2026-10-05): Scriptwriterの`write_synopsis`で、今あるシーンの題・あらすじを書く(幕・シーンの番号で指し、増減しない。
+  場所・時期・状況は変えない。空の値では消さない)。右側はDramaturgy Editorの埋め込み専用の`scene_synopsis`([architecture.md](architecture.md) 10節)。
+  テストは`tests/api/test_ai_build_scenes.py`。headless Chromeで、Synopsisと同じ手順を確かめた。本物の生成AIではまだ確かめていない。
+- Build with AIのScriptの工程(読み上げ台本。2026-10-05): Scriptwriterの`write_dialogue`で、選んだ1シーンの台詞の全体を書く(話者は配役済みの人物だけ。
+  演出付きの原稿があるシーン・配役の無い作品は断る)。会話はシーンごと(`ai_build_message.scene_id`、APIの`scene_id`)。右側はシーンの選択と、
+  Dramaturgy Editorの埋め込み専用の`script`(行の話者・台詞の編集、追加・削除)。[architecture.md](architecture.md) 10節。
+  テストは`tests/api/test_ai_build_script.py`。headless Chromeで、シーンの切り替え(会話も切り替わる)・ワンショット・配役の無い人物の除外・Apply・
+  行の追加と削除の保存を確かめた。本物の生成AIではまだ確かめていない。
+- Build with AIのDirectionの工程(演出付きの原稿。音声合成の直前。2026-10-05): Directorの`direct_scene`で、選んだシーンの台詞ごとに、音声にする文
+  (感情タグ入り。文言は変えない)・ト書き・演出・訳文(音声の言語が違う作品だけ)を作る。右側はDramaturgy Editorの埋め込み専用の`direction`
+  (Clear Directionで原稿を消す)。[architecture.md](architecture.md) 10節。テストは`tests/api/test_ai_build_direction.py`。headless Chromeで、
+  ワンショット・Apply・直接の保存・Clear Directionを確かめた。本物の生成AIではまだ確かめていない。
+- Dramaturgy EditorのRecordingタブ(音声の生成。2026-10-05): 言語(制作の言語=音声にする文、音声の言語=訳文)を選び、演出付きの原稿から
+  シーンごとに1つのmp3を作る(Record・Record All・Stop、再生・ダウンロード)。足りないもののあるシーンは理由を示して断る。保存先は
+  `<プロジェクト>/recordings/<作品のid>/<言語>/<シーンのid>.mp3`([architecture.md](architecture.md) 8節)。テストは`tests/api/test_recording.py`。
+  headless Chromeで、音声合成を偽物に差し替えたサーバーにより、足りないものの表示・Record All・再生用のファイルの配信・言語の切り替えを確かめた。
+  **本物の音声合成ではまだ確かめていない**。
+- Dramaturgy EditorのScenesタブの詳細をPlot・Script・Translationに分けた(2026-10-05): Scriptは台詞の行の編集(消した行の原稿も消す。
+  文言を変えた行は原稿と食い違うと示し、Recordingは断る)、Translationは原稿の訳文の編集と、生成AIによる訳(StageManagerの`translate`。
+  欄に入れるだけで、Saveで下書きへ)。[architecture.md](architecture.md) 8節。テストは`tests/api/test_scene_translation.py`。headless Chromeで、
+  台詞の変更・削除と食い違いの表示、Translate・Save、Recordingでの食い違いの表示を確かめた。本物の生成AIではまだ確かめていない。
 - 文章生成の既定をGemma(Gemini APIの`gemma-4-31b-it`)にした(2026-10-02): `apps/sample_data/project.yaml`の`creative_llm`・`assistive_llm`と、
   `main.py`の既定(project.yamlに設定が無いとき)。GUIで作った新しいプロジェクトには既定が無い(Generative AIタブで設定する)。
 - 文章生成の設定の分離(2026-10-02): Generative AIタブで、作品作り(Creative LLM)と作業補助(Assistive LLM)を別々に設定する

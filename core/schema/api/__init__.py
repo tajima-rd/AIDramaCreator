@@ -78,6 +78,13 @@ from .project import (
     ProjectSaveAsRequest,
     ProjectUpdatePathRequest,
 )
+from .recording import (
+    RecordingCreateRequest,
+    RecordingLanguageInfo,
+    RecordingListResult,
+    RecordingSceneInfo,
+)
+from .scene_translation import SceneTranslationLine, SceneTranslationRequest, SceneTranslationResult
 from .voice import VoiceListResult, VoiceSummary
 
 __all__ = [
@@ -141,6 +148,13 @@ __all__ = [
     "ProjectPropertiesUpdateRequest",
     "ProjectSaveAsRequest",
     "ProjectUpdatePathRequest",
+    "RecordingCreateRequest",
+    "RecordingLanguageInfo",
+    "RecordingListResult",
+    "RecordingSceneInfo",
+    "SceneTranslationLine",
+    "SceneTranslationRequest",
+    "SceneTranslationResult",
     "VoiceListResult",
     "VoiceSummary",
 ]

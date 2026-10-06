@@ -1,7 +1,7 @@
 # core/schema/api/ai_build.py
 """
 Build with AI(core.service.api.ai_build)のDTO。会話は作品ごとに1本で、工程(タブ)ごとに分けて見せる・送る
-(docs/architecture.md 10節)。提案は、工程の内容の形(Proposalなら企画書の全項目)で返す。
+(docs/architecture.md 10節)。シーンごとの工程(Script)は、会話をさらにシーン(scene_id)ごとに分ける。提案は、工程の内容の形(Proposalなら企画書の全項目)で返す。
 """
 
 from typing import Any, Literal, Optional
@@ -15,6 +15,7 @@ class AiBuildStepInfo(BaseModel):
     role_name: str  # 相談相手の職能(モデル定義YAMLの区画名の単数形)
     task_code: str
     available: bool  # Falseの工程はタブを並べるが選べない
+    per_scene: bool = False  # シーンごとの工程(送る・見せる・消すときにscene_idが要る)
 
 
 class AiBuildStepListResult(BaseModel):
@@ -24,6 +25,7 @@ class AiBuildStepListResult(BaseModel):
 class AiBuildMessageInfo(BaseModel):
     id: int
     step: str
+    scene_id: Optional[str] = None  # シーンごとの工程での発言のシーン
     role: Literal["user", "assistant"]
     mode: Optional[Literal["one_shot", "dialogue"]] = None
     text: str
@@ -44,6 +46,7 @@ class AiBuildMessageListResult(BaseModel):
 class AiBuildSendRequest(BaseModel):
     draft_id: str  # 編集用の下書き(今の内容を読む)
     dramaturgy_id: str
+    scene_id: Optional[str] = None  # シーンごとの工程(Script)で対象にするシーン
     mode: Literal["one_shot", "dialogue"]
     text: str = ""  # ワンショット下書きでは空でもよい
     reference_file_ids: list[str] = []  # 参照する資料(Dataset)

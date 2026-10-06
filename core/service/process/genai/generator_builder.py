@@ -110,6 +110,22 @@ def build_speech_generator(project: Project, config: Optional[SpeechConfig] = No
     return create_speech_generator(setting.client, setting.model, api_key=saved_api_key(setting), config=config)
 
 
+def build_actor_speech_generator(
+    project: Project, client: Optional[str], model: Optional[str], config: Optional[SpeechConfig] = None
+) -> SpeechGenerator:
+    """演者(Actor)の音声合成器。演者の提供元・モデルが空なら、プロジェクトの設定(Project.tts)のもの。"""
+    setting = project.tts
+    if not client and not model:
+        return build_speech_generator(project, config)
+    client = client or (setting.client if setting else None)
+    model = model or (setting.model if setting else None)
+    if not client or not model:
+        raise ValueError("音声合成の提供元・モデルが決まっていません(Project > PreferencesのTTSか、演者の設定)。")
+    api_url = setting.api_url if setting and setting.client == client else None
+    actor_setting = TtsSetting(client=client, model=model, api_url=api_url)
+    return create_speech_generator(client, model, api_key=saved_api_key(actor_setting), config=config)
+
+
 def build_embedding_generator(project: Project, config: Optional[EmbeddingConfig] = None) -> EmbeddingGenerator:
     """プロジェクトの設定(Project.embedding)から埋め込みの生成器を作る。"""
     setting = project.embedding

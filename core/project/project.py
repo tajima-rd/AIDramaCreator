@@ -28,6 +28,8 @@ DATASETS_DIRNAME = "datasets"
 DRAFTS_DIRNAME = "drafts"
 # プロジェクトのユーザー既定(エージェント等。core.infra.store.agent_default_store)
 USER_DEFAULT_DIRNAME = "user_default"
+# 生成した音声(Dramaturgy EditorのRecordingタブ)の置き場所
+RECORDINGS_DIRNAME = "recordings"
 
 PROTOCOL_VERSION = "0.1.0"
 DEFAULT_SERVER_BASE_URL = "http://127.0.0.1:8100"
@@ -59,6 +61,11 @@ class ProjectLayout:
     def drafts_dir(self) -> str:
         """作成途中の下書きの置き場所(対話方式の制作で使う予定。docs/future_design.md)。"""
         return os.path.join(self.root_dir, DRAFTS_DIRNAME)
+
+    @property
+    def recordings_dir(self) -> str:
+        """生成した音声の置き場所(<作品のid>/<言語>/<シーンのid>.mp3)。"""
+        return os.path.join(self.root_dir, RECORDINGS_DIRNAME)
 
     @property
     def user_default_agents_dir(self) -> str:
