@@ -19,7 +19,7 @@ project_idはcore.infra.store.project_registry_store(永続レジストリ)で�
 エンドポイント本体は、core.service.apiと同じリソース単位でapi/routers/配下に分割されている
 (include順は、ルートの照合順を保つため変更しないこと)。このファイルは
 FastAPIアプリの生成・各routerのinclude・静的ファイルのmount・システム側の例外から
-HTTPステータスへの共通の対応付けのみを担う。Web GUI(apps/AIDC-Console)は/app/で配信する。
+HTTPステータスへの共通の対応付けのみを担う。Web GUI(apps/AIDC-Console)は/app/で配信する(/は/app/へ転送する)。
 
 システム(core/service/api)はHTTPを知らず、エラーを例外で返す。プロジェクト・Dataset・作品モデルの下書きと版の不在は
 専用の例外(ProjectNotFoundError・DatasetNotFoundError・DatasetMetadataNotFoundError・DraftNotFoundError・
@@ -31,7 +31,7 @@ VersionNotFoundError)なので、
 import os
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from api.routers import (
@@ -41,6 +41,7 @@ from api.routers import (
     dataset,
     drama_draft,
     drama_model,
+    language,
     preference,
     project,
     recording,
@@ -62,6 +63,7 @@ app.include_router(agent_default.router)
 app.include_router(ai_build.router)
 app.include_router(character_import.router)
 app.include_router(voice.router)
+app.include_router(language.router)
 app.include_router(recording.router)
 app.include_router(scene_translation.router)
 
@@ -94,6 +96,11 @@ async def version_not_found(_request: Request, exc: VersionNotFoundError):
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+@app.get("/", include_in_schema=False)
+async def root():
+    return RedirectResponse(url="/app/")
 
 
 _CONSOLE_APP_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "apps", "AIDC-Console")

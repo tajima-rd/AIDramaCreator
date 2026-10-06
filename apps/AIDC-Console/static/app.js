@@ -768,18 +768,32 @@ async function mountCharacterEditor(projectId) {
 // 作品の追加専用の下書きを作って確定するため、Dramaturgy Editorの下書きに確定していない変更があると、
 // その下書きが確定できなくなる。そのため、変更があれば先にSave Versionを求める(変更が無ければ、
 // 次にDramaturgy Editorを開くときに作り直される)。
-function actionNewDramaturgy() {
+async function actionNewDramaturgy() {
   if (!state.project) {
     showToast("先にプロジェクトを開いてください", "error");
     return;
   }
+  let languages;
+  try {
+    languages = (await apiFetch("/languages")).languages || []; // 作品の言語の一覧(システム既定)
+  } catch (e) {
+    showApiError(e);
+    return;
+  }
+  const languageSelect = (id, label, selected, hint) =>
+    `<div class="field"><label for="${id}">${label}</label><select id="${id}">
+      <option value="">(未設定)</option>
+      ${languages
+        .map((l) => `<option value="${escapeAttr(l.code)}" ${l.code === selected ? "selected" : ""}>${escapeHtml(`${l.label}・${l.name}(${l.code})`)}</option>`)
+        .join("")}
+    </select><div class="field-hint">${hint}</div></div>`;
   openModal({
     title: "New Dramaturgy",
     bodyHtml:
       textField("f_title", "Title") +
       textField("f_act_count", "Number of Acts", "1", "空の幕をこの数だけ作ります(後からDramaturgy EditorのActsタブで追加・削除できます)") +
-      textField("f_input_language", "Input Language", "ja", "制作に使う言語のコード(例: ja)") +
-      textField("f_output_language", "Output Language", "ja", "音声にする言語のコード(例: ja・zh)"),
+      languageSelect("f_input_language", "Input Language", "ja", "制作に使う言語(台詞を書く言語)") +
+      languageSelect("f_output_language", "Output Language", "ja", "既定の音声の言語。ほかの言語の訳文は、Dramaturgy EditorのScenesタブで作れます"),
     buttons: [
       { label: "Cancel", onClick: closeModal },
       {

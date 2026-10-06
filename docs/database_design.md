@@ -105,7 +105,8 @@ QIDMのdraftsにあった根拠(evidence)・会話(conversation)は、対話方�
 | `act` ⊂dramaturgy | id・dramaturgy_id・sort_order・title・synopsis |
 | `scene` ⊂act | id・act_id・sort_order・title・synopsis・period_id・location_id・situation_location_id・situation_description・situation_time_of_day・situation_environment |
 | `line` ⊂scene | id・scene_id・sort_order・cast_id→cast・text |
-| `script_element` ⊂scene | id・scene_id・sort_order・kind(dialogue / sound_effect / atmosphere / music)・Dialogueの列(line_id・cast_id・text・action・direction_style・direction_pace・direction_dynamics・direction_emotion・direction_pause_after・translated_text・has_situation・situation_location_id・situation_description・situation_time_of_day・situation_environment) |
+| `script_element` ⊂scene | id・scene_id・sort_order・kind(dialogue / sound_effect / atmosphere / music)・Dialogueの列(line_id・cast_id・text・action・direction_style・direction_pace・direction_dynamics・direction_emotion・direction_pause_after・has_situation・situation_location_id・situation_description・situation_time_of_day・situation_environment) |
+| `script_element_translation` ⊂script_element | element_id・sort_order・language・text(主キーはelement_idとlanguage。台詞の言語ごとの訳文。2026-10-06) |
 
 多対多(中間テーブル。並びを持つものは`sort_order`付き):
 `dramaturgy_character`・`dramaturgy_relationship`・`dramaturgy_location`・`dramaturgy_site_flow`・`character_group_member`・`biography_relationship`。

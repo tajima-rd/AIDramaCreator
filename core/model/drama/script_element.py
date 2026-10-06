@@ -28,6 +28,14 @@ class Direction:
         self.pause_after: Optional[str] = pause_after
 
 
+class Translation:
+    """台詞の訳文。languageは言語のコード(BCP 47。例: en・zh-CN)。textは読み上げる訳文(音声タグを含められる)。"""
+
+    def __init__(self, language: str, text: str):
+        self.language: str = language
+        self.text: str = text
+
+
 class ScriptElement:
     """原稿の要素の基底。"""
 
@@ -38,7 +46,7 @@ class ScriptElement:
 
 class Dialogue(ScriptElement):
     """演出付きの台詞。line_idは元になったLine、cast_idは話者(Cast)で、どちらも識別子で参照する。textには音声タグを含められる。
-    actionはト書き(動作・状況)。translated_textはDramaturgyのoutput_languageへの訳文。situationは、場面の途中で
+    actionはト書き(動作・状況)。translationsは言語ごとの訳文(いくつでも。同じ言語は1つ。2026-10-06ユーザー)。situationは、場面の途中で
     状況(場所・状況・時間帯・天候等)が変わるときだけ持つ(無ければシーンの状況)。"""
 
     def __init__(
@@ -49,7 +57,7 @@ class Dialogue(ScriptElement):
         text: str,
         action: Optional[str] = None,
         direction: Optional[Direction] = None,
-        translated_text: Optional[str] = None,
+        translations: Optional[list[Translation]] = None,
         situation: Optional[Situation] = None,
     ):
         super().__init__(order)
@@ -58,7 +66,7 @@ class Dialogue(ScriptElement):
         self.text: str = text
         self.action: Optional[str] = action
         self.direction: Direction = direction if direction is not None else Direction()
-        self.translated_text: Optional[str] = translated_text
+        self.translations: list[Translation] = list(translations or [])
         self.situation: Optional[Situation] = situation
 
 

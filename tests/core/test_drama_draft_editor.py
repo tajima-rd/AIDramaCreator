@@ -160,7 +160,7 @@ dramaturgies:
                 line: {ref: l2}
                 cast: {ref: taro_voice}
                 text: 港へ下りよう。
-                translated_text: 去港口吧。
+                translations: [{language: zh-CN, text: 去港口吧。}, {language: en, text: To the harbor.}]
                 situation:
                   location: {ref: harbor}
                   environment: 霧
@@ -238,7 +238,7 @@ def test_confirmed_model_round_trips_through_db(db_path):
     assert quiet.direction.pause_after == "長め"
     assert quiet.line_id == scene.script.lines[0].id
     assert harbor.situation.location.name == "港"
-    assert harbor.translated_text == "去港口吧。"
+    assert [(t.language, t.text) for t in harbor.translations] == [("zh-CN", "去港口吧。"), ("en", "To the harbor.")]
     # 省略した状況(None)と、空の状況は区別される
     assert empty.situation is not None and empty.situation.description is None
     assert scene.situation.location is scene.location

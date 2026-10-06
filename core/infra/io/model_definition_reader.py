@@ -18,7 +18,7 @@ import yaml
 from core.gis.analysis.containment import covers_point, line_endpoints
 from core.gis.geometry import is_areal, normalize_wkt, parse_wkt
 from core.infra.io.agent_default_reader import complete_agent_spec
-from core.model.agent import AgentTask, BaseAgent
+from core.model.agent import AgentTask, BaseAgent, LanguageVoice
 from core.model.agent.factory import AGENT_ROLES, build_actor, build_agent
 from core.model.drama import (
     AdditionalFeature,
@@ -40,6 +40,7 @@ from core.model.drama import (
     Situation,
     SpeechStyle,
     TemporalNode,
+    Translation,
 )
 from core.model.drama.factory import (
     build_act,
@@ -60,6 +61,7 @@ from core.model.drama.factory import (
 )
 from core.model.drama.script_element import Direction
 from core.schema.formats.dramaturgy_definition import (
+    ActorSpec,
     AgentSpec,
     AgentsSpec,
     CharacteristicSpec,
@@ -493,7 +495,7 @@ def _dramaturgy(dramaturgy_spec: DramaturgySpec, refs: "_References") -> Dramatu
                     element_spec.text,
                     element_spec.action,
                     direction,
-                    element_spec.translated_text,
+                    _translations(element_spec, where),
                     (
                         _situation(element_spec.situation, refs, where)
                         if element_spec.situation
@@ -565,6 +567,7 @@ def _agents(spec: Optional[AgentsSpec], refs: "_References") -> list[BaseAgent]:
             full.rules,
             full.prohibitions,
             _tasks(full),
+            _voices(full),
             id=full.id,
         )
         refs.register("Agent", full.key, actor)
@@ -574,6 +577,24 @@ def _agents(spec: Optional[AgentsSpec], refs: "_References") -> list[BaseAgent]:
 
 def _tasks(spec: AgentSpec) -> list[AgentTask]:
     return [AgentTask(t.code, t.title, t.description, t.rules, t.prohibitions) for t in spec.tasks]
+
+
+def _voices(spec: ActorSpec) -> list[LanguageVoice]:
+    """演者の言語ごとの声(同じ言語が2つあればValueError)。"""
+    languages = [v.language for v in spec.voices]
+    duplicated = sorted({language for language in languages if languages.count(language) > 1})
+    if duplicated:
+        raise ValueError(f"演者 '{spec.name}' の声の言語 {', '.join(duplicated)} が2つあります(声は言語ごとに1つ)")
+    return [LanguageVoice(v.language, v.voice_name, v.tts_provider, v.tts_model) for v in spec.voices]
+
+
+def _translations(spec: DialogueSpec, where: str) -> list[Translation]:
+    """原稿の台詞の訳文(同じ言語が2つあればValueError)。"""
+    languages = [t.language for t in spec.translations]
+    duplicated = sorted({language for language in languages if languages.count(language) > 1})
+    if duplicated:
+        raise ValueError(f"{where}の訳文の言語 {', '.join(duplicated)} が2つあります(訳文は言語ごとに1つ)")
+    return [Translation(t.language, t.text) for t in spec.translations]
 
 
 def _situation(

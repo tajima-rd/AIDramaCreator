@@ -5,7 +5,7 @@ Build with AIの演出付きの原稿の工程(Direction)の結合テスト。�
 - 選んだシーンの台詞の1行ごとに、演出付きの台詞(Dialogue)を作る(台詞・配役と対応付ける)。2回目からは識別子を保って書き換える
 - 音声にする文は、感情タグを除くと台詞の文言と同じでなければならない(違えば台詞のまま使い注意)。一覧に無い感情タグは外す
 - 演出の無い台詞は、今の原稿を残す(無ければ台詞のままの原稿を作る)。無い番号は外して注意
-- 訳文は、音声の言語が制作の言語と違う作品だけ(無ければ注意)
+- 訳文は作らない(ScenesタブのTranslationの担当)。今の訳文は残す
 - 台詞の無いシーンは断る
 """
 
@@ -63,7 +63,7 @@ def ctx(client, project):
 
 
 def _draft(number, text, **values):
-    base = dict(action="", style="", pace="", dynamics="", emotion="", pause_after="", translated_text="")
+    base = dict(action="", style="", pace="", dynamics="", emotion="", pause_after="")
     return DialogueDirectionDraft(number=number, text=text, **{**base, **values})
 
 
@@ -98,7 +98,7 @@ def test_one_shot_creates_directed_dialogues(client, ctx, fake):
         _reply(
             [
                 _draft(1, "[excited] ようこそ、ハチ北へ。[angry]", action="Waves", style="Warm", pace="Moderate",
-                       emotion="Glad", translated_text="[excited] 欢迎来到八北。"),
+                       emotion="Glad"),
                 _draft(2, "どうぞよろしくお願いします。", style="Polite"),
                 _draft(9, "無い台詞"),
             ]
@@ -110,12 +110,13 @@ def test_one_shot_creates_directed_dialogues(client, ctx, fake):
     assert fake["tasks"] == ["direct_scene"]
     assert message["changed_fields"] == ["3行の台詞に演出を付ける(新しく3行)"]
     warnings = " ".join(message["warnings"])
-    for text in ("「[angry]」は使えない", "台詞2の音声にする文が台詞の文言と違う", "台詞9はありません", "台詞3の演出が無い", "台詞2の訳文がありません"):
+    for text in ("「[angry]」は使えない", "台詞2の音声にする文が台詞の文言と違う", "台詞9はありません", "台詞3の演出が無い"):
         assert text in warnings
-    # 生成AIには、話す人物の配役(訛り)・番号付きの台詞・訳すことを渡す
+    # 生成AIには、話す人物の配役(訛り)・番号付きの台詞を渡す。訳文は求めない
     request = fake["generator"].calls[0]["messages"][-1].text
-    for text in ("訛り: 関西弁", "1. 西谷: ようこそ、ハチ北へ。", "3. 西谷: ほな、行こか。", "音声の言語: zh。訳文を作る"):
+    for text in ("訛り: 関西弁", "1. 西谷: ようこそ、ハチ北へ。", "3. 西谷: ほな、行こか。"):
         assert text in request
+    assert "translated" not in fake["generator"].calls[0]["system"]
     assert "[whispers]" in fake["generator"].calls[0]["system"]
 
     assert _action(client, ctx, message["id"], "apply").status_code == 200
@@ -124,7 +125,6 @@ def test_one_shot_creates_directed_dialogues(client, ctx, fake):
     first, second, third = (e for _, e in elements)
     assert first["text"] == "[excited] ようこそ、ハチ北へ。" and first["action"] == "Waves"
     assert first["direction"] == {"style": "Warm", "pace": "Moderate", "emotion": "Glad"}
-    assert first["translated_text"] == "[excited] 欢迎来到八北。"
     # 文言を変えた台詞・演出の無い台詞は、台詞のまま
     assert second["text"] == "よろしくお願いします。" and second["direction"] == {"style": "Polite"}
     assert third["text"] == "ほな、行こか。" and first["cast"] != second["cast"]
@@ -164,12 +164,20 @@ def test_scene_without_lines_is_refused_and_script_is_locked_after_direction(cli
     assert resp.status_code == 400 and "演出付きの原稿" in resp.text
 
 
-def test_same_language_work_has_no_translation(client, ctx, fake):
-    patch = {"dramaturgies": [{"id": ctx["dramaturgy_id"], "output_language": "ja"}]}
-    assert client.post(f"{ctx['base']}/edit", content=yaml.safe_dump(patch)).status_code == 200
-    fake["generator"] = _FakeGenerator(_reply([_draft(n, "", translated_text="訳さない") for n in (1, 2, 3)]))
-    message = parse_yaml(_send(client, ctx))
-    assert "訳文" not in " ".join(message["warnings"])
-    assert "訳さない" in fake["generator"].calls[0]["messages"][-1].text
-    assert _action(client, ctx, message["id"], "apply").status_code == 200
-    assert all("translated_text" not in e for _, e in _elements(client, ctx))
+def test_direction_keeps_existing_translations(client, ctx, fake):
+    fake["generator"] = _FakeGenerator(_reply([_draft(n, "") for n in (1, 2, 3)]))
+    first = parse_yaml(_send(client, ctx))
+    assert _action(client, ctx, first["id"], "apply").status_code == 200
+    # ScenesタブのTranslationで訳文を入れた(言語ごとに複数)
+    element = _elements(client, ctx)[0][1]
+    act_id = parse_yaml(client.get(f"{ctx['base']}/content"))["dramaturgies"][0]["acts"][0]["id"]
+    translations = [{"language": "en", "text": "Welcome."}, {"language": "ko", "text": "어서 오세요."}]
+    patch = {"dramaturgies": [{"id": ctx["dramaturgy_id"], "acts": [{"id": act_id, "scenes": [
+        {"id": ctx["scene_ids"][0], "elements": [{"id": element["id"], "translations": translations}]}]}]}]}
+    assert client.post(f"{ctx['base']}/edit", content=yaml.safe_dump(patch, allow_unicode=True)).status_code == 200
+    # 演出を作り直しても、訳文は残る
+    fake["generator"] = _FakeGenerator(_reply([_draft(1, "[excited] ようこそ、ハチ北へ。", style="Bright")]))
+    second = parse_yaml(_send(client, ctx))
+    assert _action(client, ctx, second["id"], "apply").status_code == 200
+    element = _elements(client, ctx)[0][1]
+    assert element["direction"] == {"style": "Bright"} and element["translations"] == translations

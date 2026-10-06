@@ -56,6 +56,7 @@ def _scene_info(
         title=scene.title,
         line_count=len(scene.script.lines),
         problems=scene_recorder.scene_problems(dramaturgy, scene, language),
+        notices=scene_recorder.scene_notices(dramaturgy, scene, language),
         recorded=recording is not None,
         recorded_at=recording.recorded_at if recording else None,
         size=recording.size if recording else None,

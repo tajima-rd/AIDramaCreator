@@ -37,8 +37,8 @@ Character・CharacterGroup・Relationship)は、dramaturgyと並ぶ最上位の�
               scenes: [{id, key, order, title, synopsis, period, location,
                         situation: {location, description, time_of_day, environment},
                         script: {lines: [{id, key, order, cast, text}]},
-                        elements: [{type: dialogue, id, key, order, line, cast, text, action, direction, translated_text,
-                                    situation}
+                        elements: [{type: dialogue, id, key, order, line, cast, text, action, direction,
+                                    translations: [{language, text}], situation}   # translationsは言語ごとの訳文(同じ言語は1つ)
                                    | {type: sound_effect | atmosphere | music, id, key, order}]}]}]
       history: {edges: [{id, key, label, kind, source, target}]}   # source/targetはTemporalNodeへの参照
       agents:                         # 作品作りに参加するエージェント(生成AIが担う職能。作品が所有する)
@@ -276,6 +276,11 @@ class SituationSpec(_Spec):
     environment: Optional[str] = None
 
 
+class TranslationSpec(_Spec):
+    language: str  # 言語のコード(BCP 47。例: en・zh-CN)
+    text: str
+
+
 class DialogueSpec(_Spec):
     type: Literal["dialogue"]
     id: Optional[str] = None
@@ -286,7 +291,7 @@ class DialogueSpec(_Spec):
     text: str
     action: Optional[str] = None
     direction: Optional[DirectionSpec] = None
-    translated_text: Optional[str] = None
+    translations: list[TranslationSpec] = []  # 言語ごとの訳文(同じ言語は1つ)
     situation: Optional[SituationSpec] = None  # 場面の途中で変わるときだけ
 
 
@@ -362,11 +367,19 @@ class AgentSpec(_Spec):
     tasks: list[AgentTaskSpec] = []
 
 
+class LanguageVoiceSpec(_Spec):
+    language: str  # 言語のコード(BCP 47。例: en・zh-CN)
+    voice_name: str  # その言語を読むときの話者
+    tts_provider: Optional[str] = None  # 空なら演者の既定(それも空ならproject.yamlのgenai.tts)
+    tts_model: Optional[str] = None
+
+
 class ActorSpec(AgentSpec):
     cast: Ref  # Castへの参照(モデルではActor.casting_id)
-    voice_name: Optional[str] = None  # 話者(音声合成の提供元の声の識別子)
+    voice_name: Optional[str] = None  # 既定の話者(音声合成の提供元の声の識別子)
     tts_provider: Optional[str] = None  # 音声合成の提供元(例: Gemini)。空ならproject.yamlのgenai.tts
     tts_model: Optional[str] = None  # 音声合成のモデル。空ならproject.yamlのgenai.tts
+    voices: list[LanguageVoiceSpec] = []  # 言語ごとの声(その言語を読むときに既定の声の代わりに使う。同じ言語は1つ)
 
 
 class AgentsSpec(_Spec):

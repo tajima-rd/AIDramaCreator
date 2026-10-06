@@ -95,7 +95,7 @@
   説明は同じディレクトリの`README.md`、設計は[future_design.md](future_design.md)「LocationとSiteFlow」)。作品モデル・project.dbへの組み込みと取り込みは下の項目。
 
 - `apps/AIDC-Console/`(ビルド不要の素のHTML/CSS/JS)。APIサーバーが`/app/`で配信する(`scripts/server/start.sh`の後に
-  `http://127.0.0.1:8100/app/`)。QIDM Consoleの共通部分を複製して直したもの([qidm_reuse.md](qidm_reuse.md))。
+  `http://127.0.0.1:8100/app/`。`/`は`/app/`へ転送する)。QIDM Consoleの共通部分を複製して直したもの([qidm_reuse.md](qidm_reuse.md))。
 - 画面: 上にメニューバー(`Project`・`Edit`・`Connection`)、左にTree、右にパネルの入れ物(main-area)。QIDMにあったPropertiesの区画は置かない。
 - メニュー: Project(作成・開く・保存・別名で保存・閉じる・Preferences・Exit)、Edit(New Dramaturgy・Dramaturgy Editor・Edit Location on Map・Character Editor・Build with AI)、
   Connection(接続・接続テスト・パスの更新・切断)。
@@ -143,10 +143,10 @@
   テストは`tests/api/test_ai_build_script.py`。headless Chromeで、シーンの切り替え(会話も切り替わる)・ワンショット・配役の無い人物の除外・Apply・
   行の追加と削除の保存を確かめた。本物の生成AIではまだ確かめていない。
 - Build with AIのDirectionの工程(演出付きの原稿。音声合成の直前。2026-10-05): Directorの`direct_scene`で、選んだシーンの台詞ごとに、音声にする文
-  (感情タグ入り。文言は変えない)・ト書き・演出・訳文(音声の言語が違う作品だけ)を作る。右側はDramaturgy Editorの埋め込み専用の`direction`
+  (感情タグ入り。文言は変えない)・ト書き・演出を作る(訳文は作らない。2026-10-06)。右側はDramaturgy Editorの埋め込み専用の`direction`
   (Clear Directionで原稿を消す)。[architecture.md](architecture.md) 10節。テストは`tests/api/test_ai_build_direction.py`。headless Chromeで、
   ワンショット・Apply・直接の保存・Clear Directionを確かめた。本物の生成AIではまだ確かめていない。
-- Dramaturgy EditorのRecordingタブ(音声の生成。2026-10-05): 言語(制作の言語=音声にする文、音声の言語=訳文)を選び、演出付きの原稿から
+- Dramaturgy EditorのRecordingタブ(音声の生成。2026-10-05): 言語(制作の言語=音声にする文、既定の音声の言語・訳文のある言語=その言語の訳文)を選び、演出付きの原稿から
   シーンごとに1つのmp3を作る(Record・Record All・Stop、再生・ダウンロード)。足りないもののあるシーンは理由を示して断る。保存先は
   `<プロジェクト>/recordings/<作品のid>/<言語>/<シーンのid>.mp3`([architecture.md](architecture.md) 8節)。テストは`tests/api/test_recording.py`。
   headless Chromeで、音声合成を偽物に差し替えたサーバーにより、足りないものの表示・Record All・再生用のファイルの配信・言語の切り替えを確かめた。
@@ -155,6 +155,11 @@
   文言を変えた行は原稿と食い違うと示し、Recordingは断る)、Translationは原稿の訳文の編集と、生成AIによる訳(StageManagerの`translate`。
   欄に入れるだけで、Saveで下書きへ)。[architecture.md](architecture.md) 8節。テストは`tests/api/test_scene_translation.py`。headless Chromeで、
   台詞の変更・削除と食い違いの表示、Translate・Save、Recordingでの食い違いの表示を確かめた。本物の生成AIではまだ確かめていない。
+- 作品の言語と多言語の訳文(2026-10-06): Input Language・Output Language(とNew Dramaturgy)を言語の一覧(`core/default/languages.yaml`、
+  `GET /languages`)のプルダウンにした。原稿の台詞の訳文を言語ごとにいくつでも持てるようにした(`Dialogue.translations`、DBは
+  `script_element_translation`)。ScenesタブのTranslationは言語を選んで訳す・直す(ほかの言語の訳文は残る)。Recordingは訳文のある言語を
+  すべて選べる。Build with AIのDirectionは訳文を作らない。headless Chromeで、プルダウン・韓国語への翻訳と保存(中国語の訳文が残る)・
+  Recordingの言語の一覧・Output Languageの保存・New Dramaturgyのダイアログを確かめた。
 - 文章生成の既定をGemma(Gemini APIの`gemma-4-31b-it`)にした(2026-10-02): `apps/sample_data/project.yaml`の`creative_llm`・`assistive_llm`と、
   `main.py`の既定(project.yamlに設定が無いとき)。GUIで作った新しいプロジェクトには既定が無い(Generative AIタブで設定する)。
 - 文章生成の設定の分離(2026-10-02): Generative AIタブで、作品作り(Creative LLM)と作業補助(Assistive LLM)を別々に設定する

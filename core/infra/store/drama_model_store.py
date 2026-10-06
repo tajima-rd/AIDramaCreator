@@ -26,7 +26,7 @@ from typing import Any, Optional
 
 from core.gis.io.geopackage import decode_geometry, encode_geometry, ensure_geopackage
 from core.infra.io.model_definition_reader import ModelDefinition
-from core.model.agent import Actor, AgentTask, BaseAgent
+from core.model.agent import Actor, AgentTask, BaseAgent, LanguageVoice
 from core.model.agent.factory import AGENT_ROLES, build_actor, build_agent
 from core.model.drama import (
     AdditionalFeature,
@@ -51,6 +51,7 @@ from core.model.drama import (
     SoundEffect,
     SpeechStyle,
     TemporalNode,
+    Translation,
 )
 from core.model.drama.factory import (
     build_act,
@@ -189,6 +190,15 @@ CREATE TABLE IF NOT EXISTS agent (
     tts_provider TEXT,
     tts_model TEXT
 );
+CREATE TABLE IF NOT EXISTS agent_voice (
+    agent_id TEXT NOT NULL REFERENCES agent(id) ON DELETE CASCADE,
+    sort_order INTEGER NOT NULL,
+    language TEXT NOT NULL,
+    voice_name TEXT NOT NULL,
+    tts_provider TEXT,
+    tts_model TEXT,
+    PRIMARY KEY (agent_id, language)
+);
 CREATE TABLE IF NOT EXISTS agent_task (
     agent_id TEXT NOT NULL REFERENCES agent(id) ON DELETE CASCADE,
     sort_order INTEGER NOT NULL,
@@ -269,12 +279,18 @@ CREATE TABLE IF NOT EXISTS script_element (
     direction_dynamics TEXT,
     direction_emotion TEXT,
     direction_pause_after TEXT,
-    translated_text TEXT,
     has_situation INTEGER NOT NULL DEFAULT 0,
     situation_location_id TEXT REFERENCES location(id),
     situation_description TEXT,
     situation_time_of_day TEXT,
     situation_environment TEXT
+);
+CREATE TABLE IF NOT EXISTS script_element_translation (
+    element_id TEXT NOT NULL REFERENCES script_element(id) ON DELETE CASCADE,
+    sort_order INTEGER NOT NULL,
+    language TEXT NOT NULL,
+    text TEXT NOT NULL,
+    PRIMARY KEY (element_id, language)
 );
 CREATE TABLE IF NOT EXISTS dramaturgy_character (
     dramaturgy_id TEXT NOT NULL REFERENCES dramaturgy(id) ON DELETE CASCADE,
@@ -322,6 +338,7 @@ _TABLES = (
     "dramaturgy_location",
     "dramaturgy_relationship",
     "dramaturgy_character",
+    "script_element_translation",
     "script_element",
     "line",
     "scene",
@@ -329,6 +346,7 @@ _TABLES = (
     '"cast"',
     "temporal_edge",
     "agent_task",
+    "agent_voice",
     "agent",
     "proposal_character",
     "proposal",
@@ -719,12 +737,18 @@ def _write_element(conn: sqlite3.Connection, scene_id: str, element: ScriptEleme
                 "direction_dynamics": direction.dynamics,
                 "direction_emotion": direction.emotion,
                 "direction_pause_after": direction.pause_after,
-                "translated_text": element.translated_text,
                 "has_situation": 1 if element.situation is not None else 0,
                 **_situation_columns(element.situation),
             }
         )
     _insert(conn, "script_element", values)
+    if isinstance(element, Dialogue):
+        for order, translation in enumerate(element.translations):
+            _insert(
+                conn,
+                "script_element_translation",
+                {"element_id": element.id, "sort_order": order, "language": translation.language, "text": translation.text},
+            )
 
 
 def _rows(conn: sqlite3.Connection, sql: str, *params: Any) -> list[sqlite3.Row]:
@@ -775,6 +799,19 @@ def _write_agent(
             "tts_model": agent.tts_model if is_actor else None,
         },
     )
+    for order, voice in enumerate(agent.voices if is_actor else []):
+        _insert(
+            conn,
+            "agent_voice",
+            {
+                "agent_id": agent.id,
+                "sort_order": order,
+                "language": voice.language,
+                "voice_name": voice.voice_name,
+                "tts_provider": voice.tts_provider,
+                "tts_model": voice.tts_model,
+            },
+        )
     for order, task in enumerate(agent.tasks):
         _insert(
             conn,
@@ -823,6 +860,12 @@ def _read_agents(conn: sqlite3.Connection, dramaturgy_id: str) -> list[BaseAgent
                 row["tts_provider"],
                 row["tts_model"],
                 *common,
+                [
+                    LanguageVoice(v["language"], v["voice_name"], v["tts_provider"], v["tts_model"])
+                    for v in _rows(
+                        conn, "SELECT * FROM agent_voice WHERE agent_id = ? ORDER BY sort_order", row["id"]
+                    )
+                ],
                 id=row["id"],
             )
         else:
@@ -1065,7 +1108,7 @@ def _read_dramaturgy(
                 )
             ]
             elements = [
-                _read_element(element, locations)
+                _read_element(conn, element, locations)
                 for element in _rows(
                     conn,
                     "SELECT * FROM script_element WHERE scene_id = ? ORDER BY sort_order, rowid",
@@ -1135,7 +1178,7 @@ def _read_dramaturgy(
     )
 
 
-def _read_element(row: sqlite3.Row, locations: dict[str, Any]) -> ScriptElement:
+def _read_element(conn: sqlite3.Connection, row: sqlite3.Row, locations: dict[str, Any]) -> ScriptElement:
     if row["kind"] != "dialogue":
         return build_plain_element(row["kind"], row["sort_order"], id=row["id"])
     return build_dialogue(
@@ -1151,7 +1194,14 @@ def _read_element(row: sqlite3.Row, locations: dict[str, Any]) -> ScriptElement:
             row["direction_emotion"],
             row["direction_pause_after"],
         ),
-        row["translated_text"],
+        [
+            Translation(item["language"], item["text"])
+            for item in _rows(
+                conn,
+                "SELECT * FROM script_element_translation WHERE element_id = ? ORDER BY sort_order",
+                row["id"],
+            )
+        ],
         _situation(row, locations) if row["has_situation"] else None,
         id=row["id"],
     )

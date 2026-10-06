@@ -1,0 +1,22 @@
+# 作品の言語の一覧のシステム既定(正本。2026-10-06)。Dramaturgy EditorのInput Language・Output Language・訳文の言語のプルダウンに使う。
+# codeはBCP 47の言語のコード(作品・訳文に保存する値)、nameはその言語での名前、labelは日本語の名前。並びがプルダウンの順。
+# 観光地向けに、少なくとも日本語・英語・中国語(簡体字・繁体字)・韓国語、多くはフランス語・スペイン語も要る(ユーザー)。
+languages:
+- {code: ja, name: 日本語, label: 日本語}
+- {code: en, name: English, label: 英語}
+- {code: zh-CN, name: 中文(简体), label: 中国語(簡体字)}
+- {code: zh-TW, name: 中文(繁體), label: 中国語(繁体字)}
+- {code: ko, name: 한국어, label: 韓国語}
+- {code: fr, name: Français, label: フランス語}
+- {code: es, name: Español, label: スペイン語}
+- {code: de, name: Deutsch, label: ドイツ語}
+- {code: it, name: Italiano, label: イタリア語}
+- {code: pt, name: Português, label: ポルトガル語}
+- {code: ru, name: Русский, label: ロシア語}
+- {code: th, name: ไทย, label: タイ語}
+- {code: vi, name: Tiếng Việt, label: ベトナム語}
+- {code: id, name: Bahasa Indonesia, label: インドネシア語}
+- {code: ms, name: Bahasa Melayu, label: マレー語}
+- {code: tl, name: Filipino, label: フィリピン語}
+- {code: hi, name: हिन्दी, label: ヒンディー語}
+- {code: ar, name: العربية, label: アラビア語}

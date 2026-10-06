@@ -7,7 +7,7 @@ DB・ファイルには触れず、組み立てたオブジェクトを返すだ
 import functools
 from typing import Optional
 
-from core.model.agent.actor import Actor
+from core.model.agent.actor import Actor, LanguageVoice
 from core.model.agent.agent_task import AgentTask
 from core.model.agent.base_agent import BaseAgent
 from core.model.agent.casting_director import CastingDirector
@@ -69,7 +69,8 @@ def build_actor(
     rules: Optional[list[str]] = None,
     prohibitions: Optional[list[str]] = None,
     tasks: Optional[list[AgentTask]] = None,
+    voices: Optional[list[LanguageVoice]] = None,
 ) -> Actor:
     return Actor(
-        casting_id, name, voice_name, tts_provider, tts_model, role, persona, rules, prohibitions, tasks
+        casting_id, name, voice_name, tts_provider, tts_model, role, persona, rules, prohibitions, tasks, voices
     )

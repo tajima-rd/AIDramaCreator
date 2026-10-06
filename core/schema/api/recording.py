@@ -11,7 +11,7 @@ from pydantic import BaseModel
 
 class RecordingLanguageInfo(BaseModel):
     code: str  # 言語のコード(例: ja)
-    source: Literal["text", "translated_text"]  # 読み上げる原稿の項目(音声にする文・訳文)
+    source: Literal["text", "translation"]  # 読み上げる原稿の項目(音声にする文・その言語の訳文)
 
 
 class RecordingSceneInfo(BaseModel):
@@ -21,6 +21,7 @@ class RecordingSceneInfo(BaseModel):
     title: Optional[str] = None
     line_count: int  # 台詞の数
     problems: list[str] = []  # 音声を作るのに足りないもの(空なら作れる)
+    notices: list[str] = []  # 作れるが確かめるとよいこと(読む言語の声が無く、既定の声で読む演者)
     recorded: bool  # 音声があるか
     recorded_at: Optional[str] = None
     size: Optional[int] = None  # 音声のファイルの大きさ(バイト)

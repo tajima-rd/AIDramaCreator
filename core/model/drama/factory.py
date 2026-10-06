@@ -32,6 +32,7 @@ from core.model.drama.script_element import (
     Music,
     ScriptElement,
     SoundEffect,
+    Translation,
 )
 from core.model.drama.site_flow import SiteFlow, SiteFlowDirection
 from core.model.drama.situation import Situation
@@ -247,10 +248,10 @@ def build_dialogue(
     text: str,
     action: Optional[str] = None,
     direction: Optional[Direction] = None,
-    translated_text: Optional[str] = None,
+    translations: Optional[list[Translation]] = None,
     situation: Optional[Situation] = None,
 ) -> Dialogue:
-    return Dialogue(order, line_id, cast_id, text, action, direction, translated_text, situation)
+    return Dialogue(order, line_id, cast_id, text, action, direction, translations, situation)
 
 
 # 固有の属性を持たない原稿の要素。種類の名前(モデル定義YAMLのtype)→クラス

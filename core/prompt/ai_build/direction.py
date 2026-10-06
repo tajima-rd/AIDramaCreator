@@ -3,8 +3,8 @@
 Build with AIの演出付きの原稿の工程(Direction。docs/architecture.md 10節)。相談相手はDirector、タスクはdirect_scene。
 
 右側で選んだ1つのシーンの台詞(Scene.script)の1行ごとに、演出付きの台詞(Scene.elementsのDialogue)を作る: 音声にする文
-(台詞の文言は変えず、音声合成の感情タグだけを挿む)・ト書き・演出(話し方・速さ・強弱・感情・後の間)。作品の音声の言語
-(output_language)が制作の言語(input_language)と違えば、訳文(translated_text)も作る。音声合成はこの原稿から作る。
+(台詞の文言は変えず、音声合成の感情タグだけを挿む)・ト書き・演出(話し方・速さ・強弱・感情・後の間)。音声合成はこの原稿から作る。
+訳文は作らない(翻訳はStageManagerの担当。Dramaturgy EditorのScenesタブのTranslationで、言語ごとに作る。2026-10-06ユーザー)。
 効果音・環境音・BGMは扱わない(モデルに中身の属性がまだ無い)。台詞は番号(1から)で指す。
 """
 
@@ -78,9 +78,6 @@ class DialogueDirectionDraft(BaseModel):
     dynamics: str = Field(description="強弱(英語。例: Soft, rising at the end)。無ければ空文字")
     emotion: str = Field(description="感情(英語。例: Relieved)。無ければ空文字")
     pause_after: str = Field(description="この台詞の後の間(Short・Medium・Longのどれか)。無ければ空文字")
-    translated_text: str = Field(
-        description="音声の言語への訳文(感情タグも同じ所に挿む)。訳さない作品では空文字"
-    )
 
 
 class DirectionReply(BaseModel):
@@ -103,11 +100,6 @@ GUIDE = [
     "人物の性格・年齢・話し方、配役の演じ方・話す速さ・訛り、シーンの場所・状況・あらすじ、前後の台詞の流れから演出を決める。",
 ]
 
-TRANSLATION_GUIDE = [
-    "今の内容に「訳文を作る」とある作品では、各台詞のtranslated_textに音声の言語の訳文を書き、textと同じ所に同じ感情タグを挿む。"
-    "訳文は話し言葉にし、人物の口調・呼び方が伝わるようにする。「訳さない」とある作品では、translated_textは空文字にする。",
-]
-
 ONE_SHOT_RULES = [
     "利用者の要望・資料・シーンの設定・台詞・今の原稿から、このシーンのすべての台詞の演出を1回で作り、has_proposalをtrueにする。",
     "今の原稿に良いところがあれば活かす。",
@@ -128,15 +120,6 @@ PROHIBITIONS = [
 ]
 
 
-def translates(dramaturgy: Dramaturgy) -> bool:
-    """音声の言語が制作の言語と違い、訳文を作る作品か。"""
-    return bool(
-        dramaturgy.output_language
-        and dramaturgy.input_language
-        and dramaturgy.output_language != dramaturgy.input_language
-    )
-
-
 def direction_prompt(agent: Optional[BaseAgent], mode: BuildMode) -> Prompt:
     rules = COMMON_RULES + (ONE_SHOT_RULES if mode is BuildMode.ONE_SHOT else DIALOGUE_RULES)
     title = (
@@ -150,7 +133,7 @@ def direction_prompt(agent: Optional[BaseAgent], mode: BuildMode) -> Prompt:
             Section(
                 title=title,
                 children=[
-                    BulletInstruction(items=GUIDE + TRANSLATION_GUIDE),
+                    BulletInstruction(items=GUIDE),
                     MandatoryRule(BulletInstruction(items=rules)),
                     ForbiddenRule(BulletInstruction(items=PROHIBITIONS)),
                 ],
@@ -179,7 +162,6 @@ def _direction_text(dialogue: Dialogue) -> str:
         ("強弱", direction.dynamics),
         ("感情", direction.emotion),
         ("後の間", direction.pause_after),
-        ("訳文", dialogue.translated_text),
     ]
     return " / ".join(f"{label}: {value}" for label, value in facts if value)
 
@@ -192,12 +174,7 @@ def direction_context(dramaturgy: Dramaturgy, scene_id: str) -> str:
     if not lines:
         raise ValueError("このシーンには台詞がありません。先にScriptの工程で台詞を書いてください。")
 
-    text = [f"# 作品: {dramaturgy.title}"]
-    language = dramaturgy.input_language or "(未設定)"
-    if translates(dramaturgy):
-        text.append(f"(制作の言語: {language}。音声の言語: {dramaturgy.output_language}。訳文を作る)")
-    else:
-        text.append(f"(台詞の言語: {language}。訳さない)")
+    text = [f"# 作品: {dramaturgy.title}", f"(台詞の言語: {dramaturgy.input_language or '(未設定)'})"]
     text += ["", f"# 原稿を作るシーン(第{act_number}幕のシーン{scene_number})"]
     text += scene_text(scene_number, scene)
 
@@ -230,7 +207,7 @@ def direction_summary(proposal: dict[str, Any]) -> str:
     for item in proposal.get("dialogues") or []:
         facts = [
             item.get("text"),
-            *(f"{key}: {item.get(key)}" for key in ("action", "style", "pace", "dynamics", "emotion", "pause_after", "translated_text") if item.get(key)),
+            *(f"{key}: {item.get(key)}" for key in ("action", "style", "pace", "dynamics", "emotion", "pause_after") if item.get(key)),
         ]
         rows.append(f"{item.get('number')}. " + " / ".join(f for f in facts if f))
     return "\n".join(rows)

@@ -41,7 +41,7 @@ const AI_BUILD_ONE_SHOT_HINTS = {
   casting: AI_BUILD_UPDATE_ONLY_HINT,
   audition: AI_BUILD_UPDATE_ONLY_HINT,
   script: "要望・資料・今の内容から、選んだシーンの台詞の全体を1回で提案します(Applyすると台詞が丸ごと置き換わります)",
-  direction: "要望・資料・今の内容から、選んだシーンのすべての台詞の演出(と訳文)を1回で提案します(台詞の文言は変えません)",
+  direction: "要望・資料・今の内容から、選んだシーンのすべての台詞の演出を1回で提案します(台詞の文言は変えません。訳文はScenesタブのTranslationで作ります)",
 };
 const AI_BUILD_STATUS_LABELS = { pending: "未反映", applied: "反映済み", undone: "取り消し済み" };
 
@@ -420,7 +420,7 @@ customElements.define(
         const rows = proposal.dialogues
           .map((d) => {
             const facts = [d.action, d.style, d.emotion, d.pace, d.dynamics, d.pause_after && `pause: ${d.pause_after}`].filter(Boolean);
-            return `<li><b>${escapeHtml(String(d.number))}.</b> ${escapeHtml(d.text || "")}${d.translated_text ? `<div>${escapeHtml(d.translated_text)}</div>` : ""}${
+            return `<li><b>${escapeHtml(String(d.number))}.</b> ${escapeHtml(d.text || "")}${
               facts.length ? `<div class="field-hint">${escapeHtml(facts.join(" · "))}</div>` : ""
             }</li>`;
           })

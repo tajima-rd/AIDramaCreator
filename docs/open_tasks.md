@@ -60,8 +60,10 @@
 - [x] 作品のモデルの演出付きの原稿から音声を作る処理(Dramaturgy EditorのRecordingタブ。2026-10-05)
 - [ ] Recordingタブを本物の音声合成で確かめる(新しい声の一覧の識別子で読めるか、感情タグ・演出の効き方、訳文の読み上げ。課金を伴うのでユーザーに確認してから)
 - [x] Dramaturgy EditorのScenesタブで台詞の編集と訳文の作成(Plot・Script・Translation。2026-10-05)
-- [ ] 訳文を作る担当の整理: Build with AIのDirectionの工程はDirector(`direct_scene`)が演出と一緒に訳文も作るが、設計
-  (model_design.md)では翻訳はStageManagerの`translate`。Directionの訳文をやめてTranslationに任せるか(ユーザーと相談)
+- [x] 訳文を作る担当の整理(Directionは訳さず、ScenesタブのTranslation(StageManager)で言語ごとに作る。2026-10-06)
+- [x] 作品の言語のプルダウンと、言語ごとの訳文(いくつでも。2026-10-06)
+- [ ] **言語ごとの声**: 演者(`Actor`)の声は配役ごとに1つ(Output Languageの声をAuditionで選ぶ)なので、ほかの言語の音声もその声で読む。
+  言語ごとに声を選べるようにするか(ユーザーと相談)
 - [ ] `main.py`の音声の生成を、Recordingと同じ処理(`scene_recorder`)に移すか(旧来の`work/scene/`の原稿をやめるか。要相談)
 - [ ] Build with AIの工程を足す(効果音・環境音・BGM等。モデルの属性から)
 - [x] 企画書のYAMLの読み込み(ProposalタブのImport from YAML。フォームに入れ、Saveで下書きへ。2026-10-01)

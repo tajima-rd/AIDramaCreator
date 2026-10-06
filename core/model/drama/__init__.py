@@ -23,6 +23,7 @@ from core.model.drama.script_element import (
     Music,
     ScriptElement,
     SoundEffect,
+    Translation,
 )
 from core.model.drama.site_flow import SiteFlow, SiteFlowDirection
 from core.model.drama.situation import Situation
@@ -46,6 +47,7 @@ __all__ = [
     "Characteristic",
     "Dialogue",
     "Direction",
+    "Translation",
     "Dramaturgy",
     "History",
     "Line",

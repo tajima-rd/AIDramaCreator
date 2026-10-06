@@ -37,7 +37,7 @@ Project(core/project。今はモデル定義の読み込み結果 ModelDefinitio
              ├ Script ─ 台詞の段階(Scriptwriter)
              │   └ Line ×n ─ cast: Cast
              └ ScriptElement ×n ─ 演出付きの原稿の段階(Director)
-                 ├ Dialogue(line_id・cast_id・ト書き・Direction・訳文)
+                 ├ Dialogue(line_id・cast_id・ト書き・Direction・言語ごとの訳文)
                  ├ SoundEffect(空)
                  ├ Atmosphere(空)
                  └ Music(空)
@@ -65,7 +65,8 @@ store(台帳)の側で持つ。
 | `script.py` | `Script` | `lines` |
 | | `Line` | `id`・`order`・`cast: Cast`・`text` |
 | `script_element.py` | `ScriptElement`(基底) | `id`・`order` |
-| | `Dialogue` | `line_id`・`cast_id`(ID参照)・`text`・`action`(ト書き)・`direction`・`translated_text`(output_languageへの訳文)・`situation`(場面の途中で状況が変わるときだけ。無ければシーンの状況) |
+| | `Dialogue` | `line_id`・`cast_id`(ID参照)・`text`・`action`(ト書き)・`direction`・`translations: list[Translation]`(言語ごとの訳文。いくつでも、同じ言語は1つ。2026-10-06ユーザー。旧`translated_text`)・`situation`(場面の途中で状況が変わるときだけ。無ければシーンの状況) |
+| | `Translation` | `language`(BCP 47の言語のコード)・`text`(読み上げる訳文。感情タグを含められる)(2026-10-06) |
 | | `Direction` | `style`・`pace`・`dynamics`・`emotion`・`pause_after`(言葉で表す間。ミリ秒にしない) |
 | | `SoundEffect`・`Atmosphere`・`Music` | 空 |
 | `cast.py` | `Cast`・`CastBilling` | `id`・`character: Character`(演じる人物。関連)・`performance: Performance`(演じ方)・`voice_gender: VoiceGender`(声を当てるときの性別)・`language`・`accent`・`billing: CastBilling`(役の重さ。lead=主役・supporting=脇役・minor=端役。未設定可。2026-10-02)。声は演者(`Actor`)が持つ(2026-10-01) |

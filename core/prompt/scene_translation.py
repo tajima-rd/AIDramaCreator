@@ -3,8 +3,8 @@
 シーンの台詞の翻訳(Dramaturgy EditorのScenesタブのTranslation)のプロンプトと、生成AIに返させる構造。担当はStageManager、
 タスクはtranslate(docs/model_design.md)。生成AIは呼ばない(呼ぶのはcore.service.process.genai.scene_translator)。
 
-訳すのは、台詞ごとの原稿の音声にする文(感情タグ入り。原稿が無い・今の台詞と食い違うなら台詞)。訳文は作品の音声の言語(output_language)で、
-同じ所に同じ感情タグを挿む。訳文はRecordingで音声の言語の音声を作るときに読む(Dialogue.translated_text)。
+訳すのは、台詞ごとの原稿の音声にする文(感情タグ入り。原稿が無い・今の台詞と食い違うなら台詞)。訳す言語は利用者が選ぶ(いくつでも。
+2026-10-06ユーザー)。同じ所に同じ感情タグを挿む。訳文はRecordingでその言語の音声を作るときに読む(Dialogue.translations)。
 """
 
 from typing import Optional
@@ -76,11 +76,11 @@ def source_text(scene: Scene, line: Line) -> str:
     return line.text
 
 
-def translation_context(dramaturgy: Dramaturgy, scene: Scene, scene_number: int) -> str:
-    """生成AIに渡す内容(言語・シーンの設定・話す人物の設定・番号付きの台詞)。"""
+def translation_context(dramaturgy: Dramaturgy, scene: Scene, scene_number: int, source: str, target: str) -> str:
+    """生成AIに渡す内容(言語・シーンの設定・話す人物の設定・番号付きの台詞)。source・targetは言語の名前(例: 日本語(ja))。"""
     lines = ordered_lines(scene)
     text = [
-        f"# 訳す言語: {dramaturgy.input_language} → {dramaturgy.output_language}",
+        f"# 訳す言語: {source} → {target}",
         "",
         "# シーン",
         *scene_text(scene_number, scene),

@@ -387,9 +387,7 @@ _HANDLERS: dict[str, _StepHandler] = {
         lambda project, content, dramaturgy, scene_id, code, reply, mode: (
             PatchOutcome(None, [], [])
             if mode is BuildMode.DIALOGUE and not reply.has_proposal
-            else direction_patch(
-                content, dramaturgy.id, scene_id, reply.dialogues, direction_prompts.translates(dramaturgy)
-            )
+            else direction_patch(content, dramaturgy.id, scene_id, reply.dialogues)
         ),
         lambda reply: {"dialogues": [d.model_dump() for d in reply.dialogues]},
     ),

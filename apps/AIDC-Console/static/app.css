@@ -735,6 +735,7 @@ ai-build-panel .panel-tab:disabled { color: var(--text-disabled); cursor: defaul
   padding: 6px 8px; border: 1px solid var(--divider); border-radius: var(--radius-sm); background: var(--surface); }
 .dr-scene { display: flex; flex-direction: column; gap: 2px; }
 .dr-problems { margin: 2px 0 0 0; padding-left: 18px; color: var(--danger, #b3261e); font-size: var(--fs-sm); }
+.dr-notices { margin: 2px 0 0 0; padding-left: 18px; color: var(--text-muted); font-size: var(--fs-sm); }
 .dr-audio audio { width: 100%; height: 32px; }
 
 /* Dramaturgy EditorのScenesタブ: シーンの詳細のタブ(Plot・Script・Translation) */

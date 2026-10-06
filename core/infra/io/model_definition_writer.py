@@ -415,6 +415,17 @@ def _agents(agents: Sequence[BaseAgent], keys: _Keys) -> dict[str, Any]:
                         "voice_name": agent.voice_name,
                         "tts_provider": agent.tts_provider,
                         "tts_model": agent.tts_model,
+                        "voices": [
+                            _compact(
+                                {
+                                    "language": v.language,
+                                    "voice_name": v.voice_name,
+                                    "tts_provider": v.tts_provider,
+                                    "tts_model": v.tts_model,
+                                }
+                            )
+                            for v in agent.voices
+                        ],
                     }
                 )
             )
@@ -609,7 +620,7 @@ def _script_element(element: ScriptElement, keys: _Keys, scene_key: str) -> dict
                         "pause_after": direction.pause_after,
                     }
                 ),
-                "translated_text": element.translated_text,
+                "translations": [{"language": t.language, "text": t.text} for t in element.translations],
                 "situation": _situation(element.situation, keys) if element.situation else None,
             }
         )

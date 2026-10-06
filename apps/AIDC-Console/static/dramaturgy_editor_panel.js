@@ -15,7 +15,8 @@
  * Locations(作品で使う場所(Location)と、場所の間の移動(SiteFlow)。場所の実体はプロジェクトにあり、作品は参照で持つ。
  * Import Mapで地図(KML・KMZ・GeoPackage)を取り込み、Generate Scenesで、シーンの無い場所からシーンを機械的に作る)・Acts(幕の一覧と詳細。追加・削除)・
  * Scenes(すべての幕のシーンの一覧と詳細。追加・削除。詳細はPlot(題・あらすじ・場所)・Script(台詞の行の編集。台詞を消すと
- * その行の原稿も消す)・Translation(原稿の訳文。Translateで生成AIが訳した文を欄に入れ、確かめて直してからSave))・Recording(言語を選び、演出付きの原稿からシーンごとの音声を作る。
+ * その行の原稿も消す)・Translation(言語を選び、原稿のその言語の訳文を編集。訳文は言語ごとにいくつでも持てる。Translateで生成AIが訳した文を欄に入れ、
+ * 確かめて直してからSave))・Recording(言語を選び、演出付きの原稿からシーンごとの音声を作る。
  * Record Allは作れるシーンを順に作る。音声はプロジェクトのrecordings/に置き、生成し直すと上書き)。幕・シーンのorderは0から連番で、削除したら残りを詰める。
  *
  * 埋め込み(loadEmbedded): Build with AIの右側で、決まったタブだけを出す(ヘッダー・タブは隠し、編集用の下書きは埋め込む側の
@@ -25,6 +26,9 @@
  * script(埋め込む側が選んだシーン(loadEmbeddedのsceneId)の台詞。話者は配役から選ぶ。行の追加・削除)と、
  * direction(選んだシーンの演出付きの原稿。台詞ごとに音声にする文・ト書き・演出・訳文。Clear Directionで原稿を消す)もある。
  */
+
+// 作品の言語の一覧(GET /languages。システム既定core/default/languages.yaml)。パネルをまたいで1回だけ読む
+let DRAMATURGY_LANGUAGES = null;
 
 // 役の重さ(core.model.drama.cast.CastBilling)と表示名。空は未設定
 const CAST_BILLINGS = [
@@ -93,6 +97,8 @@ customElements.define(
       this.embedded = false; // 他のパネルに埋め込んで、決まったタブだけを出す
       this.voiceLists = {}; // 言語→声の一覧の取得結果(VoiceListResult。失敗なら{error})
       this.sceneDetailTab = "plot"; // Scenesタブの詳細のタブ(plot・script・translation)
+      this.translationLanguage = ""; // ScenesタブのTranslationで選んだ言語
+      this.languages = []; // 作品の言語の一覧(LanguageInfo[])
       this.recordingLanguage = ""; // Recordingタブで選んだ言語(空なら最初の言語)
       this.recordingList = null; // RecordingListResult(読み込み中・失敗ならnull)
       this.recordingBusy = null; // 音声の生成中の説明(null=生成していない)
@@ -122,6 +128,7 @@ customElements.define(
           this.dispatchEvent(new CustomEvent("dramaturgy-editor-closed", { bubbles: true }));
           return;
         }
+        await this.ensureLanguages();
         await this.reloadContent();
       } catch (e) {
         showApiError(e);
@@ -137,6 +144,7 @@ customElements.define(
       this.draft = draft;
       this.activeTab = tab;
       try {
+        await this.ensureLanguages();
         await this.reloadContent();
       } catch (e) {
         showApiError(e);
@@ -152,6 +160,35 @@ customElements.define(
       }
       this.render();
       if (this.embedded) this.dispatchEvent(new CustomEvent("dramaturgy-editor-edited", { bubbles: true }));
+    }
+
+    async ensureLanguages() {
+      if (!DRAMATURGY_LANGUAGES) {
+        DRAMATURGY_LANGUAGES = apiFetch("/languages").then((result) => result.languages || []);
+        DRAMATURGY_LANGUAGES.catch(() => (DRAMATURGY_LANGUAGES = null)); // 失敗したら次に読み直す
+      }
+      this.languages = await DRAMATURGY_LANGUAGES;
+    }
+
+    // 言語の表示名(一覧に無いコードはコードのまま)
+    languageLabel(code) {
+      const entry = this.languages.find((l) => l.code === code);
+      return entry ? `${entry.label}・${entry.name}(${code})` : code;
+    }
+
+    // 言語のプルダウンの選択肢。一覧に無い今の値も残す。emptyは未設定の選択肢の文言(nullなら出さない)
+    languageOptions(selected, { exclude = [], empty = "(未設定)", note = () => "" } = {}) {
+      const codes = this.languages.map((l) => l.code).filter((code) => !exclude.includes(code));
+      if (selected && !codes.includes(selected) && !exclude.includes(selected)) codes.push(selected);
+      return (
+        (empty !== null ? `<option value="" ${selected ? "" : "selected"}>${escapeHtml(empty)}</option>` : "") +
+        codes
+          .map(
+            (code) =>
+              `<option value="${escapeAttr(code)}" ${code === selected ? "selected" : ""}>${escapeHtml(this.languageLabel(code))}${escapeHtml(note(code))}</option>`
+          )
+          .join("")
+      );
     }
 
     acts() {
@@ -313,20 +350,22 @@ customElements.define(
         return;
       }
       const busy = !!this.recordingBusy;
-      const sourceLabel = { text: "原稿の音声にする文", translated_text: "原稿の訳文" };
+      const sourceLabel = { text: "原稿の音声にする文", translation: "原稿の訳文" };
       const options = list.languages
         .map(
           (l) =>
-            `<option value="${escapeAttr(l.code)}" ${l.code === list.language ? "selected" : ""}>${escapeHtml(l.code)}(${sourceLabel[l.source]}を読む)</option>`
+            `<option value="${escapeAttr(l.code)}" ${l.code === list.language ? "selected" : ""}>${escapeHtml(this.languageLabel(l.code))} — ${sourceLabel[l.source]}を読む</option>`
         )
         .join("");
       const ready = list.scenes.filter((s) => !s.problems.length);
       const rows = list.scenes
         .map((s) => {
           const label = `Act ${s.act_number} · Scene ${s.scene_number}${s.title ? ` ${escapeHtml(s.title)}` : ""}`;
-          const status = s.problems.length
-            ? `<ul class="dr-problems">${s.problems.map((p) => `<li>${escapeHtml(p)}</li>`).join("")}</ul>`
-            : `<span class="field-hint">台詞 ${s.line_count}</span>`;
+          const status =
+            (s.problems.length
+              ? `<ul class="dr-problems">${s.problems.map((p) => `<li>${escapeHtml(p)}</li>`).join("")}</ul>`
+              : `<span class="field-hint">台詞 ${s.line_count}</span>`) +
+            (s.notices && s.notices.length ? `<ul class="dr-notices">${s.notices.map((n) => `<li>${escapeHtml(n)}</li>`).join("")}</ul>` : "");
           const audio = s.recorded
             ? `<audio controls preload="none" src="${escapeAttr(this.recordingUrl(s))}"></audio>
                <div class="field-hint">${escapeHtml(new Date(s.recorded_at).toLocaleString())} · <a href="${escapeAttr(this.recordingUrl(s))}" download="act_${s.act_number}_scene_${s.scene_number}.mp3">Download</a></div>`
@@ -622,7 +661,6 @@ customElements.define(
         return;
       }
       const d = this.dramaturgy;
-      const translates = !!(d.output_language && d.input_language && d.output_language !== d.input_language);
       const lines = [...((entry.scene.script || {}).lines || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
       const castCharacter = new Map((d.casts || []).map((c) => [c.key, this.characterName(c.character.ref)]));
       const dialogues = (entry.scene.elements || []).filter((e) => e.type === "dialogue" && e.line);
@@ -637,8 +675,8 @@ customElements.define(
       }
       body.innerHTML = `
         <div class="panel-form">
-          <p class="field-hint">音声はこの原稿から作ります。${translates ? `音声の言語(${escapeHtml(d.output_language)})への訳文で読み上げます。` : ""}
-            ト書き・演出は音声合成への指示なので英語で書きます。</p>
+          <p class="field-hint">音声はこの原稿から作ります。ト書き・演出は音声合成への指示なので英語で書きます。
+            訳文はDramaturgy EditorのScenesタブのTranslationで、言語ごとに作ります。</p>
           ${lines
             .map((line, i) => {
               const e = elementOf(line) || {};
@@ -647,7 +685,6 @@ customElements.define(
             <div class="panel-section-title">${i + 1}. ${escapeHtml(castCharacter.get(line.cast && line.cast.ref) || "")}
               <span class="field-hint">${escapeHtml(line.text)}</span>${e.id ? "" : ` <span class="dataset-badge">未演出</span>`}</div>
             ${field(`dd_text_${i}`, "Text (音声にする文)", e.text || "", 2)}
-            ${translates ? field(`dd_translated_${i}`, "Translated Text", e.translated_text || "", 2) : ""}
             ${field(`dd_action_${i}`, "Action", e.action)}
             <div class="panel-form-row">
               ${field(`dd_style_${i}`, "Style", dir.style)}
@@ -667,13 +704,13 @@ customElements.define(
         </div>
       `;
       body.querySelector("#dd_save").addEventListener("click", (ev) =>
-        this.withButtonBusy(ev.currentTarget, "Saving...", () => this.saveDirection(entry, lines, elementOf, translates))
+        this.withButtonBusy(ev.currentTarget, "Saving...", () => this.saveDirection(entry, lines, elementOf))
       );
       body.querySelector("#dd_clear").addEventListener("click", () => this.clearDirection(entry, dialogues));
     }
 
-    // 台詞ごとの原稿を保存する(原稿のある台詞は書き換え、無い台詞は何か書いたときだけ作る。音声にする文が空なら台詞のまま)
-    async saveDirection(entry, lines, elementOf, translates) {
+    // 台詞ごとの原稿を保存する(原稿のある台詞は書き換え、無い台詞は何か書いたときだけ作る。音声にする文が空なら台詞のまま。訳文は変えない)
+    async saveDirection(entry, lines, elementOf) {
       const body = this.querySelector("#de-body");
       const value = (id) => {
         const el = body.querySelector(`#${id}`);
@@ -692,13 +729,12 @@ customElements.define(
             emotion: value(`dd_emotion_${i}`),
             pause_after: value(`dd_pause_${i}`),
           },
-          translated_text: translates ? value(`dd_translated_${i}`) : null,
         };
         if (current) {
           elements.push({ id: current.id, ...values });
           return;
         }
-        const written = value(`dd_text_${i}`) || values.action || values.translated_text || Object.values(values.direction).some(Boolean);
+        const written = value(`dd_text_${i}`) || values.action || Object.values(values.direction).some(Boolean);
         if (!written) return;
         const compact = (obj) => Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== null));
         elements.push({
@@ -735,12 +771,12 @@ customElements.define(
       }
     }
 
-    // ScenesタブのTranslation: 台詞ごとの原稿の訳文。Translateは生成AIの訳を欄に入れるだけ(Saveで下書きへ)
+    // ScenesタブのTranslation: 言語を選び、台詞ごとの原稿のその言語の訳文を編集する(訳文は言語ごとにいくつでも)。
+    // Translateは生成AIの訳を欄に入れるだけ(Saveで下書きへ)
     renderTranslationEditor(body, entry) {
       const d = this.dramaturgy;
-      const translates = !!(d.output_language && d.input_language && d.output_language !== d.input_language);
-      if (!translates) {
-        body.innerHTML = `<p class="placeholder">訳文は、PropertiesタブでInput LanguageとOutput Languageを違う言語に設定した作品で作れます。</p>`;
+      if (!d.input_language) {
+        body.innerHTML = `<p class="placeholder">PropertiesタブでInput Language(制作の言語)を設定してください。</p>`;
         return;
       }
       const lines = [...((entry.scene.script || {}).lines || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
@@ -749,12 +785,35 @@ customElements.define(
         return;
       }
       const dialogues = this.sceneDialogues(entry.scene);
+      const translationOf = (dialogue, language) =>
+        ((dialogue && dialogue.translations) || []).find((t) => t.language === language) || null;
+      // 選べる言語: 制作の言語以外の一覧と、一覧に無いが訳文のある言語。既定は作品のOutput Language
+      const saved = new Set([...dialogues.values()].flatMap((e) => (e.translations || []).map((t) => t.language)));
+      const candidates = [...this.languages.map((l) => l.code), ...[...saved].filter((c) => !this.languages.some((l) => l.code === c))].filter(
+        (code) => code !== d.input_language
+      );
+      if (!candidates.includes(this.translationLanguage)) {
+        this.translationLanguage = candidates.includes(d.output_language) ? d.output_language : candidates[0] || "";
+      }
+      const language = this.translationLanguage;
+      const countOf = (code) => lines.filter((line) => translationOf(dialogues.get(line.key), code)).length;
       const castCharacter = new Map((d.casts || []).map((c) => [c.key, this.characterName(c.character.ref)]));
       const bare = (text) => (text || "").replace(/\[[^\]]*\]/g, "").replace(/\s/g, "");
       body.innerHTML = `
         <div class="panel-form">
-          <p class="field-hint">${escapeHtml(d.input_language)} → ${escapeHtml(d.output_language)}。訳文はRecordingで${escapeHtml(d.output_language)}の音声を作るときに読みます。
-            Translateは生成AIの訳を欄に入れるだけで、Saveするまで下書きには入りません。</p>
+          <div class="field">
+            <label for="dtr_language">Language</label>
+            <select id="dtr_language">${this.languageOptions(language, {
+              exclude: [d.input_language],
+              empty: null,
+              note: (code) => {
+                const n = countOf(code);
+                return `${code === d.output_language ? " — 既定" : ""}${n ? ` — 訳文 ${n}/${lines.length}` : ""}`;
+              },
+            })}</select>
+            <div class="field-hint">${escapeHtml(this.languageLabel(d.input_language))}から訳します。訳文は言語ごとに残り、Recordingでその言語の音声を作るときに読みます。
+              Translateは生成AIの訳を欄に入れるだけで、Saveするまで下書きには入りません。</div>
+          </div>
           <div id="dt-warnings"></div>
           ${lines
             .map((line, i) => {
@@ -762,12 +821,13 @@ customElements.define(
               // 原稿の音声にする文(感情タグ入り)を訳す。原稿が今の台詞と食い違えば台詞を訳す
               const stale = dialogue && bare(dialogue.text) !== bare(line.text);
               const source = dialogue && !stale && dialogue.text !== line.text ? dialogue.text : null;
+              const current = translationOf(dialogue, language);
               return `
             <div class="field">
               <label for="dtr_${i}">${i + 1}. ${escapeHtml(castCharacter.get(line.cast && line.cast.ref) || "")}: ${escapeHtml(line.text)}</label>
               ${source ? `<div class="field-hint">音声にする文: ${escapeHtml(source)}</div>` : ""}
               ${stale ? `<div class="field-error">原稿が今の台詞と食い違います(訳すのは今の台詞)</div>` : ""}
-              <textarea id="dtr_${i}" rows="2">${escapeHtml((dialogue && dialogue.translated_text) || "")}</textarea>
+              <textarea id="dtr_${i}" rows="2">${escapeHtml(current ? current.text : "")}</textarea>
             </div>`;
             })
             .join("")}
@@ -777,21 +837,25 @@ customElements.define(
           </div>
         </div>
       `;
+      body.querySelector("#dtr_language").addEventListener("change", (ev) => {
+        this.translationLanguage = ev.target.value;
+        this.renderTranslationEditor(body, entry);
+      });
       body.querySelector("#dtr_translate").addEventListener("click", (ev) =>
-        this.withButtonBusy(ev.currentTarget, "Translating...", () => this.translateScene(body, entry, lines))
+        this.withButtonBusy(ev.currentTarget, "Translating...", () => this.translateScene(body, entry, lines, language))
       );
       body.querySelector("#dtr_save").addEventListener("click", (ev) =>
-        this.withButtonBusy(ev.currentTarget, "Saving...", () => this.saveTranslation(body, entry, lines))
+        this.withButtonBusy(ev.currentTarget, "Saving...", () => this.saveTranslation(body, entry, lines, language))
       );
     }
 
-    async translateScene(body, entry, lines) {
+    async translateScene(body, entry, lines, language) {
       const filled = lines.some((_, i) => body.querySelector(`#dtr_${i}`).value.trim());
-      if (filled && !confirm("今の訳文の欄を、生成AIの訳で置き換えます(Saveするまで下書きは変わりません)。よろしいですか?")) return;
+      if (filled && !confirm(`${this.languageLabel(language)}の訳文の欄を、生成AIの訳で置き換えます(Saveするまで下書きは変わりません)。よろしいですか?`)) return;
       try {
         const result = await apiFetch(`/projects/${this.projectId}/drama-drafts/${this.draft.draftId}/scene-translation`, {
           method: "POST",
-          bodyObj: { dramaturgy_id: this.dramaturgyId, scene_id: entry.scene.id },
+          bodyObj: { dramaturgy_id: this.dramaturgyId, scene_id: entry.scene.id, language },
         });
         const byLine = new Map(result.lines.map((l) => [l.line_id, l.translated_text]));
         lines.forEach((line, i) => {
@@ -808,15 +872,23 @@ customElements.define(
       }
     }
 
-    // 訳文を保存する(原稿のある台詞は訳文だけを書き換え、原稿の無い台詞は訳文を書いたときだけ台詞のままの原稿を作る)
-    async saveTranslation(body, entry, lines) {
+    // 選んだ言語の訳文を保存する(ほかの言語の訳文は残す。原稿のある台詞は訳文の一覧のその言語だけを書き換え、
+    // 原稿の無い台詞は訳文を書いたときだけ台詞のままの原稿を作る)
+    async saveTranslation(body, entry, lines, language) {
       const dialogues = this.sceneDialogues(entry.scene);
       const elements = [];
       lines.forEach((line, i) => {
-        const text = body.querySelector(`#dtr_${i}`).value.trim() || null; // nullは訳文を消す
+        const text = body.querySelector(`#dtr_${i}`).value.trim();
         const dialogue = dialogues.get(line.key);
         if (dialogue) {
-          if ((dialogue.translated_text || null) !== text) elements.push({ id: dialogue.id, translated_text: text });
+          const translations = [...(dialogue.translations || [])];
+          const index = translations.findIndex((t) => t.language === language);
+          const before = index >= 0 ? translations[index].text : "";
+          if (before === text) return;
+          if (!text) translations.splice(index, 1);
+          else if (index >= 0) translations[index] = { language, text };
+          else translations.push({ language, text });
+          elements.push({ id: dialogue.id, translations }); // 訳文の一覧は丸ごと置き換える
         } else if (text) {
           elements.push({
             type: "dialogue",
@@ -824,7 +896,7 @@ customElements.define(
             line: { ref: line.key },
             cast: { ref: line.cast.ref },
             text: line.text,
-            translated_text: text,
+            translations: [{ language, text }],
           });
         }
       });
@@ -834,7 +906,7 @@ customElements.define(
       }
       try {
         await this.editDramaturgy({ acts: [{ id: entry.act.id, scenes: [{ id: entry.scene.id, elements }] }] });
-        showToast("訳文を下書きに保存しました(Save Versionで確定)", "ok");
+        showToast(`${this.languageLabel(language)}の訳文を下書きに保存しました(Save Versionで確定)`, "ok");
       } catch (e) {
         showApiError(e);
       }
@@ -910,8 +982,16 @@ customElements.define(
             <div class="field-hint">作品全体のあらすじ(メタメタストーリー)。</div>
           </div>
           <div class="panel-form-row">
-            ${textField("dp_input_language", "Input Language", d.input_language || "", "制作に使う言語のコード(例: ja)")}
-            ${textField("dp_output_language", "Output Language", d.output_language || "", "音声にする言語のコード(例: ja・zh)")}
+            <div class="field">
+              <label for="dp_input_language">Input Language</label>
+              <select id="dp_input_language">${this.languageOptions(d.input_language || "")}</select>
+              <div class="field-hint">制作に使う言語(台詞を書く言語)。</div>
+            </div>
+            <div class="field">
+              <label for="dp_output_language">Output Language</label>
+              <select id="dp_output_language">${this.languageOptions(d.output_language || "")}</select>
+              <div class="field-hint">既定の音声の言語(Auditionで声を選ぶ言語)。ほかの言語の訳文はScenesタブのTranslationでいくつでも作れます。</div>
+            </div>
           </div>
           <div class="panel-actions">
             <button type="button" class="btn btn-primary" id="dp_save">Save</button>
@@ -1308,7 +1388,11 @@ customElements.define(
           </div>
           <div class="panel-form-row">
             ${textField("dc_pace", "Pace", performance.pace || "", "話す速さ")}
-            ${textField("dc_language", "Language", cast.language || "", "話す言語のコード(空なら作品の言語)")}
+            <div class="field">
+              <label for="dc_language">Language</label>
+              <select id="dc_language">${this.languageOptions(cast.language || "", { empty: "(作品の言語)" })}</select>
+              <div class="field-hint">既定の声の言語(空なら作品のOutput Language)</div>
+            </div>
             ${textField("dc_accent", "Accent", cast.accent || "", "訛り・話しぶり")}
           </div>
           <div class="panel-actions">
@@ -1317,6 +1401,8 @@ customElements.define(
           </div>
           <div class="panel-section-title">Actor(演者の声)</div>
           <div id="dc_voice"><p class="field-hint">声の一覧を読み込んでいます…</p></div>
+          <div class="panel-section-title">Voices by Language(言語ごとの声)</div>
+          <div id="dc_language_voices"><p class="field-hint">声の一覧を読み込んでいます…</p></div>
         </div>
       `;
       detail.querySelector("#dc_save").addEventListener("click", (ev) =>
@@ -1324,6 +1410,93 @@ customElements.define(
       );
       detail.querySelector("#dc_delete").addEventListener("click", () => this.deleteCast(cast));
       this.renderVoiceSection(detail.querySelector("#dc_voice"), cast);
+      this.renderLanguageVoices(detail.querySelector("#dc_language_voices"), cast);
+    }
+
+    // 作品の言語(制作の言語・既定の音声の言語・どこかの台詞に訳文のある言語)。言語の一覧の順
+    workLanguages() {
+      const d = this.dramaturgy;
+      const codes = new Set([d.input_language, d.output_language].filter(Boolean));
+      for (const act of d.acts || []) {
+        for (const scene of act.scenes || []) {
+          for (const e of scene.elements || []) for (const t of e.translations || []) codes.add(t.language);
+        }
+      }
+      const rank = new Map(this.languages.map((l, i) => [l.code, i]));
+      return [...codes].sort((a, b) => (rank.get(a) ?? 999) - (rank.get(b) ?? 999) || a.localeCompare(b));
+    }
+
+    // 言語ごとの声: 演者がその言語を読むときに、既定の声の代わりに使う声(Recording)。既定の声の言語(配役の言語)以外の、作品の言語と
+    // 設定済みの言語を並べる。「(既定の声を使う)」はその言語の声を持たない
+    async renderLanguageVoices(box, cast, extra = []) {
+      const actor = this.actorOf(cast);
+      const current = new Map(((actor && actor.voices) || []).map((v) => [v.language, v]));
+      const defaultLanguage = this.castLanguage(cast);
+      const languages = [...new Set([...this.workLanguages(), ...current.keys(), ...extra])].filter((code) => code !== defaultLanguage);
+      const lists = await Promise.all(languages.map((code) => this.voiceList(code)));
+      if (!box.isConnected) return;
+      const voiceLabel = (v) => `${v.voice_id}(${[v.gender, v.pitch, v.accent].filter(Boolean).join(" · ")})`;
+      const rows = languages
+        .map((code, i) => {
+          const result = lists[i];
+          const selected = current.has(code) ? current.get(code).voice_name : "";
+          const voices = result.voices || [];
+          const unknown = selected && !voices.some((v) => v.voice_id === selected);
+          const control = result.error
+            ? `<input type="text" data-lang-voice="${escapeAttr(code)}" value="${escapeAttr(selected)}" placeholder="声の識別子">`
+            : `<select data-lang-voice="${escapeAttr(code)}">
+                <option value="">(既定の声を使う)</option>
+                ${unknown ? `<option value="${escapeAttr(selected)}" selected>${escapeHtml(selected)}(一覧に無い声)</option>` : ""}
+                ${voices.map((v) => `<option value="${escapeAttr(v.voice_id)}" ${v.voice_id === selected ? "selected" : ""}>${escapeHtml(voiceLabel(v))}</option>`).join("")}
+              </select>`;
+          return `<div class="field"><label>${escapeHtml(this.languageLabel(code))}</label>${control}
+            <div class="field-hint">${result.error ? `声の一覧を取得できません: ${escapeHtml(result.error)}` : `${voices.length}件`}</div></div>`;
+        })
+        .join("");
+      const addable = this.languages.filter((l) => l.code !== defaultLanguage && !languages.includes(l.code));
+      box.innerHTML = `
+        <div class="field-hint">Recordingで、その言語を読むときに既定の声(${escapeHtml(this.languageLabel(defaultLanguage) || "未設定")})の代わりに使う声です。
+          既定の声のままだと、ほかの言語をうまく読めないことがあります。</div>
+        ${rows || `<p class="field-hint">作品にほかの言語がありません(ScenesタブのTranslationで訳文を作るか、下で言語を足せます)。</p>`}
+        <div class="panel-actions">
+          <select id="dc_add_voice_language"><option value="">(言語を足す)</option>${addable
+            .map((l) => `<option value="${escapeAttr(l.code)}">${escapeHtml(this.languageLabel(l.code))}</option>`)
+            .join("")}</select>
+          <button type="button" class="btn btn-primary" id="dc_save_language_voices">Save Voices</button>
+        </div>`;
+      box.querySelector("#dc_add_voice_language").addEventListener("change", (ev) => {
+        if (ev.target.value) this.renderLanguageVoices(box, cast, [...extra, ev.target.value]);
+      });
+      box.querySelector("#dc_save_language_voices").addEventListener("click", (ev) =>
+        this.withButtonBusy(ev.currentTarget, "Saving...", () => this.saveLanguageVoices(box, cast, languages, lists))
+      );
+    }
+
+    // 言語ごとの声を保存する(一覧を丸ごと置き換える。演者がいなければ作る)。提供元・モデルは、声の一覧を取った音声合成の設定
+    async saveLanguageVoices(box, cast, languages, lists) {
+      const actor = this.actorOf(cast);
+      const kept = new Map(((actor && actor.voices) || []).map((v) => [v.language, v]));
+      const voices = [];
+      languages.forEach((code, i) => {
+        const input = box.querySelector(`[data-lang-voice="${CSS.escape(code)}"]`);
+        const voiceName = input ? input.value.trim() : "";
+        if (!voiceName) return;
+        const list = lists[i];
+        const before = kept.get(code);
+        const voice = { language: code, voice_name: voiceName };
+        if (!list.error) Object.assign(voice, { tts_provider: list.provider, tts_model: list.model });
+        else if (before && before.voice_name === voiceName) Object.assign(voice, { tts_provider: before.tts_provider, tts_model: before.tts_model });
+        voices.push(voice);
+      });
+      const patch = actor
+        ? { id: actor.id, voices }
+        : { name: `${this.characterName(cast.character.ref)}役の演者`, cast: { ref: cast.key }, voices };
+      try {
+        await this.editDramaturgy({ agents: { actors: [patch] } }); // 声の一覧は丸ごと置き換える
+        showToast("言語ごとの声を下書きに保存しました(Save Versionで確定)", "ok");
+      } catch (e) {
+        showApiError(e);
+      }
     }
 
     // 演者の声: 音声合成の提供元の声の一覧(配役の言語)から選ぶ。一覧が取れなければ、声の識別子を直接入れる

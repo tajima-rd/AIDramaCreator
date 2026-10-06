@@ -78,6 +78,7 @@ from .project import (
     ProjectSaveAsRequest,
     ProjectUpdatePathRequest,
 )
+from .language import LanguageInfo, LanguageListResult
 from .recording import (
     RecordingCreateRequest,
     RecordingLanguageInfo,
@@ -148,6 +149,8 @@ __all__ = [
     "ProjectPropertiesUpdateRequest",
     "ProjectSaveAsRequest",
     "ProjectUpdatePathRequest",
+    "LanguageInfo",
+    "LanguageListResult",
     "RecordingCreateRequest",
     "RecordingLanguageInfo",
     "RecordingListResult",

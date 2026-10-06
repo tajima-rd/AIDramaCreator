@@ -17,7 +17,7 @@ import copy
 from typing import Any, Optional
 
 # idもkeyも持たない要素の一覧(書いた一覧で丸ごと置き換える)。rules・prohibitions・tasksはエージェントとそのタスクの
-# 一覧(タスクはcodeで特定するが、一覧ごと送る)
+# 一覧(タスクはcodeで特定するが、一覧ごと送る)。translationsは原稿の台詞の言語ごとの訳文、voicesは演者の言語ごとの声(どちらも言語で特定するが、一覧ごと送る)
 _REPLACED_LISTS = frozenset(
     {
         "members",
@@ -29,6 +29,8 @@ _REPLACED_LISTS = frozenset(
         "rules",
         "prohibitions",
         "tasks",
+        "translations",
+        "voices",
     }
 )
 # 区画ごとに、丸ごと置き換える一覧(区画の名前→一覧の名前)。作品(dramaturgy)の中のcharacters・relationships・locations・

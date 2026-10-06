@@ -17,7 +17,7 @@ Build with AIの生成AIの提案を、編集用の下書きへ重ねる部分YA
   場所・時期・状況は変えない。空の値では既存の値を消さない。無い番号のシーンは外して注意を返す
 - 演出付きの原稿(Direction): 選んだシーンの台詞の1行ごとに、演出付きの台詞(Dialogue)を作るか書き換える(台詞と対応付け、識別子を保つ)。
   音声にする文は、感情タグを除くと台詞の文言と同じでなければならない(違えば台詞のまま使い、注意を返す)。一覧に無い感情タグは外す。
-  訳文は、音声の言語が制作の言語と違う作品だけ。演出の無い台詞は、今の原稿を残す(無ければ台詞のままの原稿を作る)
+  訳文(translations)は作らず、今の訳文を残す。演出の無い台詞は、今の原稿を残す(無ければ台詞のままの原稿を作る)
 - 台詞(Script): 選んだシーンの台詞の全体を置き換える(今の行を順に書き換え、余った行は消し、足りない行は足す)。話者は人物の名前で
   指し、作品の配役にいない人物の行・空の行は外して注意を返す
 """
@@ -201,7 +201,6 @@ def direction_patch(
     dramaturgy_id: str,
     scene_id: str,
     drafts: list[DialogueDirectionDraft],
-    translates: bool,
 ) -> PatchOutcome:
     """シーンの演出付きの原稿の提案を部分YAMLにする(台詞の1行ごとに、演出付きの台詞を作るか書き換える)。"""
     dramaturgy = _dramaturgy_spec(content, dramaturgy_id)
@@ -233,7 +232,7 @@ def direction_patch(
                 continue  # 演出の無い台詞は、今の原稿を残す
             warnings.append(f"台詞{number}の演出が無いので、台詞のままの原稿にしました。")
             draft = DialogueDirectionDraft(
-                number=number, text="", action="", style="", pace="", dynamics="", emotion="", pause_after="", translated_text=""
+                number=number, text="", action="", style="", pace="", dynamics="", emotion="", pause_after=""
             )
         where = f"台詞{number}"
         text = _known_tags(draft.text or "", where, warnings)
@@ -241,9 +240,6 @@ def direction_patch(
             if _text(draft.text):
                 warnings.append(f"{where}の音声にする文が台詞の文言と違うので、台詞のまま使いました(文言はScriptの工程で直す)。")
             text = line["text"]
-        translated = _text(_known_tags(draft.translated_text or "", f"{where}の訳文", warnings)) if translates else None
-        if translates and translated is None:
-            warnings.append(f"{where}の訳文がありません。")
         values: dict[str, Any] = {
             "type": "dialogue",
             "order": line.get("order", number - 1),
@@ -252,14 +248,12 @@ def direction_patch(
             "text": text,
             "action": _text(draft.action),
             "direction": {field: _text(getattr(draft, field)) for field in _DIRECTION_FIELDS},
-            "translated_text": translated,
         }
         if current is not None:
             same = (
                 current.get("text") == values["text"]
                 and current.get("action") == values["action"]
                 and _compact(current.get("direction") or {}) == _compact(values["direction"])
-                and current.get("translated_text") == values["translated_text"]
             )
             if same:
                 continue

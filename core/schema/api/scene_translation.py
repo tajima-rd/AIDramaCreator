@@ -10,6 +10,7 @@ from pydantic import BaseModel
 class SceneTranslationRequest(BaseModel):
     dramaturgy_id: str
     scene_id: str
+    language: str  # 訳す言語のコード(制作の言語以外。例: en・zh-CN)
 
 
 class SceneTranslationLine(BaseModel):
@@ -19,6 +20,6 @@ class SceneTranslationLine(BaseModel):
 
 
 class SceneTranslationResult(BaseModel):
-    language: str  # 訳した言語(作品のoutput_language)
+    language: str  # 訳した言語
     lines: list[SceneTranslationLine]
     warnings: list[str] = []

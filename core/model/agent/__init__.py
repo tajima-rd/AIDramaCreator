@@ -3,7 +3,7 @@
 (生成AIの呼び出しは処理の側)。職能ごとの既定の文面とタスクの一覧の正本は、core/default/agents/のYAML。
 """
 
-from core.model.agent.actor import Actor
+from core.model.agent.actor import Actor, LanguageVoice
 from core.model.agent.agent_task import AgentTask
 from core.model.agent.base_agent import BaseAgent
 from core.model.agent.casting_director import CastingDirector
@@ -19,6 +19,7 @@ __all__ = [
     "BaseAgent",
     "CastingDirector",
     "Director",
+    "LanguageVoice",
     "Researcher",
     "Scriptwriter",
     "SoundEngineer",

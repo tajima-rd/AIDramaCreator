@@ -2,9 +2,10 @@
 """
 音声の生成(Dramaturgy EditorのRecordingタブ。/projects/{id}/recordings)の結合テスト。音声合成は偽物に差し替える(提供元を呼ばない)。
 
-- 作品で作れる言語は、制作の言語(音声にする文)と、それと違う音声の言語(訳文)
+- 作品で作れる言語は、制作の言語(音声にする文)・既定の音声の言語・訳文のある言語(その言語の訳文。言語の一覧の順)
 - シーンごとに足りないもの(演出付きの原稿の無い台詞・その言語の文の無い台詞・声の無い配役・台詞の無いシーン)を示し、あれば断る(音声合成を呼ばない)
-- 台詞の順に演者の声で読み、台詞の後の間を挟んでmp3にする。音声合成への指示は配役の演じ方・訛り・場所・演出から作る
+- 台詞の順に演者の声(読む言語の声があればそれ、無ければ既定の声)で読み、台詞の後の間を挟んでmp3にする。音声合成への指示は
+  配役の演じ方・訛り・場所・演出から作り、「TRANSCRIPTだけを読む」と明記する。制作の言語以外で読むときは、制作の言語で書いた設定を渡さない
 - 音声は<プロジェクト>/recordings/<作品>/<言語>/<シーン>.mp3に置き、生成し直すと上書きする
 """
 
@@ -28,16 +29,18 @@ locations:
 dramaturgy:
   title: ハチ北
   input_language: ja
-  output_language: zh
+  output_language: zh-CN
   characters: [{ref: nishitani}, {ref: guest}]
   locations: [{ref: lift}]
   casts:
-    - {key: nishitani_cast, character: {ref: nishitani}, accent: Kansai dialect, performance: {title: Reliable Guide, pace: Slow}}
-    - {key: guest_cast, character: {ref: guest}}
+    - {key: nishitani_cast, character: {ref: nishitani}, language: ja, accent: Kansai dialect,
+       performance: {title: Reliable Guide, pace: Slow}}
+    - {key: guest_cast, character: {ref: guest}, language: en}
   agents:
     actors:
       - {name: 西谷役の演者, cast: {ref: nishitani_cast}, voice_name: ja-jp-advisor-1}
-      - {name: 客役の演者, cast: {ref: guest_cast}, voice_name: Kore, tts_provider: Gemini, tts_model: other-tts}
+      - {name: 客役の演者, cast: {ref: guest_cast}, voice_name: Kore, tts_provider: Gemini, tts_model: other-tts,
+         voices: [{language: en, voice_name: en-us-concierge-6}]}
   acts:
     - order: 0
       scenes:
@@ -51,7 +54,9 @@ dramaturgy:
               - {key: l2, order: 1, cast: {ref: guest_cast}, text: どうも。}
           elements:
             - {type: dialogue, order: 0, line: {ref: l1}, cast: {ref: nishitani_cast}, text: "[excited] ようこそ。",
-               action: Waves, direction: {style: Warm, emotion: Glad, pause_after: Long}, translated_text: "[excited] 欢迎。"}
+               action: Waves, direction: {style: Warm, emotion: Glad, pause_after: Long},
+               translations: [{language: zh-CN, text: "[excited] 欢迎。"}, {language: fr, text: "[excited] Bienvenue."},
+                              {language: en, text: "[excited] Welcome."}]}
             - {type: dialogue, order: 1, line: {ref: l2}, cast: {ref: guest_cast}, text: どうも。}
         - order: 1
           title: 未演出
@@ -131,16 +136,21 @@ def _record(client, ctx, scene_index, language):
 
 def test_list_shows_languages_and_problems(client, ctx):
     result = _list(client, ctx)
-    assert [(lang["code"], lang["source"]) for lang in result["languages"]] == [("ja", "text"), ("zh", "translated_text")]
+    assert [(lang["code"], lang["source"]) for lang in result["languages"]] == [
+        ("ja", "text"),
+        ("zh-CN", "translation"),
+        ("en", "translation"),
+        ("fr", "translation"),
+    ]
     assert result["language"] == "ja"
     first, second, third = result["scenes"]
     assert (first["act_number"], first["scene_number"], first["problems"], first["recorded"]) == (1, 1, [], False)
     assert "台詞1に演出付きの原稿がありません" in second["problems"][0]
     assert "台詞がありません" in third["problems"][0]
     # 訳文の無い台詞は、音声の言語では足りない
-    zh = _list(client, ctx, "zh")["scenes"][0]
-    assert zh["problems"] == ["台詞2にzhの訳文がありません。"]
-    assert client.get(ctx["url"], params={"draft_id": ctx["draft_id"], "dramaturgy_id": ctx["dramaturgy_id"], "language": "en"}).status_code == 400
+    zh = _list(client, ctx, "zh-CN")["scenes"][0]
+    assert zh["problems"] == ["台詞2にzh-CNの訳文がありません。"]
+    assert client.get(ctx["url"], params={"draft_id": ctx["draft_id"], "dramaturgy_id": ctx["dramaturgy_id"], "language": "de"}).status_code == 400
 
 
 def test_record_scene_writes_mp3(client, ctx, speech):
@@ -154,9 +164,11 @@ def test_record_scene_writes_mp3(client, ctx, speech):
         ("Kore", ("Gemini", "other-tts")),
     ]
     prompt = speech[0]["text"]
-    for text in ("AUDIO PROFILE: 西谷", "Reliable Guide", "THE SCENE: 第1リフト / Morning", "Waves", "Warm", "Emotion: Glad",
-                 "Pace: Slow", "Accent: Kansai dialect", "[excited] ようこそ。"):
+    for text in ("AUDIO PROFILE: 西谷", "Reliable Guide", "THE SCENE: 第1リフト / Morning", "Waves", "Style: Warm", "Emotion: Glad",
+                 "Pace: Slow", "Accent: Kansai dialect", "Language: 日本語 (ja). Read ONLY the text under TRANSCRIPT",
+                 "# TRANSCRIPT\n[excited] ようこそ。"):
         assert text in prompt
+    assert "# 1." not in prompt  # 見出しに番号を付けない
     assert "欢迎" not in prompt
     # ファイルの置き場所と、台詞の後の間(Long=1500ms、無ければShort=300ms)
     path = os.path.join(ctx["root"], "recordings", ctx["dramaturgy_id"], "ja", ctx["scene_ids"][0] + ".mp3")
@@ -166,20 +178,43 @@ def test_record_scene_writes_mp3(client, ctx, speech):
     file_resp = client.get(f"{ctx['url']}/{ctx['dramaturgy_id']}/ja/{ctx['scene_ids'][0]}.mp3")
     assert file_resp.status_code == 200 and file_resp.headers["content-type"] == "audio/mpeg"
     assert _list(client, ctx)["scenes"][0]["recorded"] is True
-    assert _list(client, ctx, "zh")["scenes"][0]["recorded"] is False
+    assert _list(client, ctx, "zh-CN")["scenes"][0]["recorded"] is False
 
 
-def test_record_translation_reads_translated_text(client, ctx, speech):
-    patch = {"dramaturgies": [{"id": ctx["dramaturgy_id"], "output_language": "ja"}]}
-    # 訳文の無い作品(制作と音声の言語が同じ)では、作れる言語は1つ
+def test_record_translation_reads_that_language(client, ctx, speech):
     draft = f"/projects/{ctx['pid']}/drama-drafts/{ctx['draft_id']}"
+    dramaturgy = parse_yaml(client.get(f"{draft}/content"))["dramaturgies"][0]
+    scene = next(s for s in dramaturgy["acts"][0]["scenes"] if s["id"] == ctx["scene_ids"][0])
+    second = next(e for e in scene["elements"] if e["order"] == 1)
+    # 台詞2に英語の訳文を足すと、英語は作れる(フランス語はまだ足りない)
+    patch = {"dramaturgies": [{"id": ctx["dramaturgy_id"], "acts": [{"id": dramaturgy["acts"][0]["id"], "scenes": [
+        {"id": ctx["scene_ids"][0], "elements": [{"id": second["id"], "translations": [{"language": "en", "text": "Hi."}]}]}]}]}]}
     assert client.post(f"{draft}/edit", content=yaml.safe_dump(patch)).status_code == 200
-    assert [lang["code"] for lang in _list(client, ctx)["languages"]] == ["ja"]
-    patch = {"dramaturgies": [{"id": ctx["dramaturgy_id"], "output_language": "zh"}]}
-    assert client.post(f"{draft}/edit", content=yaml.safe_dump(patch)).status_code == 200
+    assert _list(client, ctx, "fr")["scenes"][0]["problems"] == ["台詞2にfrの訳文がありません。"]
+    # 英語の声の無い演者は既定の声で読むことを知らせる(音声は作れる)
+    notices = _list(client, ctx, "en")["scenes"][0]["notices"]
+    assert notices == ["「西谷」にはenの声が無いので、既定の声(ja-jp-advisor-1)で読みます(CastsタブのVoices by Languageで選べます)。"]
+    # 既定の声が英語(配役の言語en)の客は、日本語を既定の声で読む
+    assert _list(client, ctx, "ja")["scenes"][0]["notices"] == [
+        "「客」にはjaの声が無いので、既定の声(Kore)で読みます(CastsタブのVoices by Languageで選べます)。"
+    ]
+    resp = _record(client, ctx, 0, "en")
+    assert resp.status_code == 200, resp.text
+    assert [c["text"].split("# TRANSCRIPT\n")[1] for c in speech] == ["[excited] Welcome.", "Hi."]
+    # 英語の声のある演者はそれで、無い演者は既定の声で読む(提供元・モデルは演者の既定)
+    assert [(c["voice"], c["generator"]) for c in speech] == [
+        ("ja-jp-advisor-1", (None, None)),
+        ("en-us-concierge-6", ("Gemini", "other-tts")),
+    ]
+    # 制作の言語以外では、制作の言語で書いた設定(名前・演じ方・場所・状況・訛り・話す速さ)を渡さない。演出・ト書きは渡す
+    prompt = speech[0]["text"]
+    for text in ("西谷", "Reliable Guide", "第1リフト", "Morning", "Kansai dialect", "Pace: Slow"):
+        assert text not in prompt, text
+    for text in ("Waves", "Style: Warm", "Emotion: Glad", "Language: English (en). Read ONLY the text under TRANSCRIPT"):
+        assert text in prompt, text
     # 訳文が足りなければ断る
-    resp = _record(client, ctx, 0, "zh")
-    assert resp.status_code == 400 and "zhの訳文がありません" in resp.text and speech == []
+    resp = _record(client, ctx, 0, "fr")
+    assert resp.status_code == 400 and "frの訳文がありません" in resp.text and len(speech) == 2
 
 
 def test_scene_with_problems_is_refused_without_calling_tts(client, ctx, speech):
@@ -204,3 +239,19 @@ def test_tts_failure_is_502_and_keeps_previous_file(client, ctx, speech, monkeyp
     resp = _record(client, ctx, 0, "ja")
     assert resp.status_code == 502 and "quota" in resp.text
     assert _list(client, ctx)["scenes"][0]["recorded_at"] == before["recorded_at"]
+
+
+def test_language_voices_survive_save_version(client, ctx):
+    draft = f"/projects/{ctx['pid']}/drama-drafts/{ctx['draft_id']}"
+    actors = parse_yaml(client.get(f"{draft}/content"))["dramaturgies"][0]["agents"]["actors"]
+    nishitani = next(a for a in actors if a["voice_name"] == "ja-jp-advisor-1")
+    voices = [
+        {"language": "en", "voice_name": "en-us-advisor-1", "tts_provider": "Gemini", "tts_model": "gemini-3.8-flash-lite-tts"},
+        {"language": "ko", "voice_name": "ko-kr-advisor-1"},
+    ]
+    patch = {"dramaturgies": [{"id": ctx["dramaturgy_id"], "agents": {"actors": [{"id": nishitani["id"], "voices": voices}]}}]}
+    assert client.post(f"{draft}/edit", content=yaml.safe_dump(patch)).status_code == 200
+    assert client.post(f"{draft}/confirm", content="note: 声\n").status_code == 200
+    model = parse_yaml(client.get(f"/projects/{ctx['pid']}/drama-model"))
+    saved = next(a for a in model["dramaturgies"][0]["agents"]["actors"] if a["id"] == nishitani["id"])
+    assert saved["voices"] == voices and saved["voice_name"] == "ja-jp-advisor-1"
