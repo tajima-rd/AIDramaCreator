@@ -62,8 +62,9 @@
 - [x] Dramaturgy EditorのScenesタブで台詞の編集と訳文の作成(Plot・Script・Translation。2026-10-05)
 - [x] 訳文を作る担当の整理(Directionは訳さず、ScenesタブのTranslation(StageManager)で言語ごとに作る。2026-10-06)
 - [x] 作品の言語のプルダウンと、言語ごとの訳文(いくつでも。2026-10-06)
-- [ ] **言語ごとの声**: 演者(`Actor`)の声は配役ごとに1つ(Output Languageの声をAuditionで選ぶ)なので、ほかの言語の音声もその声で読む。
-  言語ごとに声を選べるようにするか(ユーザーと相談)
+- [x] 言語ごとの声(CastsタブのVoices by Language)と、音声合成への指示の修正(利用者の書いた設定を渡さない。2026-10-06)
+- [ ] 配役の演じ方(説明・訛り等)を音声に効かせる方法: 今は音声合成に渡していない(日本語の設定を読み上げたため)。英語の演じ方の欄を
+  足すか、生成AIで英語の演出に直して渡すか(ユーザーと相談)
 - [ ] `main.py`の音声の生成を、Recordingと同じ処理(`scene_recorder`)に移すか(旧来の`work/scene/`の原稿をやめるか。要相談)
 - [ ] Build with AIの工程を足す(効果音・環境音・BGM等。モデルの属性から)
 - [x] 企画書のYAMLの読み込み(ProposalタブのImport from YAML。フォームに入れ、Saveで下書きへ。2026-10-01)

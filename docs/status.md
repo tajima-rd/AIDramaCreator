@@ -160,6 +160,10 @@
   `script_element_translation`)。ScenesタブのTranslationは言語を選んで訳す・直す(ほかの言語の訳文は残る)。Recordingは訳文のある言語を
   すべて選べる。Build with AIのDirectionは訳文を作らない。headless Chromeで、プルダウン・韓国語への翻訳と保存(中国語の訳文が残る)・
   Recordingの言語の一覧・Output Languageの保存・New Dramaturgyのダイアログを確かめた。
+- 言語ごとの声と、音声合成への指示の修正(2026-10-06): 訳文の言語の録音で、日本語専用の声が台本ではなく人物設定を日本語で読む不具合を
+  実験で特定して直した。CastsタブにVoices by Language(配役ごと・言語ごとの声。`Actor.voices`、DBは`agent_voice`)を足し、Recordingは読む言語の
+  声を使う(無ければ既定の声で読むことを知らせる)。音声合成への指示は、利用者の書いた設定を渡さず、英語の演出と「TRANSCRIPTだけを読む」に
+  した。配役のLanguageもプルダウンにした。本物の音声合成と文字起こしで、英語(日本語の声・英語の声)・日本語とも台本どおりに読むことを確かめた。
 - 文章生成の既定をGemma(Gemini APIの`gemma-4-31b-it`)にした(2026-10-02): `apps/sample_data/project.yaml`の`creative_llm`・`assistive_llm`と、
   `main.py`の既定(project.yamlに設定が無いとき)。GUIで作った新しいプロジェクトには既定が無い(Generative AIタブで設定する)。
 - 文章生成の設定の分離(2026-10-02): Generative AIタブで、作品作り(Creative LLM)と作業補助(Assistive LLM)を別々に設定する

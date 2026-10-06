@@ -10,7 +10,7 @@
 足りないもの(台詞が無い・演出付きの原稿の無い台詞・原稿が今の台詞と食い違う台詞・その言語の文の無い台詞・声の決まっていない配役)
 があるシーンは断る
 (課金の無駄を防ぐ。scene_problemsで先に一覧にする)。声は、演者に読む言語の声(Actor.voices)があればそれ、無ければ既定の声。提供元・モデルが空なら、演者の既定、それも空ならproject.yamlのgenai.tts。
-制作の言語以外で読むときは、利用者が制作の言語で書いた設定を音声合成に渡さない(core.prompt.recording)。
+利用者の書いた設定(演じ方・訛り・場所等)は音声合成に渡さない(core.prompt.recording)。
 """
 
 import io
@@ -194,13 +194,12 @@ def record_scene(project: Project, dramaturgy: Dramaturgy, scene: Scene, languag
         raise ValueError("このシーンの音声は作れません:\n" + "\n".join(f"* {p}" for p in problems))
     generators = {}
     audio = AudioSegment.empty()
-    native = language.source == TEXT  # 制作の言語で読む(利用者の書いた設定も渡す)
     name = language_name(language.code)
     for take in takes:
         key = (take.voice.tts_provider, take.voice.tts_model)
         if key not in generators:
             generators[key] = build_actor_speech_generator(project, *key)
-        prompt = speech_prompt(scene, take.cast, take.dialogue, take.text, name, native)
+        prompt = speech_prompt(take.cast, take.dialogue, take.text, name)
         wav = generators[key].synthesize(prompt, voice=take.voice.voice_name)
         audio += AudioSegment.from_wav(io.BytesIO(wav)) + _pause(take.dialogue)
     out = io.BytesIO()

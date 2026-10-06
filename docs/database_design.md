@@ -99,6 +99,7 @@ QIDMのdraftsにあった根拠(evidence)・会話(conversation)は、対話方�
 | `proposal` ⊂dramaturgy | dramaturgy_id(作品ごとに1行)・title・catchphrase・logline・intent・target_area・synopsis |
 | `proposal_character` ⊂proposal | dramaturgy_id・sort_order・name・description |
 | `agent` ⊂dramaturgy | id・dramaturgy_id・sort_order・kind(職能。YAMLの区画名の単数形)・name・role・persona・rules・prohibitions(JSONの文字列の一覧)・casting_id(Actorだけ。ID参照で制約なし)・voice_name・tts_provider・tts_model |
+| `agent_voice` ⊂agent | agent_id・sort_order・language・voice_name・tts_provider・tts_model(主キーはagent_idとlanguage。演者の言語ごとの声。2026-10-06) |
 | `agent_task` ⊂agent | agent_id・sort_order・code・title・description・rules・prohibitions(JSON) |
 | `temporal_edge` ⊂dramaturgy | id・dramaturgy_id・sort_order・label・kind・source_id・target_id→temporal_node |
 | `cast` ⊂dramaturgy | id・dramaturgy_id・sort_order・character_id・performance_title・performance_description・performance_pace・voice_gender・language・accent・billing |

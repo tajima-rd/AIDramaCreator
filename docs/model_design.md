@@ -140,7 +140,8 @@ UMLからの変更(2026-09-30ユーザー承認): `Profile`をなくし、`Chara
 | `director.py` | `Director` | text | なし | `direct_scene` |
 | `stage_manager.py` | `StageManager` | text(翻訳) | なし | `translate`(ScenesタブのTranslation、2026-10-05。キューシートの組み立てはプログラムで、タスクにしない) |
 | `sound_engineer.py` | `SoundEngineer` | (将来) | なし | `design_sound`(結合はプログラム) |
-| `actor.py` | `Actor` | speech | `casting_id`(Castごとに1つ。ID参照)・`voice_name`(使う声)・`tts_provider`・`tts_model`(音声合成の提供元・モデル) | `perform_dialogue` |
+| `actor.py` | `Actor` | speech | `casting_id`(Castごとに1つ。ID参照)・`voice_name`(既定の声)・`tts_provider`・`tts_model`(音声合成の提供元・モデル)・`voices: list[LanguageVoice]`(言語ごとの声。同じ言語は1つ。2026-10-06ユーザー) | `perform_dialogue` |
+| | `LanguageVoice` | (値) | `language`(BCP 47)・`voice_name`・`tts_provider`・`tts_model`(空なら演者の既定) | |
 
 エージェントどうしのやり取り(発注・提案と反映・利用者との相談)はエージェントのモデルではないので、ここには置かない
 (公開API・処理の側で設計する。QIDMのdraftsに相当)。

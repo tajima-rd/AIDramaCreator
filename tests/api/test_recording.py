@@ -5,7 +5,7 @@
 - 作品で作れる言語は、制作の言語(音声にする文)・既定の音声の言語・訳文のある言語(その言語の訳文。言語の一覧の順)
 - シーンごとに足りないもの(演出付きの原稿の無い台詞・その言語の文の無い台詞・声の無い配役・台詞の無いシーン)を示し、あれば断る(音声合成を呼ばない)
 - 台詞の順に演者の声(読む言語の声があればそれ、無ければ既定の声)で読み、台詞の後の間を挟んでmp3にする。音声合成への指示は
-  配役の演じ方・訛り・場所・演出から作り、「TRANSCRIPTだけを読む」と明記する。制作の言語以外で読むときは、制作の言語で書いた設定を渡さない
+  演出(英語)・ト書き・声の性別から作り、「TRANSCRIPTだけを読む」と明記する。利用者の書いた設定(名前・演じ方・訛り・場所等)は渡さない
 - 音声は<プロジェクト>/recordings/<作品>/<言語>/<シーン>.mp3に置き、生成し直すと上書きする
 """
 
@@ -164,11 +164,12 @@ def test_record_scene_writes_mp3(client, ctx, speech):
         ("Kore", ("Gemini", "other-tts")),
     ]
     prompt = speech[0]["text"]
-    for text in ("AUDIO PROFILE: 西谷", "Reliable Guide", "THE SCENE: 第1リフト / Morning", "Waves", "Style: Warm", "Emotion: Glad",
-                 "Pace: Slow", "Accent: Kansai dialect", "Language: 日本語 (ja). Read ONLY the text under TRANSCRIPT",
+    for text in ("# THE SCENE\nWaves", "Style: Warm", "Emotion: Glad", "Language: 日本語 (ja). Read ONLY the text under TRANSCRIPT",
                  "# TRANSCRIPT\n[excited] ようこそ。"):
         assert text in prompt
-    assert "# 1." not in prompt  # 見出しに番号を付けない
+    # 見出しに番号を付けない。利用者の書いた設定(名前・演じ方・話す速さ・訛り・場所・状況)は渡さない
+    for text in ("# 1.", "西谷", "Reliable Guide", "Pace: Slow", "Kansai dialect", "第1リフト", "Morning"):
+        assert text not in prompt, text
     assert "欢迎" not in prompt
     # ファイルの置き場所と、台詞の後の間(Long=1500ms、無ければShort=300ms)
     path = os.path.join(ctx["root"], "recordings", ctx["dramaturgy_id"], "ja", ctx["scene_ids"][0] + ".mp3")
@@ -206,7 +207,7 @@ def test_record_translation_reads_that_language(client, ctx, speech):
         ("ja-jp-advisor-1", (None, None)),
         ("en-us-concierge-6", ("Gemini", "other-tts")),
     ]
-    # 制作の言語以外では、制作の言語で書いた設定(名前・演じ方・場所・状況・訛り・話す速さ)を渡さない。演出・ト書きは渡す
+    # どの言語でも、利用者の書いた設定は渡さない。演出・ト書きは渡す
     prompt = speech[0]["text"]
     for text in ("西谷", "Reliable Guide", "第1リフト", "Morning", "Kansai dialect", "Pace: Slow"):
         assert text not in prompt, text
