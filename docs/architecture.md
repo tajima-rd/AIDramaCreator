@@ -201,6 +201,8 @@
 - QIDMのGUIのファイルは、実行時に参照せず**複製して直す**(別リポジトリに依存しないため)。
 - **APIサーバーの既定のポートは8100**(QIDMの8000と競合するため。`scripts/server/start.sh`の`AIDC_SERVER_PORT`・
   `core/project/project.py`の`DEFAULT_SERVER_BASE_URL`・`app.js`の`DEFAULT_SERVER_BASE_URL`・`apps/sample_data/project.yaml`を揃える)。
+- **Connect to Serverの既定の接続先はページ自身のオリジン**(`location.origin`。`file://`等で開いたときだけ`DEFAULT_SERVER_BASE_URL`)。
+  APIサーバーはCORSを許していないため、`localhost:8100/app/`で開いて`127.0.0.1:8100`へ接続すると別オリジンとなりfetchが失敗する。
 - パネルはShadow DOMを使わない(light DOM)Custom Elementとし、`app.css`の共通クラス(`.field`・`.btn`・`.panel-*`等)を使う。
 - メニュー: Project・**Edit**・Connection。Editに`New Dramaturgy...`(題・幕数・言語。空の幕を持つ作品を作り、すぐに確定する)と
   `Dramaturgy Editor`(Treeで選んだ作品。QIDMのDomain Editorにあたる)、`Edit Location on Map`(下の「地図の上での場所の編集」)。

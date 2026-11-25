@@ -12,6 +12,13 @@
 const SERVER_STORAGE_KEY = "aidc_server_base_url";
 const DEFAULT_SERVER_BASE_URL = "http://127.0.0.1:8100";
 
+// 接続先の既定。APIサーバーが配信したページ(/app/)ならそのオリジンを使う。localhostと127.0.0.1は
+// ブラウザでは別オリジンで、サーバーはCORSを許していないため、ページと違うほうを既定にすると接続できない。
+function defaultServerBaseUrl() {
+  const { protocol, origin } = window.location;
+  return protocol === "http:" || protocol === "https:" ? origin : DEFAULT_SERVER_BASE_URL;
+}
+
 const state = {
   serverBaseUrl: localStorage.getItem(SERVER_STORAGE_KEY) || "",
   project: null, // ProjectInfo | null
@@ -283,7 +290,7 @@ function renderBadges() {
 function actionConnectToServer() {
   openModal({
     title: "Connect to Server",
-    bodyHtml: textField("f_base_url", "Server base URL", state.serverBaseUrl || DEFAULT_SERVER_BASE_URL),
+    bodyHtml: textField("f_base_url", "Server base URL", state.serverBaseUrl || defaultServerBaseUrl()),
     buttons: [
       { label: "Cancel", onClick: closeModal },
       {
